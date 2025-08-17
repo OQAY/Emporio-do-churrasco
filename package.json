@@ -1,15 +1,11 @@
 {
-  "name": "menu-online-admin",
+  "name": "emporio-do-churrasco",
   "version": "1.0.0",
   "description": "Sistema de cardapio digital com painel administrativo",
-  "main": "index.html",
+  "type": "module",
   "scripts": {
     "dev": "npx serve . -s -l 3000",
-    "build": "echo 'Projeto pronto para deploy'",
-    "preview": "npx serve . -s -l 4173",
-    "lint": "echo 'Linting JavaScript...'",
-    "format": "echo 'Formatting code...'",
-    "test": "echo 'Running tests...'"
+    "preview": "npx serve . -s -l 4173"
   },
   "keywords": [
     "restaurante",
@@ -21,19 +17,9 @@
   ],
   "author": "Lucas",
   "license": "MIT",
-  "devDependencies": {
-    "serve": "^14.2.1"
-  },
-  "dependencies": {},
-  "engines": {
-    "node": ">=14.0.0"
-  },
   "repository": {
     "type": "git",
-    "url": "https://github.com/lucas/menu-online.git"
+    "url": "https://github.com/OQAY/Emporio-do-churrasco.git"
   },
-  "bugs": {
-    "url": "https://github.com/lucas/menu-online/issues"
-  },
-  "homepage": "https://github.com/lucas/menu-online#readme"
+  "homepage": "https://emporio-do-churrasco.vercel.app"
 }
