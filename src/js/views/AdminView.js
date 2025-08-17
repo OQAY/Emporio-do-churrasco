@@ -369,13 +369,35 @@ export class AdminView {
                 </div>
                 
                 <div class="p-6">
-                    <div class="mb-4">
+                    <div class="mb-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                         <input 
                             type="text" 
                             id="gallerySearch" 
                             placeholder="Buscar imagens..." 
-                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-300"
+                            class="w-full max-w-md px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-300"
                         >
+                        
+                        <div class="flex items-center gap-4">
+                            <!-- Contador de selecionadas -->
+                            <div id="selectionCounter" class="text-sm text-gray-500 hidden">
+                                <span id="selectedCount">0</span> selecionada(s)
+                            </div>
+                            
+                            <!-- Botão de apagar selecionadas -->
+                            <button 
+                                id="deleteSelectedBtn"
+                                class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 flex items-center gap-2 hidden"
+                            >
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                </svg>
+                                Apagar
+                            </button>
+                            
+                            <div class="text-sm text-gray-500">
+                                ${images.length} ${images.length === 1 ? 'imagem' : 'imagens'}
+                            </div>
+                        </div>
                     </div>
                     
                     ${images.length === 0 ? `
@@ -398,7 +420,20 @@ export class AdminView {
 
     createGalleryImageCard(image) {
         return `
-            <div class="relative group bg-gray-100 rounded-lg overflow-hidden aspect-square hover:shadow-lg transition-shadow">
+            <div class="gallery-image-card relative group bg-gray-100 rounded-lg overflow-hidden aspect-square hover:shadow-lg transition-all duration-300" data-image-id="${image.id}">
+                <!-- Overlay de seleção -->
+                <div class="selection-overlay absolute inset-0 bg-black bg-opacity-0 transition-opacity duration-300 z-10"></div>
+                
+                <!-- Checkmark de selecionado -->
+                <div class="selected-indicator absolute top-2 right-2 bg-blue-600 text-white rounded-full p-1 opacity-0 transform scale-0 transition-all duration-300 z-20">
+                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                    </svg>
+                </div>
+                
+                <!-- Hidden checkbox for state tracking -->
+                <input type="checkbox" class="image-checkbox hidden" data-image-id="${image.id}">
+                
                 <img 
                     src="${image.url}" 
                     alt="${image.name || 'Imagem da galeria'}"
@@ -406,10 +441,10 @@ export class AdminView {
                     onclick="window.showImagePreview('${image.id}')"
                 >
                 
-                <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-opacity flex items-center justify-center">
-                    <div class="opacity-0 group-hover:opacity-100 transition-opacity flex gap-2">
+                <div class="action-buttons absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-opacity flex items-center justify-center z-30">
+                    <div class="opacity-0 group-hover:opacity-100 transition-opacity flex gap-2 relative z-40">
                         <button 
-                            class="p-2 bg-white text-blue-600 rounded-full hover:bg-blue-50 select-image-btn"
+                            class="p-2 bg-white text-blue-600 rounded-full hover:bg-blue-50 select-image-btn relative z-50"
                             data-image-id="${image.id}"
                             title="Selecionar imagem"
                         >
@@ -418,7 +453,7 @@ export class AdminView {
                             </svg>
                         </button>
                         <button 
-                            class="p-2 bg-white text-gray-700 rounded-full hover:bg-gray-100 edit-image-btn"
+                            class="p-2 bg-white text-gray-700 rounded-full hover:bg-gray-100 edit-image-btn relative z-50"
                             data-image-id="${image.id}"
                             title="Editar imagem"
                         >
@@ -427,7 +462,7 @@ export class AdminView {
                             </svg>
                         </button>
                         <button 
-                            class="p-2 bg-white text-red-600 rounded-full hover:bg-red-50 delete-image-btn"
+                            class="p-2 bg-white text-red-600 rounded-full hover:bg-red-50 delete-image-btn relative z-50"
                             data-image-id="${image.id}"
                             title="Excluir imagem"
                         >

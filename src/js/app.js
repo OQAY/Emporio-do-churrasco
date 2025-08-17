@@ -63,7 +63,25 @@ class App {
             </section>
 
             <nav class="max-w-4xl mx-auto px-3 py-4 sticky top-[120px] bg-white/95 backdrop-blur-sm z-20 border-b border-gray-50">
-                <div id="categoryTabs" class="flex gap-2 overflow-x-auto pb-1 scrollbar-hide" style="scroll-behavior: smooth;"></div>
+                <div class="relative">
+                    <!-- Gradient fade para indicar scroll -->
+                    <div class="absolute left-0 top-0 bottom-0 w-6 bg-gradient-to-r from-white/95 to-transparent z-10 pointer-events-none"></div>
+                    <div class="absolute right-0 top-0 bottom-0 w-6 bg-gradient-to-l from-white/95 to-transparent z-10 pointer-events-none"></div>
+                    
+                    <!-- Container dos filtros -->
+                    <div id="categoryTabs" class="flex gap-2 overflow-x-auto pb-2 pt-1 scrollbar-hide" style="scroll-behavior: smooth; scrollbar-width: none; -ms-overflow-style: none;">
+                        <!-- Tabs will be rendered here -->
+                    </div>
+                </div>
+                
+                <!-- Indicador de scroll (mobile) -->
+                <div class="sm:hidden flex justify-center mt-2">
+                    <div class="flex gap-1">
+                        <div class="w-2 h-1 bg-gray-300 rounded-full"></div>
+                        <div class="w-2 h-1 bg-gray-300 rounded-full"></div>
+                        <div class="w-2 h-1 bg-gray-300 rounded-full"></div>
+                    </div>
+                </div>
             </nav>
 
             <main class="max-w-4xl mx-auto px-3 py-4">

@@ -832,53 +832,99 @@ export class AdminController {
     showGallery() {
         const images = this.database.getGalleryImages();
         this.view.showGallery(images);
+        this.selectedImages = new Set(); // Track selected images
         
+        // Wait for DOM to be fully rendered before setting up event listeners
+        setTimeout(() => {
+            this.setupGalleryEventListeners();
+        }, 100);
+    }
+    
+    setupGalleryEventListeners() {
         // Upload multiple images
-        document.getElementById('uploadImagesBtn').addEventListener('click', () => {
-            this.showImageUploadForm();
-        });
+        const uploadBtn = document.getElementById('uploadImagesBtn');
+        if (uploadBtn) {
+            uploadBtn.addEventListener('click', () => {
+                this.showImageUploadForm();
+            });
+        }
         
         // Upload from URL
-        document.getElementById('uploadFromUrlBtn').addEventListener('click', () => {
-            this.showUrlUploadForm();
-        });
+        const uploadUrlBtn = document.getElementById('uploadFromUrlBtn');
+        if (uploadUrlBtn) {
+            uploadUrlBtn.addEventListener('click', () => {
+                this.showUrlUploadForm();
+            });
+        }
         
         // Search functionality
-        let searchTimeout;
-        document.getElementById('gallerySearch').addEventListener('input', (e) => {
-            clearTimeout(searchTimeout);
-            searchTimeout = setTimeout(() => {
-                this.filterGalleryImages(e.target.value);
-            }, 300);
+        const searchInput = document.getElementById('gallerySearch');
+        if (searchInput) {
+            let searchTimeout;
+            searchInput.addEventListener('input', (e) => {
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(() => {
+                    this.filterGalleryImages(e.target.value);
+                }, 300);
+            });
+        }
+        
+        // Image selection checkboxes (hidden, only for state)
+        document.querySelectorAll('.image-checkbox').forEach(checkbox => {
+            checkbox.addEventListener('change', (e) => {
+                this.toggleImageSelection(e.target.dataset.imageId, e.target.checked);
+            });
         });
         
-        // Select image buttons (for product selection)
+        // Delete selected images button
+        const deleteSelectedBtn = document.getElementById('deleteSelectedBtn');
+        if (deleteSelectedBtn) {
+            deleteSelectedBtn.addEventListener('click', () => {
+                this.deleteSelectedImages();
+            });
+        }
+        
+        // Select image buttons (for multiple selection)
         document.querySelectorAll('.select-image-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation(); // Prevent event bubbling
+                console.log('Botão selecionar clicado!'); // Debug
                 const imageId = btn.dataset.imageId;
-                const image = this.database.getGalleryImageById(imageId);
-                if (image) {
-                    this.view.showNotification(`Imagem "${image.name}" selecionada!`, 'success');
-                    // Here you could trigger an event or callback
-                    console.log('Imagem selecionada:', image);
+                const checkbox = document.querySelector(`input[data-image-id="${imageId}"]`);
+                if (checkbox) {
+                    checkbox.checked = !checkbox.checked;
+                    this.toggleImageSelection(imageId, checkbox.checked);
                 }
             });
         });
         
         // Edit image buttons
-        document.querySelectorAll('.edit-image-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
+        console.log('Configurando botões de editar...'); // Debug
+        const editButtons = document.querySelectorAll('.edit-image-btn');
+        console.log('Encontrados', editButtons.length, 'botões de editar'); // Debug
+        
+        editButtons.forEach((btn, index) => {
+            console.log(`Configurando botão ${index + 1}:`, btn); // Debug
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation(); // Prevent event bubbling
+                console.log('Botão editar clicado!'); // Debug
                 const imageId = btn.dataset.imageId;
+                console.log('Image ID:', imageId); // Debug
                 const image = this.database.getGalleryImageById(imageId);
+                console.log('Imagem encontrada:', image); // Debug
                 if (image) {
+                    console.log('Abrindo modal de edição...'); // Debug
                     this.showImageEditForm(image);
+                } else {
+                    console.error('Imagem não encontrada com ID:', imageId);
                 }
             });
         });
         
         // Delete image buttons
         document.querySelectorAll('.delete-image-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation(); // Prevent event bubbling
                 if (confirm('Tem certeza que deseja excluir esta imagem?')) {
                     this.database.deleteGalleryImage(btn.dataset.imageId);
                     this.view.showNotification('Imagem excluida com sucesso!');
@@ -888,7 +934,88 @@ export class AdminController {
         });
     }
     
+    toggleImageSelection(imageId, isSelected) {
+        const card = document.querySelector(`[data-image-id="${imageId}"]`);
+        const overlay = card.querySelector('.selection-overlay');
+        const indicator = card.querySelector('.selected-indicator');
+        
+        if (isSelected) {
+            this.selectedImages.add(imageId);
+            // Apply selection visual effects
+            overlay.classList.add('bg-opacity-20');
+            overlay.classList.add('bg-blue-500');
+            indicator.classList.remove('opacity-0', 'scale-0');
+            indicator.classList.add('opacity-100', 'scale-100');
+            card.classList.add('ring-2', 'ring-blue-500');
+        } else {
+            this.selectedImages.delete(imageId);
+            // Remove selection visual effects
+            overlay.classList.remove('bg-opacity-20', 'bg-blue-500');
+            indicator.classList.add('opacity-0', 'scale-0');
+            indicator.classList.remove('opacity-100', 'scale-100');
+            card.classList.remove('ring-2', 'ring-blue-500');
+        }
+        
+        this.updateSelectionCounter();
+        this.updateNonSelectedImagesVisual();
+    }
+    
+    updateSelectionCounter() {
+        const counter = document.getElementById('selectionCounter');
+        const countElement = document.getElementById('selectedCount');
+        const deleteBtn = document.getElementById('deleteSelectedBtn');
+        
+        const selectedCount = this.selectedImages.size;
+        
+        if (selectedCount > 0) {
+            counter.classList.remove('hidden');
+            deleteBtn.classList.remove('hidden');
+            countElement.textContent = selectedCount;
+        } else {
+            counter.classList.add('hidden');
+            deleteBtn.classList.add('hidden');
+        }
+    }
+    
+    updateNonSelectedImagesVisual() {
+        const hasSelection = this.selectedImages.size > 0;
+        
+        document.querySelectorAll('.gallery-image-card').forEach(card => {
+            const imageId = card.dataset.imageId;
+            const overlay = card.querySelector('.selection-overlay');
+            
+            if (hasSelection && !this.selectedImages.has(imageId)) {
+                // Darken non-selected images
+                overlay.classList.add('bg-opacity-40', 'bg-gray-800');
+                card.classList.add('opacity-60');
+            } else if (!this.selectedImages.has(imageId)) {
+                // Remove darkening if no selection
+                overlay.classList.remove('bg-opacity-40', 'bg-gray-800');
+                card.classList.remove('opacity-60');
+            }
+        });
+    }
+    
+    deleteSelectedImages() {
+        if (this.selectedImages.size === 0) return;
+        
+        const count = this.selectedImages.size;
+        const message = count === 1 ? 
+            'Tem certeza que deseja excluir esta imagem?' : 
+            `Tem certeza que deseja excluir ${count} imagens?`;
+            
+        if (confirm(message)) {
+            this.selectedImages.forEach(imageId => {
+                this.database.deleteGalleryImage(imageId);
+            });
+            
+            this.view.showNotification(`${count} imagem(ns) excluída(s) com sucesso!`);
+            this.showGallery(); // Refresh gallery
+        }
+    }
+    
     showImageEditForm(image) {
+        console.log('showImageEditForm chamado com:', image); // Debug
         const currentTags = image.tags || [];
         const allTags = this.database.getAllTags();
         
@@ -1280,21 +1407,29 @@ export class AdminController {
             grid.innerHTML = images.map(image => this.view.createGalleryImageCard(image)).join('');
             
             // Re-attach all event listeners
-            // Select buttons
+            
+            // Image selection checkboxes (hidden, only for state)
+            document.querySelectorAll('.image-checkbox').forEach(checkbox => {
+                checkbox.addEventListener('change', (e) => {
+                    this.toggleImageSelection(e.target.dataset.imageId, e.target.checked);
+                });
+            });
+            
+            // Select buttons (for multiple selection)
             document.querySelectorAll('.select-image-btn').forEach(btn => {
-                btn.addEventListener('click', () => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation(); // Prevent event bubbling
                     const imageId = btn.dataset.imageId;
-                    const image = this.database.getGalleryImageById(imageId);
-                    if (image) {
-                        this.view.showNotification(`Imagem "${image.name}" selecionada!`, 'success');
-                        console.log('Imagem selecionada:', image);
-                    }
+                    const checkbox = document.querySelector(`input[data-image-id="${imageId}"]`);
+                    checkbox.checked = !checkbox.checked;
+                    this.toggleImageSelection(imageId, checkbox.checked);
                 });
             });
             
             // Edit buttons
             document.querySelectorAll('.edit-image-btn').forEach(btn => {
-                btn.addEventListener('click', () => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation(); // Prevent event bubbling
                     const imageId = btn.dataset.imageId;
                     const image = this.database.getGalleryImageById(imageId);
                     if (image) {
@@ -1305,7 +1440,8 @@ export class AdminController {
             
             // Delete buttons
             document.querySelectorAll('.delete-image-btn').forEach(btn => {
-                btn.addEventListener('click', () => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation(); // Prevent event bubbling
                     if (confirm('Tem certeza que deseja excluir esta imagem?')) {
                         this.database.deleteGalleryImage(btn.dataset.imageId);
                         this.view.showNotification('Imagem excluida com sucesso!');

@@ -8,10 +8,28 @@ export class MenuView {
         const container = document.getElementById('categoryTabs');
         container.innerHTML = '';
 
+        // Icones para cada categoria
+        const categoryIcons = {
+            'all': '🍽️',
+            'Especiais da Casa': '⭐',
+            'Entradas': '🥗',
+            'Petiscos': '🍟',
+            'Pratos com Acompanhamento': '🍖',
+            'Executivos (Pratos Individuais)': '🍱',
+            'Porcoes Adicionais': '➕',
+            'Bebidas': '🥤'
+        };
+
         // Adicionar botao "Todos" primeiro
         const allButton = document.createElement('button');
-        allButton.className = 'px-5 py-3 rounded-xl border border-gray-200 text-sm font-medium bg-gray-50 hover:bg-gray-100 active:bg-gray-200 whitespace-nowrap transition-all touch-manipulation';
-        allButton.textContent = 'Todos';
+        allButton.className = 'flex items-center gap-2 px-4 py-2.5 rounded-xl border-2 border-gray-200 text-sm font-medium bg-gray-50 hover:bg-gray-100 hover:border-orange-300 active:bg-gray-200 whitespace-nowrap transition-all touch-manipulation';
+        const totalProducts = categories.reduce((sum, cat) => sum + (cat.productCount || 0), 0);
+        
+        allButton.innerHTML = `
+            <span class="text-base">${categoryIcons['all']}</span>
+            <span>Todos</span>
+            <span class="ml-1 px-2 py-0.5 bg-gray-200 text-xs rounded-full">${totalProducts}</span>
+        `;
         allButton.dataset.categoryId = 'all';
         
         allButton.addEventListener('click', () => {
@@ -29,8 +47,16 @@ export class MenuView {
 
         categories.forEach((category) => {
             const button = document.createElement('button');
-            button.className = 'px-5 py-3 rounded-xl border border-gray-200 text-sm font-medium bg-gray-50 hover:bg-gray-100 active:bg-gray-200 whitespace-nowrap transition-all touch-manipulation';
-            button.textContent = category.name;
+            button.className = 'flex items-center gap-2 px-4 py-2.5 rounded-xl border-2 border-gray-200 text-sm font-medium bg-gray-50 hover:bg-gray-100 hover:border-orange-300 active:bg-gray-200 whitespace-nowrap transition-all touch-manipulation';
+            
+            const icon = categoryIcons[category.name] || '📋';
+            const productCount = category.productCount || 0;
+            
+            button.innerHTML = `
+                <span class="text-base">${icon}</span>
+                <span>${category.name}</span>
+                ${productCount > 0 ? `<span class="ml-1 px-2 py-0.5 bg-gray-200 text-xs rounded-full">${productCount}</span>` : ''}
+            `;
             button.dataset.categoryId = category.id;
             
             button.addEventListener('click', () => {
@@ -48,13 +74,31 @@ export class MenuView {
         // Atualizar visual dos botoes
         document.querySelectorAll('#categoryTabs button').forEach(btn => {
             if (btn.dataset.categoryId === categoryId) {
-                btn.classList.add('ring-2', 'ring-orange-300', 'bg-orange-50');
-                btn.classList.remove('bg-gray-50');
+                btn.classList.add('bg-orange-500', 'text-white', 'border-orange-500');
+                btn.classList.remove('bg-gray-50', 'text-gray-900', 'border-gray-200', 'hover:bg-gray-100');
+                // Atualizar cor do badge de contagem
+                const badge = btn.querySelector('.bg-gray-200');
+                if (badge) {
+                    badge.classList.remove('bg-gray-200');
+                    badge.classList.add('bg-orange-600');
+                }
             } else {
-                btn.classList.remove('ring-2', 'ring-orange-300', 'bg-orange-50');
-                btn.classList.add('bg-gray-50');
+                btn.classList.remove('bg-orange-500', 'text-white', 'border-orange-500');
+                btn.classList.add('bg-gray-50', 'text-gray-900', 'border-gray-200', 'hover:bg-gray-100');
+                // Restaurar cor do badge de contagem
+                const badge = btn.querySelector('.bg-orange-600');
+                if (badge) {
+                    badge.classList.remove('bg-orange-600');
+                    badge.classList.add('bg-gray-200');
+                }
             }
         });
+        
+        // Scroll suave para o botao selecionado (para mobile)
+        const selectedBtn = document.querySelector(`#categoryTabs button[data-category-id="${categoryId}"]`);
+        if (selectedBtn) {
+            selectedBtn.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+        }
     }
 
     renderProducts(products) {

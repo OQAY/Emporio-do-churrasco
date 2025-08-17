@@ -9,7 +9,15 @@ export class ProductController {
 
     loadCategories() {
         const categories = this.database.getCategories(true); // Apenas categorias ativas
-        this.view.renderCategories(categories, (categoryId) => {
+        const products = this.database.getProducts({ activeOnly: true });
+        
+        // Adicionar contagem de produtos para cada categoria
+        const categoriesWithCount = categories.map(category => ({
+            ...category,
+            productCount: products.filter(product => product.categoryId === category.id).length
+        }));
+        
+        this.view.renderCategories(categoriesWithCount, (categoryId) => {
             this.currentCategory = categoryId; // null = todos, string = categoria especifica
             this.loadProducts();
         });
