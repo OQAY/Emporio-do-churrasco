@@ -9,7 +9,47 @@ export class AdminController {
     init() {
         this.setupNavigation();
         this.setupGlobalActions();
+        this.setupMobileMenu();
         this.showDashboard();
+    }
+    
+    setupMobileMenu() {
+        // Mobile menu toggle
+        const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+        const closeSidebarBtn = document.getElementById('closeSidebarBtn');
+        const sidebar = document.getElementById('sidebar');
+        const sidebarOverlay = document.getElementById('sidebarOverlay');
+        
+        if (mobileMenuBtn) {
+            mobileMenuBtn.addEventListener('click', () => {
+                sidebar.classList.remove('-translate-x-full');
+                sidebarOverlay.classList.remove('hidden');
+            });
+        }
+        
+        if (closeSidebarBtn) {
+            closeSidebarBtn.addEventListener('click', () => {
+                sidebar.classList.add('-translate-x-full');
+                sidebarOverlay.classList.add('hidden');
+            });
+        }
+        
+        if (sidebarOverlay) {
+            sidebarOverlay.addEventListener('click', () => {
+                sidebar.classList.add('-translate-x-full');
+                sidebarOverlay.classList.add('hidden');
+            });
+        }
+        
+        // Close sidebar on mobile when selecting a menu item
+        document.querySelectorAll('.nav-item').forEach(item => {
+            item.addEventListener('click', () => {
+                if (window.innerWidth < 1024) {
+                    sidebar.classList.add('-translate-x-full');
+                    sidebarOverlay.classList.add('hidden');
+                }
+            });
+        });
     }
 
     setupNavigation() {
@@ -812,6 +852,30 @@ export class AdminController {
             }, 300);
         });
         
+        // Select image buttons (for product selection)
+        document.querySelectorAll('.select-image-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const imageId = btn.dataset.imageId;
+                const image = this.database.getGalleryImageById(imageId);
+                if (image) {
+                    this.view.showNotification(`Imagem "${image.name}" selecionada!`, 'success');
+                    // Here you could trigger an event or callback
+                    console.log('Imagem selecionada:', image);
+                }
+            });
+        });
+        
+        // Edit image buttons
+        document.querySelectorAll('.edit-image-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const imageId = btn.dataset.imageId;
+                const image = this.database.getGalleryImageById(imageId);
+                if (image) {
+                    this.showImageEditForm(image);
+                }
+            });
+        });
+        
         // Delete image buttons
         document.querySelectorAll('.delete-image-btn').forEach(btn => {
             btn.addEventListener('click', () => {
@@ -822,6 +886,219 @@ export class AdminController {
                 }
             });
         });
+    }
+    
+    showImageEditForm(image) {
+        const currentTags = image.tags || [];
+        const allTags = this.database.getAllTags();
+        
+        const formHtml = `
+            <form id="imageEditForm" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Nome da Imagem</label>
+                    <input 
+                        type="text" 
+                        id="imageName" 
+                        value="${image.name || ''}"
+                        placeholder="Nome descritivo da imagem"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-orange-500 focus:border-orange-500"
+                    >
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Tags</label>
+                    
+                    <!-- Selected tags -->
+                    <div id="selectedTags" class="flex flex-wrap gap-2 mb-2 min-h-[32px] p-2 border border-gray-300 rounded-md">
+                        ${currentTags.map(tag => `
+                            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
+                                ${tag}
+                                <button type="button" class="ml-1 text-orange-600 hover:text-orange-800" onclick="removeTag('${tag}')">
+                                    <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path>
+                                    </svg>
+                                </button>
+                            </span>
+                        `).join('')}
+                    </div>
+                    
+                    <!-- Tag input with autocomplete -->
+                    <div class="relative">
+                        <input 
+                            type="text" 
+                            id="tagInput" 
+                            placeholder="Digite para adicionar tags..."
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-orange-500 focus:border-orange-500"
+                        >
+                        <div id="tagSuggestions" class="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg hidden max-h-48 overflow-y-auto">
+                            ${allTags.map(tag => `
+                                <button type="button" class="tag-suggestion w-full text-left px-3 py-2 hover:bg-orange-50 text-sm" data-tag="${tag}">
+                                    ${tag}
+                                </button>
+                            `).join('')}
+                        </div>
+                    </div>
+                    
+                    <p class="text-xs text-gray-500 mt-1">Clique nas sugestoes ou digite e pressione Enter</p>
+                    
+                    <!-- Hidden input to store tags -->
+                    <input type="hidden" id="imageTags" value="${currentTags.join(',')}">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Preview</label>
+                    <img src="${image.url}" alt="${image.name}" class="w-full h-48 object-cover rounded-md border border-gray-300">
+                </div>
+                
+                <div class="flex justify-end space-x-3 pt-4">
+                    <button 
+                        type="button" 
+                        id="cancelBtn"
+                        class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+                    >
+                        Cancelar
+                    </button>
+                    <button 
+                        type="submit" 
+                        class="px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700"
+                    >
+                        Salvar Alteracoes
+                    </button>
+                </div>
+            </form>
+        `;
+        
+        this.view.showModal('Editar Imagem', formHtml);
+        
+        // Setup tag functionality
+        this.setupTagSystem();
+        
+        document.getElementById('imageEditForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.updateGalleryImage(image.id);
+        });
+        
+        document.getElementById('cancelBtn').addEventListener('click', () => {
+            this.view.closeModal();
+        });
+    }
+    
+    setupTagSystem() {
+        const tagInput = document.getElementById('tagInput');
+        const tagSuggestions = document.getElementById('tagSuggestions');
+        const selectedTags = document.getElementById('selectedTags');
+        const imageTagsInput = document.getElementById('imageTags');
+        
+        // Show suggestions on focus
+        tagInput.addEventListener('focus', () => {
+            tagSuggestions.classList.remove('hidden');
+        });
+        
+        // Hide suggestions on blur (with delay for click)
+        tagInput.addEventListener('blur', () => {
+            setTimeout(() => {
+                tagSuggestions.classList.add('hidden');
+            }, 200);
+        });
+        
+        // Filter suggestions as user types
+        tagInput.addEventListener('input', (e) => {
+            const filter = e.target.value.toLowerCase();
+            const suggestions = tagSuggestions.querySelectorAll('.tag-suggestion');
+            
+            suggestions.forEach(suggestion => {
+                const tag = suggestion.dataset.tag;
+                if (tag.includes(filter)) {
+                    suggestion.style.display = 'block';
+                } else {
+                    suggestion.style.display = 'none';
+                }
+            });
+            
+            if (filter) {
+                tagSuggestions.classList.remove('hidden');
+            }
+        });
+        
+        // Add tag on Enter
+        tagInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                const tag = tagInput.value.trim().toLowerCase();
+                if (tag) {
+                    this.addTag(tag);
+                    tagInput.value = '';
+                }
+            }
+        });
+        
+        // Handle suggestion clicks
+        document.querySelectorAll('.tag-suggestion').forEach(btn => {
+            btn.addEventListener('click', () => {
+                this.addTag(btn.dataset.tag);
+                tagInput.value = '';
+            });
+        });
+        
+        // Make removeTag function global for onclick
+        window.removeTag = (tag) => {
+            this.removeTag(tag);
+        };
+    }
+    
+    addTag(tag) {
+        const selectedTags = document.getElementById('selectedTags');
+        const imageTagsInput = document.getElementById('imageTags');
+        
+        // Get current tags
+        let tags = imageTagsInput.value ? imageTagsInput.value.split(',') : [];
+        
+        // Add if not already present
+        if (!tags.includes(tag)) {
+            tags.push(tag);
+            imageTagsInput.value = tags.join(',');
+            
+            // Add visual tag
+            const tagElement = document.createElement('span');
+            tagElement.className = 'inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-800';
+            tagElement.innerHTML = `
+                ${tag}
+                <button type="button" class="ml-1 text-orange-600 hover:text-orange-800" onclick="removeTag('${tag}')">
+                    <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path>
+                    </svg>
+                </button>
+            `;
+            selectedTags.appendChild(tagElement);
+        }
+    }
+    
+    removeTag(tag) {
+        const selectedTags = document.getElementById('selectedTags');
+        const imageTagsInput = document.getElementById('imageTags');
+        
+        // Update hidden input
+        let tags = imageTagsInput.value.split(',').filter(t => t !== tag);
+        imageTagsInput.value = tags.join(',');
+        
+        // Remove visual element
+        const tagElements = selectedTags.querySelectorAll('span');
+        tagElements.forEach(el => {
+            if (el.textContent.trim().startsWith(tag)) {
+                el.remove();
+            }
+        });
+    }
+    
+    updateGalleryImage(imageId) {
+        const name = document.getElementById('imageName').value;
+        const tagsInput = document.getElementById('imageTags').value;
+        const tags = tagsInput.split(',').map(tag => tag.trim()).filter(tag => tag);
+        
+        this.database.updateGalleryImage(imageId, { name, tags });
+        this.view.showNotification('Imagem atualizada com sucesso!');
+        this.view.closeModal();
+        this.showGallery();
     }
 
     showImageUploadForm() {
@@ -1002,7 +1279,31 @@ export class AdminController {
         if (grid) {
             grid.innerHTML = images.map(image => this.view.createGalleryImageCard(image)).join('');
             
-            // Re-attach event listeners
+            // Re-attach all event listeners
+            // Select buttons
+            document.querySelectorAll('.select-image-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const imageId = btn.dataset.imageId;
+                    const image = this.database.getGalleryImageById(imageId);
+                    if (image) {
+                        this.view.showNotification(`Imagem "${image.name}" selecionada!`, 'success');
+                        console.log('Imagem selecionada:', image);
+                    }
+                });
+            });
+            
+            // Edit buttons
+            document.querySelectorAll('.edit-image-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const imageId = btn.dataset.imageId;
+                    const image = this.database.getGalleryImageById(imageId);
+                    if (image) {
+                        this.showImageEditForm(image);
+                    }
+                });
+            });
+            
+            // Delete buttons
             document.querySelectorAll('.delete-image-btn').forEach(btn => {
                 btn.addEventListener('click', () => {
                     if (confirm('Tem certeza que deseja excluir esta imagem?')) {

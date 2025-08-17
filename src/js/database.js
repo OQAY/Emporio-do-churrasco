@@ -727,6 +727,33 @@ class Database {
 
     return images.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
   }
+  
+  getAllTags() {
+    const data = this.getData();
+    const images = data.gallery || [];
+    const products = data.products || [];
+    const allTags = new Set();
+    
+    // Collect tags from gallery
+    images.forEach(img => {
+      if (img.tags && Array.isArray(img.tags)) {
+        img.tags.forEach(tag => allTags.add(tag.toLowerCase()));
+      }
+    });
+    
+    // Add common food tags
+    const commonTags = [
+      'picanha', 'file', 'churrasco', 'grelhado', 'carne', 
+      'frango', 'camarao', 'peixe', 'bebida', 'sobremesa',
+      'entrada', 'petisco', 'executivo', 'destaque', 'promocao',
+      'vegetariano', 'vegano', 'sem-gluten', 'especial', 'chef',
+      'tradicional', 'novo', 'quente', 'frio', 'doce', 'salgado'
+    ];
+    
+    commonTags.forEach(tag => allTags.add(tag));
+    
+    return Array.from(allTags).sort();
+  }
 
   addGalleryImage(imageData) {
     // Validate required fields
@@ -808,6 +835,17 @@ class Database {
   getGalleryImageById(imageId) {
     const images = this.getGalleryImages();
     return images.find((img) => img.id === imageId);
+  }
+  
+  updateGalleryImage(imageId, updates) {
+    const data = this.getData();
+    const index = data.gallery.findIndex((img) => img.id === imageId);
+    if (index !== -1) {
+      data.gallery[index] = { ...data.gallery[index], ...updates };
+      this.saveData(data);
+      return data.gallery[index];
+    }
+    return null;
   }
 
   imageExistsInGallery(imageUrl) {
