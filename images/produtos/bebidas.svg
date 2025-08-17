@@ -1,41 +1,114 @@
 <svg width="500" height="400" viewBox="0 0 500 400" fill="none" xmlns="http://www.w3.org/2000/svg">
   <defs>
     <linearGradient id="bg5" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#f0f9ff;stop-opacity:1" />
+      <stop offset="30%" style="stop-color:#dbeafe;stop-opacity:1" />
+      <stop offset="70%" style="stop-color:#3b82f6;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1e40af;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="cola" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#dc2626;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#991b1b;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#7f1d1d;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="beer" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#fbbf24;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#f59e0b;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#d97706;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="water" x1="0%" y1="0%" x2="0%" y2="100%">
       <stop offset="0%" style="stop-color:#dbeafe;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#93c5fd;stop-opacity:1" />
       <stop offset="100%" style="stop-color:#3b82f6;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="juice" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#fed7aa;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#fb923c;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#ea580c;stop-opacity:1" />
     </linearGradient>
   </defs>
   
   <!-- Background -->
   <rect width="500" height="400" fill="url(#bg5)"/>
   
-  <!-- Refrigerant bottle -->
-  <rect x="150" y="150" width="60" height="180" fill="#dc2626" rx="30"/>
-  <rect x="160" y="160" width="40" height="20" fill="#fef2f2" rx="5"/>
-  <text x="180" y="175" text-anchor="middle" fill="#dc2626" font-family="Arial, sans-serif" font-size="10" font-weight="bold">COLA</text>
+  <!-- Bar counter -->
+  <ellipse cx="250" cy="350" rx="220" ry="40" fill="#92400e"/>
+  <ellipse cx="250" cy="340" rx="210" ry="30" fill="#a16207"/>
+  <ellipse cx="250" cy="335" rx="200" ry="25" fill="#b45309"/>
+  
+  <!-- Wood grain -->
+  <ellipse cx="250" cy="335" rx="180" ry="20" fill="none" stroke="#78350f" stroke-width="1" opacity="0.3"/>
+  
+  <!-- Coca-Cola bottle -->
+  <rect x="120" y="200" width="25" height="120" fill="url(#cola)" rx="12"/>
+  <rect x="125" y="210" width="15" height="25" fill="#fef2f2" rx="3"/>
+  <text x="132" y="222" text-anchor="middle" fill="#dc2626" font-family="serif" font-size="8" font-weight="bold">COLA</text>
+  <circle cx="132" cy="190" r="8" fill="#dc2626"/>
+  <circle cx="132" cy="190" r="6" fill="#991b1b"/>
   
   <!-- Beer bottle -->
-  <rect x="230" y="120" width="40" height="200" fill="#92400e" rx="20"/>
-  <rect x="235" y="130" width="30" height="30" fill="#fbbf24" rx="5"/>
-  <circle cx="250" cy="340" r="25" fill="#f59e0b"/>
+  <rect x="180" y="180" width="20" height="140" fill="#92400e" rx="10"/>
+  <rect x="185" y="190" width="10" height="100" fill="url(#beer)" rx="5"/>
+  <ellipse cx="190" cy="185" rx="12" ry="8" fill="#fbbf24"/>
+  <rect x="182" y="175" width="16" height="15" fill="#fbbf24" rx="2"/>
+  <text x="190" y="182" text-anchor="middle" fill="#7c2d12" font-family="serif" font-size="6" font-weight="bold">BEER</text>
   
-  <!-- Glass -->
-  <rect x="290" y="180" width="50" height="120" fill="rgba(255,255,255,0.8)" rx="5"/>
-  <rect x="295" y="185" width="40" height="100" fill="#3b82f6" opacity="0.6"/>
-  <ellipse cx="315" cy="190" rx="15" ry="8" fill="#dbeafe"/>
+  <!-- Beer foam -->
+  <ellipse cx="190" cy="190" rx="8" ry="12" fill="#fef3c7" opacity="0.8"/>
+  
+  <!-- Glass with juice -->
+  <rect x="240" y="220" width="30" height="80" fill="rgba(255,255,255,0.9)" rx="3"/>
+  <rect x="243" y="225" width="24" height="70" fill="url(#juice)"/>
+  <ellipse cx="255" cy="230" rx="10" ry="4" fill="#fed7aa"/>
+  
+  <!-- Orange slice -->
+  <circle cx="255" cy="215" r="8" fill="#fb923c"/>
+  <path d="M 255 207 L 255 223 M 247 215 L 263 215" stroke="#ea580c" stroke-width="1"/>
   
   <!-- Water bottle -->
-  <rect x="360" y="160" width="35" height="140" fill="#dbeafe" rx="17"/>
-  <rect x="365" y="170" width="25" height="15" fill="#1e40af" rx="3"/>
-  <text x="377" y="180" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-size="8" font-weight="bold">H₂O</text>
+  <rect x="300" y="190" width="18" height="110" fill="rgba(255,255,255,0.9)" rx="9"/>
+  <rect x="303" y="195" width="12" height="95" fill="url(#water)"/>
+  <rect x="304" y="185" width="10" height="12" fill="#1e40af" rx="2"/>
+  <text x="309" y="191" text-anchor="middle" fill="white" font-family="serif" font-size="5" font-weight="bold">H₂O</text>
+  
+  <!-- Water label -->
+  <rect x="305" y="240" width="8" height="20" fill="#dbeafe" opacity="0.8"/>
+  <text x="309" y="248" text-anchor="middle" fill="#1e40af" font-family="serif" font-size="4">PURE</text>
+  <text x="309" y="252" text-anchor="middle" fill="#1e40af" font-family="serif" font-size="4">WATER</text>
+  
+  <!-- Heineken bottle -->
+  <rect x="350" y="170" width="22" height="130" fill="#15803d" rx="11"/>
+  <rect x="353" y="180" width="16" height="100" fill="#166534" rx="8"/>
+  <ellipse cx="361" cy="175" rx="13" ry="8" fill="#22c55e"/>
+  <rect x="355" y="200" width="12" height="15" fill="#fef3c7" rx="2"/>
+  <text x="361" y="207" text-anchor="middle" fill="#15803d" font-family="serif" font-size="5" font-weight="bold">PREMIUM</text>
+  
+  <!-- Heineken star -->
+  <polygon points="361,215 363,220 368,220 364,223 366,228 361,225 356,228 358,223 354,220 359,220" fill="#dc2626"/>
   
   <!-- Ice cubes -->
-  <rect x="200" y="250" width="15" height="15" fill="#f1f5f9" rx="3"/>
-  <rect x="280" y="270" width="12" height="12" fill="#f1f5f9" rx="2"/>
-  <rect x="320" y="260" width="14" height="14" fill="#f1f5f9" rx="3"/>
+  <rect x="200" y="300" width="12" height="12" fill="#f1f5f9" rx="2" opacity="0.8"/>
+  <rect x="280" y="305" width="10" height="10" fill="#f1f5f9" rx="2" opacity="0.7"/>
+  <rect x="320" y="295" width="14" height="14" fill="#f1f5f9" rx="2" opacity="0.8"/>
+  <rect x="370" y="310" width="8" height="8" fill="#f1f5f9" rx="1" opacity="0.6"/>
   
-  <!-- Title -->
-  <rect x="50" y="50" width="400" height="80" fill="rgba(0,0,0,0.7)" rx="10"/>
-  <text x="250" y="85" text-anchor="middle" fill="#3b82f6" font-family="Arial, sans-serif" font-size="28" font-weight="bold">Bebidas</text>
-  <text x="250" y="110" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-size="14">Refrescantes e Geladas</text>
+  <!-- Condensation drops -->
+  <ellipse cx="195" cy="250" rx="2" ry="6" fill="#dbeafe" opacity="0.6"/>
+  <ellipse cx="310" cy="240" rx="1" ry="4" fill="#dbeafe" opacity="0.7"/>
+  <ellipse cx="365" cy="220" rx="1" ry="3" fill="#dbeafe" opacity="0.5"/>
+  
+  <!-- Bar accessories -->
+  <!-- Bottle opener -->
+  <rect x="400" y="320" width="15" height="3" fill="#6b7280" rx="1"/>
+  <circle cx="407" cy="318" r="2" fill="#4b5563"/>
+  
+  <!-- Coasters -->
+  <circle cx="80" cy="320" r="12" fill="#92400e"/>
+  <circle cx="80" cy="320" r="10" fill="#a16207"/>
+  <text x="80" y="324" text-anchor="middle" fill="#fef3c7" font-family="serif" font-size="6">BAR</text>
+  
+  <!-- Title area -->
+  <rect x="50" y="50" width="400" height="80" fill="rgba(0,0,0,0.7)" rx="15"/>
+  <text x="250" y="85" text-anchor="middle" fill="#3b82f6" font-family="serif" font-size="36" font-weight="bold">Bebidas</text>
+  <text x="250" y="110" text-anchor="middle" fill="white" font-family="serif" font-size="16">Geladas e Refrescantes</text>
 </svg>
