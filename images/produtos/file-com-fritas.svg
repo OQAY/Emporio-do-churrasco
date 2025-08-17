@@ -1,0 +1,45 @@
+<svg width="500" height="400" viewBox="0 0 500 400" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg12" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1f2937;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#6b21a8;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="500" height="400" fill="url(#bg12)"/>
+  
+  <!-- Plate -->
+  <ellipse cx="250" cy="320" rx="220" ry="70" fill="#4b5563"/>
+  <ellipse cx="250" cy="310" rx="210" ry="60" fill="#6b7280"/>
+  
+  <!-- Filet -->
+  <ellipse cx="200" cy="240" rx="70" ry="30" fill="#7c2d12"/>
+  <ellipse cx="200" cy="235" rx="65" ry="25" fill="#991b1b"/>
+  <rect x="170" y="220" width="60" height="3" fill="#451a03"/>
+  
+  <!-- French fries -->
+  <rect x="280" y="200" width="8" height="60" fill="#fbbf24" rx="4"/>
+  <rect x="295" y="195" width="8" height="65" fill="#f59e0b" rx="4"/>
+  <rect x="310" y="198" width="8" height="62" fill="#fbbf24" rx="4"/>
+  <rect x="325" y="192" width="8" height="68" fill="#f59e0b" rx="4"/>
+  <rect x="340" y="200" width="8" height="60" fill="#fbbf24" rx="4"/>
+  
+  <!-- Onions -->
+  <ellipse cx="160" cy="275" rx="15" ry="8" fill="#fef3c7"/>
+  <ellipse cx="240" cy="280" rx="12" ry="6" fill="#fde047"/>
+  
+  <!-- Rice -->
+  <ellipse cx="300" cy="285" rx="40" ry="25" fill="#f3f4f6"/>
+  <circle cx="285" cy="280" r="2" fill="#e5e7eb"/>
+  <circle cx="300" cy="283" r="2" fill="#e5e7eb"/>
+  <circle cx="315" cy="287" r="2" fill="#e5e7eb"/>
+  
+  <!-- Farofa -->
+  <ellipse cx="180" cy="300" rx="25" ry="15" fill="#a16207"/>
+  
+  <!-- Title -->
+  <rect x="50" y="50" width="400" height="80" fill="rgba(0,0,0,0.8)" rx="10"/>
+  <text x="250" y="85" text-anchor="middle" fill="#a855f7" font-family="Arial, sans-serif" font-size="28" font-weight="bold">Filé com Fritas</text>
+  <text x="250" y="110" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-size="14">Prato Principal Completo</text>
+</svg>

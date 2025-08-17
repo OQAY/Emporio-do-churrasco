@@ -1,0 +1,39 @@
+{
+  "name": "menu-online-admin",
+  "version": "1.0.0",
+  "description": "Sistema de cardapio digital com painel administrativo",
+  "main": "index.html",
+  "scripts": {
+    "dev": "npx serve . -s -l 3000",
+    "build": "echo 'Projeto pronto para deploy'",
+    "preview": "npx serve . -s -l 4173",
+    "lint": "echo 'Linting JavaScript...'",
+    "format": "echo 'Formatting code...'",
+    "test": "echo 'Running tests...'"
+  },
+  "keywords": [
+    "restaurante",
+    "cardapio",
+    "digital",
+    "admin",
+    "menu",
+    "food"
+  ],
+  "author": "Lucas",
+  "license": "MIT",
+  "devDependencies": {
+    "serve": "^14.2.1"
+  },
+  "dependencies": {},
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/lucas/menu-online.git"
+  },
+  "bugs": {
+    "url": "https://github.com/lucas/menu-online/issues"
+  },
+  "homepage": "https://github.com/lucas/menu-online#readme"
+}

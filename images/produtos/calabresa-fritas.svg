@@ -1,0 +1,50 @@
+<svg width="500" height="400" viewBox="0 0 500 400" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg10" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#fef7cd;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#dc2626;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="500" height="400" fill="url(#bg10)"/>
+  
+  <!-- Plate -->
+  <ellipse cx="250" cy="320" rx="200" ry="70" fill="#4b5563"/>
+  <ellipse cx="250" cy="310" rx="190" ry="60" fill="#6b7280"/>
+  
+  <!-- French fries -->
+  <rect x="120" y="220" width="8" height="50" fill="#fbbf24" rx="4"/>
+  <rect x="135" y="215" width="8" height="55" fill="#f59e0b" rx="4"/>
+  <rect x="150" y="218" width="8" height="52" fill="#fbbf24" rx="4"/>
+  <rect x="165" y="212" width="8" height="58" fill="#f59e0b" rx="4"/>
+  <rect x="320" y="220" width="8" height="50" fill="#fbbf24" rx="4"/>
+  <rect x="335" y="215" width="8" height="55" fill="#f59e0b" rx="4"/>
+  <rect x="350" y="218" width="8" height="52" fill="#fbbf24" rx="4"/>
+  <rect x="365" y="212" width="8" height="58" fill="#f59e0b" rx="4"/>
+  
+  <!-- Calabresa slices -->
+  <circle cx="220" cy="240" r="20" fill="#7c2d12"/>
+  <circle cx="250" cy="230" r="22" fill="#991b1b"/>
+  <circle cx="280" cy="245" r="21" fill="#7c2d12"/>
+  <circle cx="200" cy="270" r="18" fill="#991b1b"/>
+  <circle cx="300" cy="275" r="19" fill="#7c2d12"/>
+  
+  <!-- Fat on calabresa -->
+  <circle cx="225" cy="235" r="4" fill="#fef3c7"/>
+  <circle cx="255" cy="225" r="3" fill="#fef3c7"/>
+  <circle cx="285" cy="240" r="4" fill="#fef3c7"/>
+  
+  <!-- Onions -->
+  <ellipse cx="230" cy="280" rx="15" ry="8" fill="#fef3c7"/>
+  <ellipse cx="270" cy="285" rx="12" ry="6" fill="#fde047"/>
+  
+  <!-- Farofa -->
+  <ellipse cx="190" cy="300" rx="20" ry="10" fill="#a16207"/>
+  <ellipse cx="310" cy="295" rx="18" ry="8" fill="#92400e"/>
+  
+  <!-- Title -->
+  <rect x="50" y="50" width="400" height="80" fill="rgba(0,0,0,0.7)" rx="10"/>
+  <text x="250" y="85" text-anchor="middle" fill="#fbbf24" font-family="Arial, sans-serif" font-size="24" font-weight="bold">Calabresa com Fritas</text>
+  <text x="250" y="110" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-size="14">Com Molho Rose e Farofa</text>
+</svg>

@@ -1,0 +1,40 @@
+<svg width="500" height="400" viewBox="0 0 500 400" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg3" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#f3e8ff;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#8b5cf6;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="500" height="400" fill="url(#bg3)"/>
+  
+  <!-- Wooden board -->
+  <ellipse cx="250" cy="200" rx="200" ry="120" fill="#92400e"/>
+  <ellipse cx="250" cy="190" rx="190" ry="110" fill="#a16207"/>
+  
+  <!-- Cheese slices -->
+  <ellipse cx="180" cy="160" rx="30" ry="20" fill="#fef08a"/>
+  <ellipse cx="220" cy="180" rx="25" ry="18" fill="#fde047"/>
+  <ellipse cx="160" cy="200" rx="28" ry="22" fill="#fef3c7"/>
+  
+  <!-- Salami -->
+  <circle cx="300" cy="150" r="20" fill="#7c2d12"/>
+  <circle cx="280" cy="170" r="18" fill="#991b1b"/>
+  <circle cx="320" cy="180" r="22" fill="#7c2d12"/>
+  
+  <!-- Olives -->
+  <circle cx="200" cy="220" r="8" fill="#15803d"/>
+  <circle cx="220" cy="240" r="6" fill="#166534"/>
+  <circle cx="180" cy="240" r="7" fill="#15803d"/>
+  <circle cx="320" cy="220" r="8" fill="#166534"/>
+  
+  <!-- Crackers -->
+  <rect x="280" y="200" width="25" height="15" fill="#fbbf24" rx="3"/>
+  <rect x="310" y="205" width="20" height="12" fill="#f59e0b" rx="2"/>
+  
+  <!-- Title -->
+  <rect x="50" y="50" width="400" height="80" fill="rgba(0,0,0,0.7)" rx="10"/>
+  <text x="250" y="85" text-anchor="middle" fill="#fef08a" font-family="Arial, sans-serif" font-size="28" font-weight="bold">Tábua de Frios</text>
+  <text x="250" y="110" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-size="14">Entrada Especial</text>
+</svg>
