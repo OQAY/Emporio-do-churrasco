@@ -323,9 +323,16 @@ export class AdminController {
         });
         
         // Handle gallery selection
-        document.getElementById('selectFromGallery').addEventListener('click', () => {
-            this.showGallerySelector();
-        });
+        const galleryBtn = document.getElementById('selectFromGallery');
+        console.log('Botão galeria encontrado:', galleryBtn);
+        if (galleryBtn) {
+            galleryBtn.addEventListener('click', () => {
+                console.log('Botão galeria clicado!');
+                this.showGallerySelector();
+            });
+        } else {
+            console.error('Botão selectFromGallery não encontrado!');
+        }
         
         // Handle remove selected image
         document.getElementById('removeSelectedImage').addEventListener('click', () => {
@@ -359,7 +366,9 @@ export class AdminController {
     }
 
     showGallerySelector() {
+        console.log('showGallerySelector chamado!');
         const images = this.database.getGalleryImages();
+        console.log('Imagens encontradas na galeria:', images.length);
         
         if (images.length === 0) {
             alert('Nenhuma imagem na galeria. Adicione imagens primeiro na seção Galeria.');
@@ -400,7 +409,9 @@ export class AdminController {
             </div>
         `;
         
+        console.log('Criando modal da galeria...');
         this.view.showModal('Selecionar da Galeria', galleryHtml, true);
+        console.log('Modal da galeria criado!');
         
         // Handle image selection
         document.querySelectorAll('.gallery-selector-item').forEach(item => {

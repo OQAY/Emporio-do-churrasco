@@ -685,7 +685,6 @@ class Database {
       // Validate file type
       const allowedTypes = [
         "image/jpeg",
-        "image/jpg",
         "image/png",
         "image/webp",
         "image/svg+xml",
@@ -742,6 +741,11 @@ class Database {
     }
 
     const data = this.getData();
+
+    // Ensure gallery array exists
+    if (!data.gallery) {
+      data.gallery = [];
+    }
 
     // Generate smart name if not provided
     let imageName = imageData.name || "Imagem sem nome";

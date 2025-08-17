@@ -513,13 +513,15 @@ export class AdminView {
 
     showModal(title, content, isNested = false) {
         const modal = document.getElementById('modalContainer');
+        console.log('showModal chamado - isNested:', isNested, 'modalContainer:', modal);
         
         if (isNested) {
             // For nested modals, add a new modal on top
+            console.log('Criando modal aninhado...');
             const nestedModal = document.createElement('div');
             nestedModal.className = 'nested-modal';
             nestedModal.innerHTML = `
-                <div class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-60">
+                <div class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full" style="z-index: 60;">
                     <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
                         <div class="mt-3">
                             <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">${title}</h3>
@@ -531,10 +533,11 @@ export class AdminView {
                 </div>
             `;
             modal.appendChild(nestedModal);
+            console.log('Modal aninhado adicionado:', nestedModal);
         } else {
             // Regular modal replaces everything
             modal.innerHTML = `
-                <div class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+                <div class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full" style="z-index: 50;">
                     <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
                         <div class="mt-3">
                             <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">${title}</h3>
