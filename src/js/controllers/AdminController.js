@@ -400,7 +400,7 @@ export class AdminController {
             </div>
         `;
         
-        this.view.showModal('Selecionar da Galeria', galleryHtml);
+        this.view.showModal('Selecionar da Galeria', galleryHtml, true);
         
         // Handle image selection
         document.querySelectorAll('.gallery-selector-item').forEach(item => {
@@ -422,7 +422,7 @@ export class AdminController {
                     // Small delay to show selection feedback
                     setTimeout(() => {
                         this.selectImageFromGallery(image);
-                        this.view.closeModal();
+                        this.view.closeModal(true); // Close only nested modal
                         // Show success notification
                         this.view.showNotification(`Imagem "${image.name}" selecionada!`, 'success');
                     }, 300);
@@ -440,7 +440,7 @@ export class AdminController {
         
         // Handle cancel
         document.getElementById('cancelGallerySelection').addEventListener('click', () => {
-            this.view.closeModal();
+            this.view.closeModal(true); // Close only nested modal
         });
     }
 
@@ -508,7 +508,7 @@ export class AdminController {
                     // Small delay to show selection feedback
                     setTimeout(() => {
                         this.selectImageFromGallery(image);
-                        this.view.closeModal();
+                        this.view.closeModal(true); // Close only nested modal
                         // Show success notification
                         this.view.showNotification(`Imagem "${image.name}" selecionada!`, 'success');
                     }, 300);
