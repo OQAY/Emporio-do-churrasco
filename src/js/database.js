@@ -655,11 +655,28 @@ class Database {
     // Image handling
     saveImage(file) {
         return new Promise((resolve, reject) => {
+            // Validate file size (max 5MB)
+            const maxSize = 5 * 1024 * 1024; // 5MB
+            if (file.size > maxSize) {
+                reject(new Error('Arquivo muito grande. Máximo 5MB permitido.'));
+                return;
+            }
+            
+            // Validate file type
+            const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/svg+xml'];
+            if (!allowedTypes.includes(file.type)) {
+                reject(new Error('Tipo de arquivo não suportado. Use JPG, PNG, WebP ou SVG.'));
+                return;
+            }
+            
             const reader = new FileReader();
             reader.onloadend = () => {
+                console.log(`Imagem processada: ${file.name} (${(file.size / 1024).toFixed(2)}KB)`);
                 resolve(reader.result);
             };
-            reader.onerror = reject;
+            reader.onerror = () => {
+                reject(new Error('Erro ao ler arquivo de imagem'));
+            };
             reader.readAsDataURL(file);
         });
     }
@@ -681,21 +698,68 @@ class Database {
     }
 
     addGalleryImage(imageData) {
+        // Validate required fields
+        if (!imageData.url) {
+            throw new Error('URL da imagem é obrigatória');
+        }
+        
+        // Check if image already exists
+        if (this.imageExistsInGallery(imageData.url)) {
+            console.log('Imagem já existe na galeria, pulando duplicata');
+            return null;
+        }
+        
         const data = this.getData();
+        
+        // Generate smart name if not provided
+        let imageName = imageData.name || 'Imagem sem nome';
+        
+        // Ensure unique name
+        const existingNames = data.gallery.map(img => img.name);
+        let counter = 1;
+        let finalName = imageName;
+        while (existingNames.includes(finalName)) {
+            finalName = `${imageName} (${counter})`;
+            counter++;
+        }
+        
         const newImage = {
-            id: 'img' + Date.now(),
+            id: 'img' + Date.now() + Math.random().toString(36).substr(2, 5),
             createdAt: new Date().toISOString(),
-            name: imageData.name || 'Imagem sem nome',
+            name: finalName,
             url: imageData.url,
             size: imageData.size || 0,
             type: imageData.type || 'image/jpeg',
-            tags: imageData.tags || []
+            tags: imageData.tags || [],
+            // Additional metadata
+            addedBy: 'auto-upload', // Can be 'manual' or 'auto-upload'
+            category: this.extractCategoryFromTags(imageData.tags)
         };
         
         data.gallery = data.gallery || [];
         data.gallery.push(newImage);
         this.saveData(data);
+        
+        console.log('Nova imagem adicionada à galeria:', finalName);
         return newImage;
+    }
+
+    extractCategoryFromTags(tags = []) {
+        const categoryMap = {
+            'especiais da casa': ['picanha', 'file', 'especial'],
+            'entradas': ['entrada', 'frios', 'queijo', 'bolinho'],
+            'petiscos': ['petisco', 'frango', 'camarao', 'empanado'],
+            'pratos principais': ['chapa', 'executivo', 'prato-principal'],
+            'bebidas': ['bebida', 'refrigerante', 'cerveja', 'gelado']
+        };
+        
+        for (const [category, keywords] of Object.entries(categoryMap)) {
+            if (keywords.some(keyword => tags.includes(keyword))) {
+                return category;
+            }
+        }
+        
+        return 'geral';
     }
 
     deleteGalleryImage(imageId) {
@@ -708,6 +772,11 @@ class Database {
     getGalleryImageById(imageId) {
         const images = this.getGalleryImages();
         return images.find(img => img.id === imageId);
+    }
+
+    imageExistsInGallery(imageUrl) {
+        const images = this.getGalleryImages();
+        return images.some(img => img.url === imageUrl);
     }
 
     // Export/Import data

@@ -500,8 +500,28 @@ export class AdminController {
             try {
                 const imageData = await this.database.saveImage(imageFile);
                 productData.image = imageData;
+                
+                // Auto-save to gallery with smart naming and tags
+                const categoryName = this.database.getCategoryById(productData.categoryId)?.name || 'Produto';
+                const productName = productData.name || 'Imagem';
+                
+                const galleryImageData = {
+                    name: `${productName} - ${categoryName}`,
+                    url: imageData,
+                    size: imageFile.size,
+                    type: imageFile.type,
+                    tags: this.generateAutoTags(productData.name, categoryName)
+                };
+                
+                // Check if image already exists to avoid duplicates
+                if (!this.database.imageExistsInGallery(imageData)) {
+                    this.database.addGalleryImage(galleryImageData);
+                    console.log('Imagem automaticamente salva na galeria:', galleryImageData.name);
+                }
             } catch (error) {
                 console.error('Erro ao processar imagem:', error);
+                this.view.showNotification(`Erro: ${error.message}`, 'error');
+                return; // Don't save product if image failed
             }
         }
         
@@ -515,6 +535,41 @@ export class AdminController {
         
         this.view.closeModal();
         this.showProducts();
+    }
+
+    generateAutoTags(productName, categoryName) {
+        const tags = [];
+        
+        // Add category tag
+        tags.push(categoryName.toLowerCase());
+        
+        // Generate tags based on product name
+        const productLower = productName.toLowerCase();
+        
+        // Meat/protein tags
+        if (productLower.includes('picanha')) tags.push('picanha', 'carne', 'churrasco');
+        if (productLower.includes('filé') || productLower.includes('file')) tags.push('file', 'carne', 'premium');
+        if (productLower.includes('frango')) tags.push('frango', 'ave', 'empanado');
+        if (productLower.includes('camarão') || productLower.includes('camarao')) tags.push('camarao', 'frutos-do-mar', 'premium');
+        if (productLower.includes('calabresa')) tags.push('calabresa', 'linguiça', 'defumado');
+        
+        // Food type tags
+        if (productLower.includes('pão') || productLower.includes('sanduiche')) tags.push('sanduiche', 'lanche');
+        if (productLower.includes('executivo')) tags.push('executivo', 'prato-individual', 'completo');
+        if (productLower.includes('chapa')) tags.push('chapa', 'grelhado', 'quente');
+        if (productLower.includes('empanado')) tags.push('empanado', 'crocante', 'frito');
+        if (productLower.includes('queijo')) tags.push('queijo', 'laticinio');
+        if (productLower.includes('bebida') || productLower.includes('refrigerante') || productLower.includes('cerveja')) {
+            tags.push('bebida', 'gelado', 'refrescante');
+        }
+        
+        // Preparation tags
+        if (productLower.includes('grill') || productLower.includes('grelhado')) tags.push('grelhado');
+        if (productLower.includes('frito')) tags.push('frito');
+        if (productLower.includes('assado')) tags.push('assado');
+        
+        // Remove duplicates and return
+        return [...new Set(tags)];
     }
 
     showCategories() {
