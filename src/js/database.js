@@ -152,7 +152,7 @@ class Database {
                         name: 'File com Fritas',
                         description: 'File, batata, cebola, farofa, vinagrete e baiao de dois.',
                         price: 78.90,
-                        image: 'https://images.unsplash.com/photo-1558030006-450675393462?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&h=400&q=80',
+                        image: './images/produtos/file-com-fritas.svg',
                         active: true,
                         featured: false,
                         createdAt: new Date().toISOString()
@@ -165,7 +165,7 @@ class Database {
                         name: 'Executivo de Picanha',
                         description: 'Picanha + baiao de dois, farofa, salada e pao de alho.',
                         price: 52.90,
-                        image: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&h=400&q=80',
+                        image: './images/produtos/executivo-picanha.svg',
                         active: true,
                         featured: false,
                         createdAt: new Date().toISOString()
@@ -176,7 +176,7 @@ class Database {
                         name: 'Executivo de File',
                         description: 'File + baiao de dois, farofa, salada e pao de alho.',
                         price: 48.90,
-                        image: 'https://images.unsplash.com/photo-1476224203421-9ac39bcb3327?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&h=400&q=80',
+                        image: './images/produtos/executivo-file.svg',
                         active: true,
                         featured: false,
                         createdAt: new Date().toISOString()
@@ -189,7 +189,7 @@ class Database {
                         name: 'Baiao de Dois',
                         description: 'Porcao adicional de baiao de dois.',
                         price: 18.90,
-                        image: 'https://images.unsplash.com/photo-1512058564366-18510be2db19?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&h=400&q=80',
+                        image: './images/produtos/baiao-de-dois.svg',
                         active: true,
                         featured: false,
                         createdAt: new Date().toISOString()
@@ -200,7 +200,7 @@ class Database {
                         name: 'Farofa',
                         description: 'Porcao adicional de farofa.',
                         price: 12.90,
-                        image: 'https://images.unsplash.com/photo-1613564834361-9436948817d1?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&h=400&q=80',
+                        image: './images/produtos/placeholder.svg',
                         active: true,
                         featured: false,
                         createdAt: new Date().toISOString()
@@ -211,7 +211,7 @@ class Database {
                         name: 'Vinagrete',
                         description: 'Porcao adicional de vinagrete.',
                         price: 8.90,
-                        image: 'https://images.unsplash.com/photo-1607532941433-304659e8198a?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&h=400&q=80',
+                        image: './images/produtos/placeholder.svg',
                         active: true,
                         featured: false,
                         createdAt: new Date().toISOString()
@@ -224,7 +224,7 @@ class Database {
                         name: 'Refrigerante 2L',
                         description: 'Coca-Cola, Guarana, Fanta - 2 litros.',
                         price: 12.90,
-                        image: 'https://images.unsplash.com/photo-1624517452488-04869289c4ca?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&h=400&q=80',
+                        image: './images/produtos/bebidas.svg',
                         active: true,
                         featured: false,
                         createdAt: new Date().toISOString()
@@ -235,7 +235,7 @@ class Database {
                         name: 'Cerveja Heineken',
                         description: 'Cerveja importada gelada - Long neck.',
                         price: 8.90,
-                        image: 'https://images.unsplash.com/photo-1608270586620-248524c67de9?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&h=400&q=80',
+                        image: './images/produtos/bebidas.svg',
                         active: true,
                         featured: false,
                         createdAt: new Date().toISOString()
@@ -246,7 +246,7 @@ class Database {
                         name: 'Suco Natural',
                         description: 'Laranja, acerola, caju - 500ml.',
                         price: 6.90,
-                        image: 'https://images.unsplash.com/photo-1613478223719-2ab802602423?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&h=400&q=80',
+                        image: './images/produtos/bebidas.svg',
                         active: true,
                         featured: false,
                         createdAt: new Date().toISOString()
@@ -257,7 +257,7 @@ class Database {
                         name: 'Agua Mineral',
                         description: 'Agua mineral gelada - 500ml.',
                         price: 4.90,
-                        image: 'https://images.unsplash.com/photo-1550572017-edd951aa8f72?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&h=400&q=80',
+                        image: './images/produtos/bebidas.svg',
                         active: true,
                         featured: false,
                         createdAt: new Date().toISOString()
@@ -268,43 +268,43 @@ class Database {
                     {
                         id: 'img1',
                         name: 'Pão com Picanha',
-                        url: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&h=400&q=80',
-                        size: 245760,
-                        type: 'image/jpeg',
+                        url: './images/produtos/pao-com-picanha.svg',
+                        size: 5120,
+                        type: 'image/svg+xml',
                         tags: ['sanduiche', 'picanha', 'especial'],
                         createdAt: new Date().toISOString()
                     },
                     {
                         id: 'img2',
                         name: 'Pão com Filé',
-                        url: 'https://images.unsplash.com/photo-1594212699903-ec8a3eca50f5?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&h=400&q=80',
-                        size: 298752,
-                        type: 'image/jpeg',
+                        url: './images/produtos/pao-com-file.svg',
+                        size: 5120,
+                        type: 'image/svg+xml',
                         tags: ['sanduiche', 'file', 'especial'],
                         createdAt: new Date().toISOString()
                     },
                     {
                         id: 'img3',
                         name: 'Tábua de Frios',
-                        url: 'https://images.unsplash.com/photo-1634141510639-d691d86f47be?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&h=400&q=80',
-                        size: 312456,
-                        type: 'image/jpeg',
+                        url: './images/produtos/tabua-de-frios.svg',
+                        size: 5120,
+                        type: 'image/svg+xml',
                         tags: ['entrada', 'queijo', 'frios'],
                         createdAt: new Date().toISOString()
                     },
                     {
                         id: 'img4',
                         name: 'Queijo com Goiabada',
-                        url: 'https://images.unsplash.com/photo-1486297678162-eb2a19b0a32d?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&h=400&q=80',
-                        size: 203648,
-                        type: 'image/jpeg',
+                        url: './images/produtos/queijo-com-goiabada.svg',
+                        size: 5120,
+                        type: 'image/svg+xml',
                         tags: ['sobremesa', 'doce', 'romeu-julieta'],
                         createdAt: new Date().toISOString()
                     },
                     {
                         id: 'img5',
                         name: 'Bolinho de Camarão',
-                        url: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&h=400&q=80',
+                        url: './images/produtos/bolinho-camarao.svg',
                         size: 287234,
                         type: 'image/jpeg',
                         tags: ['entrada', 'camarao', 'bolinho'],
@@ -313,7 +313,7 @@ class Database {
                     {
                         id: 'img6',
                         name: 'Batata com Queijo',
-                        url: 'https://images.unsplash.com/photo-1573080496219-bb080dd4f877?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&h=400&q=80',
+                        url: './images/produtos/batata-com-queijo.svg',
                         size: 256789,
                         type: 'image/jpeg',
                         tags: ['entrada', 'batata', 'queijo'],
@@ -322,7 +322,7 @@ class Database {
                     {
                         id: 'img7',
                         name: 'Frango Empanado',
-                        url: 'https://images.unsplash.com/photo-1562967914-608f82629710?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&h=400&q=80',
+                        url: './images/produtos/frango-empanado.svg',
                         size: 321654,
                         type: 'image/jpeg',
                         tags: ['petisco', 'frango', 'empanado'],
@@ -331,7 +331,7 @@ class Database {
                     {
                         id: 'img8',
                         name: 'Calabresa com Fritas',
-                        url: 'https://images.unsplash.com/photo-1565958011703-44f9829ba187?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&h=400&q=80',
+                        url: './images/produtos/calabresa-fritas.svg',
                         size: 345123,
                         type: 'image/jpeg',
                         tags: ['petisco', 'calabresa', 'batata'],
@@ -340,7 +340,7 @@ class Database {
                     {
                         id: 'img9',
                         name: 'Camarão Empanado',
-                        url: 'https://images.unsplash.com/photo-1582049165295-3ab30bf3d0ad?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&h=400&q=80',
+                        url: './images/produtos/camarao-empanado.svg',
                         size: 378456,
                         type: 'image/jpeg',
                         tags: ['petisco', 'camarao', 'empanado', 'destaque'],
@@ -349,7 +349,7 @@ class Database {
                     {
                         id: 'img10',
                         name: 'Picanha na Chapa',
-                        url: 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&h=400&q=80',
+                        url: './images/produtos/picanha-na-chapa.svg',
                         size: 445789,
                         type: 'image/jpeg',
                         tags: ['prato-principal', 'picanha', 'chapa', 'destaque'],
@@ -358,7 +358,7 @@ class Database {
                     {
                         id: 'img11',
                         name: 'Filé com Fritas',
-                        url: 'https://images.unsplash.com/photo-1558030006-450675393462?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&h=400&q=80',
+                        url: './images/produtos/file-com-fritas.svg',
                         size: 412356,
                         type: 'image/jpeg',
                         tags: ['prato-principal', 'file', 'batata'],
@@ -367,7 +367,7 @@ class Database {
                     {
                         id: 'img12',
                         name: 'Prato Executivo',
-                        url: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&h=400&q=80',
+                        url: './images/produtos/executivo-picanha.svg',
                         size: 367891,
                         type: 'image/jpeg',
                         tags: ['executivo', 'prato-completo', 'individual'],
@@ -376,7 +376,7 @@ class Database {
                     {
                         id: 'img13',
                         name: 'Executivo com Salada',
-                        url: 'https://images.unsplash.com/photo-1476224203421-9ac39bcb3327?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&h=400&q=80',
+                        url: './images/produtos/executivo-file.svg',
                         size: 334567,
                         type: 'image/jpeg',
                         tags: ['executivo', 'salada', 'saudavel'],
@@ -385,7 +385,7 @@ class Database {
                     {
                         id: 'img14',
                         name: 'Baião de Dois',
-                        url: 'https://images.unsplash.com/photo-1512058564366-18510be2db19?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&h=400&q=80',
+                        url: './images/produtos/baiao-de-dois.svg',
                         size: 289123,
                         type: 'image/jpeg',
                         tags: ['acompanhamento', 'baiao', 'feijao'],
@@ -394,7 +394,7 @@ class Database {
                     {
                         id: 'img15',
                         name: 'Farofa Especial',
-                        url: 'https://images.unsplash.com/photo-1613564834361-9436948817d1?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&h=400&q=80',
+                        url: './images/produtos/placeholder.svg',
                         size: 198765,
                         type: 'image/jpeg',
                         tags: ['acompanhamento', 'farofa'],
@@ -403,7 +403,7 @@ class Database {
                     {
                         id: 'img16',
                         name: 'Vinagrete Fresh',
-                        url: 'https://images.unsplash.com/photo-1607532941433-304659e8198a?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&h=400&q=80',
+                        url: './images/produtos/placeholder.svg',
                         size: 165432,
                         type: 'image/jpeg',
                         tags: ['acompanhamento', 'salada', 'vinagrete'],
@@ -412,7 +412,7 @@ class Database {
                     {
                         id: 'img17',
                         name: 'Refrigerantes Variados',
-                        url: 'https://images.unsplash.com/photo-1624517452488-04869289c4ca?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&h=400&q=80',
+                        url: './images/produtos/bebidas.svg',
                         size: 223456,
                         type: 'image/jpeg',
                         tags: ['bebida', 'refrigerante', 'gelado'],
@@ -421,7 +421,7 @@ class Database {
                     {
                         id: 'img18',
                         name: 'Cerveja Gelada',
-                        url: 'https://images.unsplash.com/photo-1608270586620-248524c67de9?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&h=400&q=80',
+                        url: './images/produtos/bebidas.svg',
                         size: 312789,
                         type: 'image/jpeg',
                         tags: ['bebida', 'cerveja', 'alcoolica'],
@@ -430,7 +430,7 @@ class Database {
                     {
                         id: 'img19',
                         name: 'Suco Natural',
-                        url: 'https://images.unsplash.com/photo-1613478223719-2ab802602423?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&h=400&q=80',
+                        url: './images/produtos/bebidas.svg',
                         size: 187654,
                         type: 'image/jpeg',
                         tags: ['bebida', 'suco', 'natural', 'saudavel'],
@@ -439,7 +439,7 @@ class Database {
                     {
                         id: 'img20',
                         name: 'Água Mineral',
-                        url: 'https://images.unsplash.com/photo-1550572017-edd951aa8f72?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&h=400&q=80',
+                        url: './images/produtos/bebidas.svg',
                         size: 156789,
                         type: 'image/jpeg',
                         tags: ['bebida', 'agua', 'mineral'],
