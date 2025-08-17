@@ -391,10 +391,17 @@ export class AdminController {
         // Handle image selection
         document.querySelectorAll('.gallery-selector-item').forEach(item => {
             item.addEventListener('click', () => {
+                console.log('Clique na imagem detectado!');
                 const imageId = item.dataset.imageId;
+                console.log('Image ID:', imageId);
                 const image = this.database.getGalleryImageById(imageId);
-                this.selectImageFromGallery(image);
-                this.view.closeModal();
+                console.log('Imagem encontrada:', image);
+                if (image) {
+                    this.selectImageFromGallery(image);
+                    this.view.closeModal();
+                } else {
+                    console.error('Imagem não encontrada no database!');
+                }
             });
         });
         
@@ -410,13 +417,38 @@ export class AdminController {
     }
 
     selectImageFromGallery(image) {
-        document.getElementById('selectedGalleryImageId').value = image.id;
-        document.getElementById('previewImage').src = image.url;
-        document.getElementById('selectedImageName').textContent = image.name;
-        document.getElementById('selectedImagePreview').classList.remove('hidden');
+        console.log('selectImageFromGallery chamado com:', image);
+        
+        const selectedGalleryImageId = document.getElementById('selectedGalleryImageId');
+        const previewImage = document.getElementById('previewImage');
+        const selectedImageName = document.getElementById('selectedImageName');
+        const selectedImagePreview = document.getElementById('selectedImagePreview');
+        const productImage = document.getElementById('productImage');
+        
+        console.log('Elementos encontrados:', {
+            selectedGalleryImageId: !!selectedGalleryImageId,
+            previewImage: !!previewImage,
+            selectedImageName: !!selectedImageName,
+            selectedImagePreview: !!selectedImagePreview,
+            productImage: !!productImage
+        });
+        
+        if (!selectedGalleryImageId || !previewImage || !selectedImageName || !selectedImagePreview) {
+            console.error('Alguns elementos não foram encontrados!');
+            return;
+        }
+        
+        selectedGalleryImageId.value = image.id;
+        previewImage.src = image.url;
+        selectedImageName.textContent = image.name;
+        selectedImagePreview.classList.remove('hidden');
         
         // Clear file input
-        document.getElementById('productImage').value = '';
+        if (productImage) {
+            productImage.value = '';
+        }
+        
+        console.log('Imagem selecionada com sucesso!');
     }
 
     filterGallerySelectorImages(search) {
