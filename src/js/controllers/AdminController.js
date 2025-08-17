@@ -251,10 +251,17 @@ export class AdminController {
                             >
                         </div>
                         
-                        <div id="selectedImagePreview" class="hidden">
-                            <img id="previewImage" class="w-20 h-20 object-cover rounded border" alt="Preview">
-                            <p id="selectedImageName" class="text-xs text-gray-600 mt-1"></p>
-                            <button type="button" id="removeSelectedImage" class="text-red-600 text-xs hover:underline">Remover</button>
+                        <div id="selectedImagePreview" class="hidden mt-3 p-3 bg-green-50 border border-green-200 rounded-md">
+                            <div class="flex items-center space-x-3">
+                                <img id="previewImage" class="w-16 h-16 object-cover rounded border-2 border-green-300" alt="Preview">
+                                <div class="flex-1">
+                                    <p id="selectedImageName" class="text-sm font-medium text-green-800"></p>
+                                    <p class="text-xs text-green-600">✅ Imagem selecionada da galeria</p>
+                                </div>
+                                <button type="button" id="removeSelectedImage" class="text-red-600 text-sm hover:underline px-2 py-1 rounded hover:bg-red-50">
+                                    ✕ Remover
+                                </button>
+                            </div>
                         </div>
                         
                         ${product?.image ? `<p class="text-xs text-gray-500">Imagem atual: ${product.image.substring(0, 50)}...</p>` : ''}
@@ -318,6 +325,13 @@ export class AdminController {
         // Handle gallery selection
         document.getElementById('selectFromGallery').addEventListener('click', () => {
             this.showGallerySelector();
+        });
+        
+        // Handle remove selected image
+        document.getElementById('removeSelectedImage').addEventListener('click', () => {
+            document.getElementById('selectedGalleryImageId').value = '';
+            document.getElementById('selectedImagePreview').classList.add('hidden');
+            this.view.showNotification('Imagem removida', 'info');
         });
         
         // Handle image upload
@@ -392,15 +406,29 @@ export class AdminController {
         document.querySelectorAll('.gallery-selector-item').forEach(item => {
             item.addEventListener('click', () => {
                 console.log('Clique na imagem detectado!');
+                
+                // Add visual feedback immediately
+                document.querySelectorAll('.gallery-selector-item').forEach(el => {
+                    el.classList.remove('ring-2', 'ring-orange-500', 'bg-orange-100');
+                });
+                item.classList.add('ring-2', 'ring-orange-500', 'bg-orange-100');
+                
                 const imageId = item.dataset.imageId;
                 console.log('Image ID:', imageId);
                 const image = this.database.getGalleryImageById(imageId);
                 console.log('Imagem encontrada:', image);
+                
                 if (image) {
-                    this.selectImageFromGallery(image);
-                    this.view.closeModal();
+                    // Small delay to show selection feedback
+                    setTimeout(() => {
+                        this.selectImageFromGallery(image);
+                        this.view.closeModal();
+                        // Show success notification
+                        this.view.showNotification(`Imagem "${image.name}" selecionada!`, 'success');
+                    }, 300);
                 } else {
                     console.error('Imagem não encontrada no database!');
+                    this.view.showNotification('Erro ao selecionar imagem!', 'error');
                 }
             });
         });
@@ -467,10 +495,26 @@ export class AdminController {
         // Re-attach event listeners
         document.querySelectorAll('.gallery-selector-item').forEach(item => {
             item.addEventListener('click', () => {
+                // Add visual feedback immediately
+                document.querySelectorAll('.gallery-selector-item').forEach(el => {
+                    el.classList.remove('ring-2', 'ring-orange-500', 'bg-orange-100');
+                });
+                item.classList.add('ring-2', 'ring-orange-500', 'bg-orange-100');
+                
                 const imageId = item.dataset.imageId;
                 const image = this.database.getGalleryImageById(imageId);
-                this.selectImageFromGallery(image);
-                this.view.closeModal();
+                
+                if (image) {
+                    // Small delay to show selection feedback
+                    setTimeout(() => {
+                        this.selectImageFromGallery(image);
+                        this.view.closeModal();
+                        // Show success notification
+                        this.view.showNotification(`Imagem "${image.name}" selecionada!`, 'success');
+                    }, 300);
+                } else {
+                    this.view.showNotification('Erro ao selecionar imagem!', 'error');
+                }
             });
         });
     }

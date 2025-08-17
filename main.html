@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Cardápio Digital</title>
+    <!-- TailwindCSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="icon" href="/img/icons/favicon.ico" />
+    <meta name="theme-color" content="#fb923c" />
+    <style>
+      .thin-scroll::-webkit-scrollbar {
+        height: 6px;
+        width: 6px;
+      }
+      .thin-scroll::-webkit-scrollbar-thumb {
+        background: #e5e7eb;
+        border-radius: 999px;
+      }
+    </style>
+  </head>
+  <body class="bg-white text-gray-900">
+    <script>
+      const CONFIG = {
+        restaurantName: "Império do Churrasco",
+        categories: [
+          "Especiais da Casa",
+          "Entradas",
+          "Petiscos",
+          "Pratos com Acompanhamento",
+          "Executivos (Pratos Individuais)",
+          "Porções Adicionais",
+          "Bebidas",
+        ],
+        items: [
+          // Especiais da Casa
+          {
+            id: "esp1",
+            cat: "Especiais da Casa",
+            name: "Pão com Picanha",
+            desc: "✨ Levemente tostado na chapa, recheado com suculentas fatias de picanha, queijo derretido e o exclusivo molho especial da casa.",
+            img: "/images/produtos/pao-com-picanha.jpg",
+          },
+          {
+            id: "esp2",
+            cat: "Especiais da Casa",
+            name: "Pão com Filé",
+            desc: "✨ Levemente tostado na chapa, recheado com suculentas fatias de filé, queijo derretido e o exclusivo molho especial da casa.",
+            img: "/images/produtos/pao-com-file.jpg",
+          },
+
+          // Entradas
+          {
+            id: "ent1",
+            cat: "Entradas",
+            name: "Tábua de frios",
+            desc: "Queijos, salame, azeitonas e variações.",
+            img: "/images/produtos/tabua-de-frios.jpg",
+          },
+          {
+            id: "ent2",
+            cat: "Entradas",
+            name: "Queijo com goiabada (Romeu e Julieta)",
+            desc: "Combinação clássica e deliciosa.",
+            img: "/images/produtos/romeu-e-julieta.jpg",
+          },
+          {
+            id: "ent3",
+            cat: "Entradas",
+            name: "Bolinho de camarão",
+            desc: "Crocante por fora e macio por dentro.",
+            img: "/images/produtos/bolinho-de-camarao.jpg",
+          },
+          {
+            id: "ent4",
+            cat: "Entradas",
+            name: "Torresmo de porco",
+            desc: "Torresminho crocante e saboroso.",
+            img: "/images/produtos/torresmo.jpg",
+          },
+          {
+            id: "ent5",
+            cat: "Entradas",
+            name: "Pé de alho assado",
+            desc: "Alho assado no ponto certo.",
+            img: "/images/produtos/pe-de-alho.jpg",
+          },
+          {
+            id: "ent6",
+            cat: "Entradas",
+            name: "Batata com queijo",
+            desc: "Batatas fritas cobertas com queijo derretido.",
+            img: "/images/produtos/batata-com-queijo.jpg",
+          },
+          {
+            id: "ent7",
+            cat: "Entradas",
+            name: "Macaxeira frita",
+            desc: "Macaxeira crocante e saborosa.",
+            img: "/images/produtos/macaxeira-frita.jpg",
+          },
+          {
+            id: "ent8",
+            cat: "Entradas",
+            name: "Pastéis variados",
+            desc: "Carne moída, frango com catupiry, queijo e camarão.",
+            img: "/images/produtos/pasteis.jpg",
+          },
+
+          // Petiscos
+          {
+            id: "pet1",
+            cat: "Petiscos",
+            name: "Isca de frango empanado com molho rosé",
+            desc: "Frango crocante acompanhado de molho rosé.",
+            img: "/images/produtos/isca-de-frango.jpg",
+          },
+          {
+            id: "pet2",
+            cat: "Petiscos",
+            name: "Calabresa com fritas",
+            desc: "Batata, cebola, molho rosé e farofa.",
+            img: "/images/produtos/calabresa-com-fritas.jpg",
+          },
+          {
+            id: "pet3",
+            cat: "Petiscos",
+            name: "Isca de peixe empanado (tilápia) com molho especial",
+            desc: "Tilápia crocante servida com molho especial.",
+            img: "/images/produtos/isca-de-peixe.jpg",
+          },
+          {
+            id: "pet4",
+            cat: "Petiscos",
+            name: "Camarão empanado com molho rosé",
+            desc: "Camarões crocantes servidos com molho rosé.",
+            img: "/images/produtos/camarao-empanado.jpg",
+          },
+          {
+            id: "pet5",
+            cat: "Petiscos",
+            name: "Camarão ao alho e óleo",
+            desc: "Acompanhado de farofa e vinagrete.",
+            img: "/images/produtos/camarao-alho-e-oleo.jpg",
+          },
+
+          // Pratos com Acompanhamento (Porções na Chapa)
+          {
+            id: "pra1",
+            cat: "Pratos com Acompanhamento",
+            name: "Picanha na chapa",
+            desc: "Picanha, queijo, batata frita, farofa, vinagrete e baião de dois.",
+            img: "/images/produtos/picanha-na-chapa.jpg",
+          },
+          {
+            id: "pra2",
+            cat: "Pratos com Acompanhamento",
+            name: "Filé com fritas",
+            desc: "Filé, batata, cebola, farofa, vinagrete e baião de dois.",
+            img: "/images/produtos/file-com-fritas.jpg",
+          },
+
+          // Executivos (Pratos Individuais)
+          {
+            id: "exe1",
+            cat: "Executivos (Pratos Individuais)",
+            name: "Executivo de Picanha",
+            desc: "Picanha + baião de dois, farofa, salada e pão de alho.",
+            img: "/images/produtos/executivo-picanha.jpg",
+          },
+          {
+            id: "exe2",
+            cat: "Executivos (Pratos Individuais)",
+            name: "Executivo de Filé",
+            desc: "Filé + baião de dois, farofa, salada e pão de alho.",
+            img: "/images/produtos/executivo-file.jpg",
+          },
+
+          // Porções Adicionais
+          {
+            id: "adc1",
+            cat: "Porções Adicionais",
+            name: "Baião de dois",
+            desc: "Porção adicional.",
+            img: "/images/produtos/baiao-de-dois.jpg",
+          },
+          {
+            id: "adc2",
+            cat: "Porções Adicionais",
+            name: "Farofa",
+            desc: "Porção adicional.",
+            img: "/images/produtos/farofa.jpg",
+          },
+          {
+            id: "adc3",
+            cat: "Porções Adicionais",
+            name: "Salada",
+            desc: "Porção adicional.",
+            img: "/images/produtos/salada.jpg",
+          },
+          {
+            id: "adc4",
+            cat: "Porções Adicionais",
+            name: "Molho rosé",
+            desc: "Porção adicional.",
+            img: "/images/produtos/molho-rose.jpg",
+          },
+          {
+            id: "adc5",
+            cat: "Porções Adicionais",
+            name: "Vinagrete",
+            desc: "Porção adicional.",
+            img: "/images/produtos/vinagrete.jpg",
+          },
+          {
+            id: "adc6",
+            cat: "Porções Adicionais",
+            name: "Queijo",
+            desc: "Porção adicional.",
+            img: "/images/produtos/queijo.jpg",
+          },
+
+          // Bebidas
+          {
+            id: "beb1",
+            cat: "Bebidas",
+            name: "Refrigerante 2L",
+            img: "/images/produtos/refri-2l.jpg",
+          },
+          {
+            id: "beb2",
+            cat: "Bebidas",
+            name: "Refrigerante 1L",
+            img: "/images/produtos/refri-1l.jpg",
+          },
+          {
+            id: "beb3",
+            cat: "Bebidas",
+            name: "Refrigerante Lata",
+            img: "/images/produtos/refri-lata.jpg",
+          },
+          {
+            id: "beb4",
+            cat: "Bebidas",
+            name: "Suco Copo",
+            desc: "Sabores a consultar.",
+            img: "/images/produtos/suco-copo.jpg",
+          },
+          {
+            id: "beb5",
+            cat: "Bebidas",
+            name: "Suco Garrafa",
+            desc: "Sabores a consultar.",
+            img: "/images/produtos/suco-garrafa.jpg",
+          },
+          {
+            id: "beb6",
+            cat: "Bebidas",
+            name: "Água sem gás",
+            img: "/images/produtos/agua-sem-gas.jpg",
+          },
+          {
+            id: "beb7",
+            cat: "Bebidas",
+            name: "Água com gás",
+            img: "/images/produtos/agua-com-gas.jpg",
+          },
+          {
+            id: "beb8",
+            cat: "Bebidas",
+            name: "Energético",
+            img: "/images/produtos/energetico.jpg",
+          },
+          {
+            id: "beb9",
+            cat: "Bebidas",
+            name: "Drink",
+            desc: "A consultar.",
+            img: "/images/produtos/drink.jpg",
+          },
+          {
+            id: "beb10",
+            cat: "Bebidas",
+            name: "Heineken",
+            desc: "Cerveja.",
+            img: "/images/produtos/cerveja-heineken.jpg",
+          },
+          {
+            id: "beb11",
+            cat: "Bebidas",
+            name: "Spaten",
+            desc: "Cerveja.",
+            img: "/images/produtos/cerveja-spaten.jpg",
+          },
+          {
+            id: "beb12",
+            cat: "Bebidas",
+            name: "Budweiser",
+            desc: "Cerveja.",
+            img: "/images/produtos/cerveja-budweiser.jpg",
+          },
+          {
+            id: "beb13",
+            cat: "Bebidas",
+            name: "Stella Artois",
+            desc: "Cerveja.",
+            img: "/images/produtos/cerveja-stella.jpg",
+          },
+          {
+            id: "beb14",
+            cat: "Bebidas",
+            name: "Corona",
+            desc: "Cerveja.",
+            img: "/images/produtos/cerveja-corona.jpg",
+          },
+        ],
+      };
+    </script>
+
+    <header
+      class="sticky top-0 z-30 bg-white/90 backdrop-blur border-b border-gray-100"
+    >
+      <div
+        class="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between"
+      >
+        <div class="flex items-center gap-3">
+          <div
+            class="h-9 w-9 rounded-xl bg-orange-500 text-white grid place-items-center font-bold"
+          >
+            IC
+          </div>
+          <div>
+            <div id="brandName" class="font-semibold">Império do Churrasco</div>
+            <div class="text-xs text-gray-500">Cardápio digital</div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Banner fixo -->
+    <section class="max-w-4xl mx-auto px-4 pt-4">
+      <div class="rounded-2xl overflow-hidden border border-gray-100">
+        <img
+          src="/images/banners/imperio-banner.png"
+          alt="Banner do restaurante"
+          class="w-full"
+          style="height: 400px; object-fit: cover; object-position: center"
+        />
+      </div>
+    </section>
+
+    <nav class="max-w-4xl mx-auto px-4 pt-5">
+      <div id="tabs" class="thin-scroll flex gap-3 overflow-x-auto pb-1"></div>
+    </nav>
+
+    <main
+      class="max-w-4xl mx-auto px-4 py-6 grid sm:grid-cols-2 gap-4"
+      id="itemsGrid"
+    ></main>
+
+    <template id="itemCardTpl">
+      <article
+        class="rounded-2xl border border-gray-200 overflow-hidden bg-white shadow-sm/50"
+      >
+        <div class="h-40 w-full bg-gray-100"></div>
+        <div class="p-3">
+          <div class="font-semibold text-base"></div>
+          <p class="text-sm text-gray-600 mt-0.5"></p>
+        </div>
+      </article>
+    </template>
+
+    <script>
+      function renderTabs() {
+        const tabs = document.getElementById("tabs");
+        tabs.innerHTML = "";
+        CONFIG.categories.forEach((cat, idx) => {
+          const b = document.createElement("button");
+          b.className =
+            "px-4 py-2 rounded-xl border border-gray-200 text-sm bg-gray-50 hover:bg-gray-100 whitespace-nowrap";
+          b.textContent = cat;
+          b.onclick = () => selectCat(cat, b);
+          if (idx === 0)
+            b.classList.add("ring-1", "ring-orange-300", "bg-orange-50");
+          tabs.appendChild(b);
+        });
+      }
+
+      function selectCat(cat, btn) {
+        document
+          .querySelectorAll("#tabs button")
+          .forEach((el) =>
+            el.classList.remove("ring-1", "ring-orange-300", "bg-orange-50")
+          );
+        if (btn) btn.classList.add("ring-1", "ring-orange-300", "bg-orange-50");
+        renderItems(cat);
+      }
+
+      function renderItems(filterCat) {
+        const grid = document.getElementById("itemsGrid");
+        grid.innerHTML = "";
+        const items = CONFIG.items.filter(
+          (i) => !filterCat || i.cat === filterCat
+        );
+        if (items.length === 0) {
+          grid.innerHTML =
+            '<div class="text-gray-500">Sem itens nesta categoria.</div>';
+          return;
+        }
+        items.forEach((item) => grid.appendChild(createItemCard(item)));
+      }
+
+      function createItemCard(item) {
+        const tpl = document.getElementById("itemCardTpl");
+        const node = tpl.content.cloneNode(true);
+        const root = node.querySelector("article");
+        const img = root.querySelector(".h-40");
+        img.style.backgroundImage = `url('${item.img}')`;
+        img.style.backgroundSize = "cover";
+        img.style.backgroundPosition = "center";
+        root.querySelector(".font-semibold").textContent = item.name;
+        root.querySelector("p").textContent = item.desc || "";
+        return root;
+      }
+
+      document.addEventListener("DOMContentLoaded", () => {
+        document.getElementById("brandName").textContent =
+          CONFIG.restaurantName;
+        renderTabs();
+        selectCat(CONFIG.categories[0]);
+      });
+    </script>
+
+    <footer
+      class="max-w-4xl mx-auto px-4 pb-8 pt-4 text-center text-xs text-gray-500"
+    >
+      Império do Churrasco · Cardápio Digital
+    </footer>
+  </body>
+</html>
