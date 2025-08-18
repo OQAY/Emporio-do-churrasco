@@ -957,6 +957,22 @@ class Database {
     return true;
   }
 
+  reorderCategories(categoryIds) {
+    const data = this.getData();
+    
+    // Update display order for each category
+    categoryIds.forEach((categoryId, index) => {
+      const category = data.categories.find(cat => cat.id === categoryId);
+      if (category) {
+        category.displayOrder = index;
+        category.order = index + 1; // Atualizar também o campo order
+      }
+    });
+    
+    this.saveData(data);
+    return true;
+  }
+
   // Export/Import data
   exportData() {
     const data = this.getData();

@@ -1411,6 +1411,9 @@ export class AdminController {
                 this.showCategoryDeleteConfirmation(btn.dataset.id);
             });
         });
+        
+        // Setup drag and drop for categories
+        this.setupCategoryDragAndDrop();
     }
 
     showCategoryDeleteConfirmation(categoryId) {
@@ -2478,6 +2481,238 @@ export class AdminController {
             const productIds = categoryRows.map(row => row.dataset.id);
             
             this.database.reorderProducts(categoryId, productIds);
+            this.view.showNotification('Ordem atualizada!', 'success');
+            
+            draggedElement = null;
+            placeholder = null;
+        };
+        
+        // Mouse up
+        document.addEventListener('mouseup', (e) => {
+            if (!isDragging || !draggedElement) return;
+            finishDrag();
+        });
+    }
+
+    setupCategoryDragAndDrop() {
+        // Variáveis para controlar o drag
+        let isDragging = false;
+        let draggedElement = null;
+        let startY = 0;
+        let startX = 0;
+        let placeholder = null;
+        
+        // Função para criar placeholder
+        const createPlaceholder = () => {
+            const placeholder = document.createElement('div');
+            placeholder.className = 'drag-placeholder p-4 border border-gray-200 rounded-lg';
+            placeholder.innerHTML = `
+                <div class="border-2 border-dashed border-orange-400 bg-orange-50 rounded-lg p-2 text-center text-orange-600 text-sm">
+                    ↕ Solte aqui para reordenar
+                </div>
+            `;
+            return placeholder;
+        };
+        
+        // Função para encontrar a linha mais próxima
+        const findClosestRow = (y) => {
+            const rows = document.querySelectorAll('.category-row:not(.dragging)');
+            let closest = null;
+            let closestDistance = Infinity;
+            
+            rows.forEach(row => {
+                const rect = row.getBoundingClientRect();
+                const distance = Math.abs(rect.top + rect.height / 2 - y);
+                if (distance < closestDistance) {
+                    closestDistance = distance;
+                    closest = row;
+                }
+            });
+            
+            return closest;
+        };
+        
+        // Mouse down no drag handle
+        document.addEventListener('mousedown', (e) => {
+            const dragHandle = e.target.closest('.drag-handle');
+            if (!dragHandle) return;
+            
+            const row = dragHandle.closest('.category-row');
+            if (!row) return;
+            
+            e.preventDefault();
+            
+            // Configurar drag após 200ms
+            setTimeout(() => {
+                if (e.buttons === 1) { // Verifica se ainda está pressionado
+                    startDrag(row, e.clientY, e.clientX);
+                }
+            }, 200);
+        });
+        
+        // Touch support
+        document.addEventListener('touchstart', (e) => {
+            const dragHandle = e.target.closest('.drag-handle');
+            if (!dragHandle) return;
+            
+            const row = dragHandle.closest('.category-row');
+            if (!row) return;
+            
+            e.preventDefault();
+            
+            const touch = e.touches[0];
+            setTimeout(() => {
+                startDrag(row, touch.clientY, touch.clientX);
+            }, 200);
+        });
+        
+        document.addEventListener('touchmove', (e) => {
+            if (!isDragging || !draggedElement) return;
+            
+            e.preventDefault();
+            
+            const touch = e.touches[0];
+            
+            // Calcular nova posição baseada no movimento do touch
+            const deltaY = touch.clientY - startY;
+            const deltaX = touch.clientX - startX;
+            
+            const rect = draggedElement.getBoundingClientRect();
+            const initialTop = parseInt(draggedElement.style.top) || rect.top;
+            const initialLeft = parseInt(draggedElement.style.left) || rect.left;
+            
+            draggedElement.style.top = (initialTop + deltaY) + 'px';
+            draggedElement.style.left = (initialLeft + deltaX) + 'px';
+            
+            startY = touch.clientY;
+            startX = touch.clientX;
+            
+            // Encontrar linha mais próxima
+            const closest = findClosestRow(touch.clientY);
+            if (closest) {
+                const rect = closest.getBoundingClientRect();
+                if (touch.clientY < rect.top + rect.height / 2) {
+                    closest.parentNode.insertBefore(placeholder, closest);
+                } else {
+                    closest.parentNode.insertBefore(placeholder, closest.nextSibling);
+                }
+            }
+        });
+        
+        document.addEventListener('touchend', (e) => {
+            if (!isDragging || !draggedElement) return;
+            finishDrag();
+        });
+        
+        // Função para iniciar o drag
+        const startDrag = (row, y, x) => {
+            isDragging = true;
+            draggedElement = row;
+            
+            // Pegar posição original da linha
+            const rect = row.getBoundingClientRect();
+            startY = y;
+            startX = x;
+            
+            // Criar placeholder
+            placeholder = createPlaceholder();
+            
+            // Estilo da linha sendo arrastada
+            row.classList.add('dragging');
+            row.style.position = 'fixed';
+            row.style.top = (rect.top) + 'px';
+            row.style.left = (rect.left) + 'px';
+            row.style.width = rect.width + 'px';
+            row.style.zIndex = '1000';
+            row.style.pointerEvents = 'none';
+            row.style.transform = 'rotate(2deg)';
+            row.style.boxShadow = '0 10px 30px rgba(0,0,0,0.3)';
+            row.style.backgroundColor = '#fff7ed';
+            row.style.border = '2px solid #fb923c';
+            
+            // Inserir placeholder
+            row.parentNode.insertBefore(placeholder, row.nextSibling);
+            
+            document.body.style.cursor = 'grabbing';
+            document.body.style.userSelect = 'none';
+        };
+        
+        // Mouse move
+        document.addEventListener('mousemove', (e) => {
+            if (!isDragging || !draggedElement) return;
+            
+            e.preventDefault();
+            
+            // Calcular nova posição baseada no movimento do mouse
+            const deltaY = e.clientY - startY;
+            const deltaX = e.clientX - startX;
+            
+            // Pegar posição inicial e somar o delta
+            const rect = draggedElement.getBoundingClientRect();
+            const initialTop = parseInt(draggedElement.style.top) || rect.top;
+            const initialLeft = parseInt(draggedElement.style.left) || rect.left;
+            
+            draggedElement.style.top = (initialTop + deltaY) + 'px';
+            draggedElement.style.left = (initialLeft + deltaX) + 'px';
+            
+            // Atualizar as coordenadas de início para o próximo movimento
+            startY = e.clientY;
+            startX = e.clientX;
+            
+            // Encontrar linha mais próxima
+            const closest = findClosestRow(e.clientY);
+            if (closest) {
+                const rect = closest.getBoundingClientRect();
+                if (e.clientY < rect.top + rect.height / 2) {
+                    closest.parentNode.insertBefore(placeholder, closest);
+                } else {
+                    closest.parentNode.insertBefore(placeholder, closest.nextSibling);
+                }
+            }
+        });
+        
+        // Função para finalizar o drag
+        const finishDrag = () => {
+            if (!isDragging || !draggedElement) return;
+            
+            isDragging = false;
+            
+            // Inserir elemento na posição do placeholder
+            if (placeholder && placeholder.parentNode) {
+                placeholder.parentNode.insertBefore(draggedElement, placeholder);
+                placeholder.remove();
+            }
+            
+            // Resetar estilos
+            draggedElement.classList.remove('dragging');
+            draggedElement.style.position = '';
+            draggedElement.style.zIndex = '';
+            draggedElement.style.pointerEvents = '';
+            draggedElement.style.transform = '';
+            draggedElement.style.boxShadow = '';
+            draggedElement.style.backgroundColor = '';
+            draggedElement.style.border = '';
+            draggedElement.style.top = '';
+            draggedElement.style.left = '';
+            draggedElement.style.width = '';
+            
+            document.body.style.cursor = '';
+            document.body.style.userSelect = '';
+            
+            // Salvar nova ordem
+            const container = draggedElement.closest('.space-y-4');
+            const categoryRows = Array.from(container.querySelectorAll('.category-row'));
+            const categoryIds = categoryRows.map(row => row.dataset.id);
+            
+            // Atualizar números dinamicamente
+            categoryRows.forEach((row, index) => {
+                const orderSpan = row.querySelector('span.text-gray-400');
+                if (orderSpan) {
+                    orderSpan.textContent = `#${index + 1}`;
+                }
+            });
+            
+            this.database.reorderCategories(categoryIds);
             this.view.showNotification('Ordem atualizada!', 'success');
             
             draggedElement = null;

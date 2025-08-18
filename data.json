@@ -1,0 +1,25 @@
+{
+  "categories": [
+    {
+      "id": "sanduiches",
+      "name": "Sanduíches Gourmet",
+      "icon": "🥪",
+      "displayOrder": 0
+    }
+  ],
+  "products": [
+    {
+      "id": "sandwich_1755486232238",
+      "name": "Steak Sandwich Premium",
+      "description": "Suculento steak grelhado com salada fresca, queijo derretido e nosso molho especial em pão artesanal",
+      "price": 38.9,
+      "category": "sanduiches",
+      "image": "images/produtos/steak-sandwich-2.jpg",
+      "inStock": true,
+      "highlight": true,
+      "promotionPrice": 34.9,
+      "createdAt": "2025-08-18T03:03:52.238Z",
+      "displayOrder": 0
+    }
+  ]
+}
