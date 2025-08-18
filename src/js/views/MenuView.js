@@ -207,10 +207,10 @@ export class MenuView {
         
         container.innerHTML = '';
         
-        // Filtrar produtos não-featured
-        const regularProducts = products.filter(product => !product.featured);
+        // Usar TODOS os produtos (incluindo featured) - eles aparecerão nas suas categorias
+        const allProducts = products;
         
-        if (regularProducts.length === 0) {
+        if (allProducts.length === 0) {
             emptyState.classList.remove('hidden');
             return;
         }
@@ -219,7 +219,7 @@ export class MenuView {
         
         // Agrupar produtos por categoria
         categories.forEach(category => {
-            const categoryProducts = regularProducts.filter(product => product.categoryId === category.id);
+            const categoryProducts = allProducts.filter(product => product.categoryId === category.id);
             
             if (categoryProducts.length > 0) {
                 // Criar seção da categoria
@@ -321,6 +321,11 @@ export class MenuView {
             <div class="mobile-horizontal items-center p-4 gap-4">
                 <!-- Conteúdo à esquerda -->
                 <div class="flex-1 min-w-0">
+                    ${product.featured ? `
+                        <span class="inline-block bg-orange-500 text-white text-xs font-medium px-2 py-1 rounded-md mb-2">
+                            Destaque
+                        </span>
+                    ` : ''}
                     <h3 class="font-semibold text-base leading-tight mb-2">${product.name}</h3>
                     ${product.description ? 
                         `<p class="text-sm text-gray-600 leading-relaxed mb-2 line-clamp-2">${product.description}</p>` : 
@@ -345,6 +350,11 @@ export class MenuView {
             <!-- Layout Desktop Vertical (743px+) -->
             <div class="desktop-vertical">
                 <div class="relative">
+                    ${product.featured ? `
+                        <span class="absolute top-3 left-3 bg-orange-500 text-white text-xs font-medium px-2 py-1 rounded-md z-10">
+                            Destaque
+                        </span>
+                    ` : ''}
                     <div class="h-48 w-full bg-gray-100">
                         ${product.image ? 
                             `<img src="${product.image}" alt="${product.name}" class="w-full h-full object-cover" loading="lazy">` :
