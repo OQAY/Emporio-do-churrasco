@@ -85,7 +85,7 @@ class App {
             </nav>
 
             <main class="max-w-4xl mx-auto px-3 py-4">
-                <div id="productsGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3"></div>
+                <div id="productsGrid" class="products-grid gap-3"></div>
                 
                 <div id="emptyState" class="hidden text-center py-12">
                     <svg class="w-20 h-20 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

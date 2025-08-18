@@ -129,10 +129,10 @@ export class MenuView {
             `R$ ${product.price.toFixed(2).replace('.', ',')}` : 
             'Consulte';
 
-        // Layout mobile horizontal (default) - layout desktop vertical (sm+)
+        // Layout mobile horizontal (até 742px) - layout desktop vertical (743px+)
         card.innerHTML = `
-            <!-- Layout Mobile Horizontal -->
-            <div class="flex items-center p-4 gap-4 sm:hidden">
+            <!-- Layout Mobile Horizontal (até 742px) -->
+            <div class="mobile-horizontal items-center p-4 gap-4">
                 <!-- Conteúdo à esquerda -->
                 <div class="flex-1 min-w-0">
                     ${product.featured ? `
@@ -161,8 +161,8 @@ export class MenuView {
                 </div>
             </div>
 
-            <!-- Layout Desktop Vertical (hidden no mobile, visible sm+) -->
-            <div class="hidden sm:block">
+            <!-- Layout Desktop Vertical (743px+) -->
+            <div class="desktop-vertical">
                 <div class="relative">
                     ${product.featured ? `
                         <span class="absolute top-3 left-3 bg-orange-500 text-white text-xs font-medium px-3 py-1 rounded-full z-10 shadow-lg">

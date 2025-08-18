@@ -69,7 +69,8 @@
       "Bash(call kill.bat)",
       "Bash(mkdir:*)",
       "Bash(git push:*)",
-      "Bash(git checkout:*)"
+      "Bash(git checkout:*)",
+      "WebFetch(domain:www.ifood.com.br)"
     ]
   },
   "enableAllProjectMcpServers": true,

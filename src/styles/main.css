@@ -168,3 +168,40 @@ html {
         image-rendering: crisp-edges;
     }
 }
+
+/* Custom breakpoint for mobile horizontal layout (até 742px) */
+@media (max-width: 742px) {
+    .mobile-horizontal {
+        display: flex !important;
+    }
+    
+    .desktop-vertical {
+        display: none !important;
+    }
+    
+    .products-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (min-width: 743px) {
+    .mobile-horizontal {
+        display: none !important;
+    }
+    
+    .desktop-vertical {
+        display: block !important;
+    }
+    
+    .products-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (min-width: 1024px) {
+    .products-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
