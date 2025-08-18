@@ -375,6 +375,11 @@ export class MenuView {
             </div>
         `;
 
+        // Adicionar event listener para abrir modal do produto
+        card.addEventListener('click', () => {
+            this.showProductModal(product);
+        });
+
         return card;
     }
 
@@ -451,7 +456,84 @@ export class MenuView {
             </div>
         `;
 
+        // Adicionar event listener para abrir modal do produto
+        card.addEventListener('click', () => {
+            this.showProductModal(product);
+        });
+
         return card;
+    }
+
+    showProductModal(product) {
+        const priceFormatted = product.price ? 
+            `R$ ${product.price.toFixed(2).replace('.', ',')}` : 
+            'Consulte';
+
+        const modalHtml = `
+            <div id="productModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+                <div class="bg-white rounded-t-3xl w-full max-w-md max-h-[90vh] overflow-hidden relative">
+                    <!-- Botão fechar (círculo com seta para baixo) -->
+                    <button id="closeProductModal" class="absolute top-4 left-4 w-10 h-10 bg-black bg-opacity-40 text-white rounded-full flex items-center justify-center z-20 hover:bg-opacity-60 transition-all">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path>
+                        </svg>
+                    </button>
+                    
+                    <!-- Imagem grande -->
+                    <div class="w-full h-64 bg-gray-100 relative">
+                        ${product.image ? 
+                            `<img src="${product.image}" alt="${product.name}" class="w-full h-full object-cover">` :
+                            `<div class="w-full h-full flex items-center justify-center">
+                                <svg class="w-20 h-20 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                </svg>
+                            </div>`
+                        }
+                    </div>
+                    
+                    <!-- Conteúdo -->
+                    <div class="p-6">
+                        <!-- Nome do produto -->
+                        <h2 class="text-2xl font-bold text-gray-900 mb-3">${product.name}</h2>
+                        
+                        <!-- Descrição -->
+                        ${product.description ? 
+                            `<p class="text-gray-600 text-base leading-relaxed mb-4">${product.description}</p>` : 
+                            ''
+                        }
+                        
+                        <!-- Preço -->
+                        <div class="text-3xl font-bold text-gray-900">
+                            ${priceFormatted}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // Adicionar modal ao body
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+        // Event listeners
+        const modal = document.getElementById('productModal');
+        const closeBtn = document.getElementById('closeProductModal');
+
+        const closeModal = () => {
+            modal.remove();
+        };
+
+        closeBtn.addEventListener('click', closeModal);
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) closeModal();
+        });
+
+        // Prevent scroll on body when modal is open
+        document.body.style.overflow = 'hidden';
+        
+        // Restore scroll when modal closes
+        modal.addEventListener('remove', () => {
+            document.body.style.overflow = '';
+        });
     }
 
     showLoading() {
