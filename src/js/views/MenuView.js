@@ -184,25 +184,32 @@ export class MenuView {
         };
 
         const observer = new IntersectionObserver((entries) => {
+            console.log('🔍 Scroll spy detectou:', entries.length, 'entradas');
+            
             let activeSection = null;
             let maxRatio = 0;
 
             entries.forEach(entry => {
+                console.log(`📍 Seção: ${entry.target.id}, Visível: ${entry.isIntersecting}, Ratio: ${entry.intersectionRatio}`);
+                
                 if (entry.isIntersecting && entry.intersectionRatio > maxRatio) {
                     maxRatio = entry.intersectionRatio;
                     
                     if (entry.target.id === 'featuredSection') {
                         activeSection = 'all';
+                        console.log('✅ Seção ativa: Destaques (all)');
                     } else {
                         // Extrair ID da categoria do formato "category-{id}"
                         const categoryId = entry.target.id.replace('category-', '');
                         activeSection = categoryId;
+                        console.log(`✅ Seção ativa: ${categoryId}`);
                     }
                 }
             });
 
             // Atualizar sublinhado apenas se detectou uma seção ativa
             if (activeSection) {
+                console.log(`🎯 Atualizando menu para: ${activeSection}`);
                 this.selectCategory(activeSection);
             }
         }, observerOptions);
@@ -210,14 +217,20 @@ export class MenuView {
         // Observar seção de destaques
         const featuredSection = document.getElementById('featuredSection');
         if (featuredSection) {
+            console.log('📋 Observando seção: featuredSection');
             observer.observe(featuredSection);
+        } else {
+            console.error('❌ Seção featuredSection não encontrada!');
         }
 
         // Observar todas as seções de categoria
         categories.forEach(category => {
             const categorySection = document.getElementById(`category-${category.id}`);
             if (categorySection) {
+                console.log(`📋 Observando seção: category-${category.id} (${category.name})`);
                 observer.observe(categorySection);
+            } else {
+                console.error(`❌ Seção category-${category.id} não encontrada!`);
             }
         });
 
