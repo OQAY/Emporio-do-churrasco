@@ -52,6 +52,7 @@ class Database {
             image: "./images/produtos/pao-com-picanha.svg",
             active: true,
             featured: true,
+            tags: ["destaque", "especial-chef"],
             createdAt: new Date().toISOString(),
           },
           {
@@ -66,6 +67,7 @@ class Database {
             image: "./images/produtos/pao-com-file.svg",
             active: true,
             featured: true,
+            tags: ["destaque", "promocao"],
             createdAt: new Date().toISOString(),
           },
 
@@ -149,6 +151,7 @@ class Database {
             image: "./images/produtos/camarao-empanado.svg",
             active: true,
             featured: true,
+            tags: ["destaque", "mais-vendido"],
             createdAt: new Date().toISOString(),
           },
 
@@ -163,6 +166,7 @@ class Database {
             image: "./images/produtos/picanha-na-chapa.svg",
             active: true,
             featured: true,
+            tags: ["destaque", "especial-chef"],
             createdAt: new Date().toISOString(),
           },
           {
@@ -467,6 +471,16 @@ class Database {
             createdAt: new Date().toISOString(),
           },
         ],
+        productTags: [
+          { id: "destaque", name: "Destaque", color: "#f59e0b", icon: "⭐" },
+          { id: "mais-vendido", name: "Mais Vendido", color: "#ef4444", icon: "🔥" },
+          { id: "especial-chef", name: "Especial do Chef", color: "#8b5cf6", icon: "👨‍🍳" },
+          { id: "novo", name: "Novo", color: "#10b981", icon: "✨" },
+          { id: "promocao", name: "Promoção", color: "#f97316", icon: "💰" },
+          { id: "vegano", name: "Vegano", color: "#22c55e", icon: "🌱" },
+          { id: "vegetariano", name: "Vegetariano", color: "#84cc16", icon: "🥬" },
+          { id: "sem-gluten", name: "Sem Glúten", color: "#06b6d4", icon: "🌾" }
+        ],
         admin: {
           username: "admin",
           password: "admin123", // Em producao, usar hash
@@ -574,7 +588,7 @@ class Database {
       );
     }
 
-    // Ordenar: primeiro em destaque, depois por ordem de categoria, depois por data
+    // Ordenar: primeiro em destaque, depois por ordem de categoria, depois por ordem do produto
     return products.sort((a, b) => {
       // Primeiro critério: featured (em destaque primeiro)
       if (a.featured && !b.featured) return -1;
@@ -583,12 +597,18 @@ class Database {
       // Segundo critério: ordem da categoria
       const categoryA = this.getCategoryById(a.categoryId);
       const categoryB = this.getCategoryById(b.categoryId);
-      const orderA = categoryA ? categoryA.order : 999;
-      const orderB = categoryB ? categoryB.order : 999;
+      const categoryOrderA = categoryA ? categoryA.order : 999;
+      const categoryOrderB = categoryB ? categoryB.order : 999;
 
-      if (orderA !== orderB) return orderA - orderB;
+      if (categoryOrderA !== categoryOrderB) return categoryOrderA - categoryOrderB;
 
-      // Terceiro critério: data de criação (mais recente primeiro)
+      // Terceiro critério: ordem do produto dentro da categoria
+      const productOrderA = a.order || 999;
+      const productOrderB = b.order || 999;
+      
+      if (productOrderA !== productOrderB) return productOrderA - productOrderB;
+
+      // Quarto critério: data de criação (mais recente primeiro)
       return new Date(b.createdAt) - new Date(a.createdAt);
     });
   }
@@ -600,10 +620,17 @@ class Database {
 
   addProduct(product) {
     const data = this.getData();
+    
+    // Calculate next order for this category
+    const categoryProducts = data.products.filter(p => p.categoryId === product.categoryId);
+    const maxOrder = categoryProducts.length > 0 ? Math.max(...categoryProducts.map(p => p.order || 0)) : 0;
+    
     const newProduct = {
       id: "prod" + Date.now(),
       active: true,
       featured: false,
+      tags: [],
+      order: maxOrder + 1,
       createdAt: new Date().toISOString(),
       ...product,
     };
@@ -626,6 +653,22 @@ class Database {
   deleteProduct(id) {
     const data = this.getData();
     data.products = data.products.filter((prod) => prod.id !== id);
+    this.saveData(data);
+    return true;
+  }
+
+  // Reorder products within a category
+  reorderProducts(categoryId, productIds) {
+    const data = this.getData();
+    
+    // Update order for each product in the category
+    productIds.forEach((productId, index) => {
+      const productIndex = data.products.findIndex(p => p.id === productId);
+      if (productIndex !== -1) {
+        data.products[productIndex].order = index + 1;
+      }
+    });
+    
     this.saveData(data);
     return true;
   }
@@ -749,7 +792,7 @@ class Database {
     const commonTags = [
       'picanha', 'file', 'churrasco', 'grelhado', 'carne', 
       'frango', 'camarao', 'peixe', 'bebida', 'sobremesa',
-      'entrada', 'petisco', 'executivo', 'destaque', 'promocao',
+      'entrada', 'petisco', 'executivo', 'destaque', 'promoção',
       'vegetariano', 'vegano', 'sem-gluten', 'especial', 'chef',
       'tradicional', 'novo', 'quente', 'frio', 'doce', 'salgado'
     ];
@@ -855,6 +898,63 @@ class Database {
   imageExistsInGallery(imageUrl) {
     const images = this.getGalleryImages();
     return images.some((img) => img.url === imageUrl);
+  }
+
+  // Product Tags methods
+  getProductTags() {
+    const data = this.getData();
+    return data.productTags || [];
+  }
+
+  addProductTag(tag) {
+    const data = this.getData();
+    if (!data.productTags) {
+      data.productTags = [];
+    }
+    
+    const newTag = {
+      id: tag.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''),
+      name: tag.name,
+      color: tag.color || '#6b7280',
+      icon: tag.icon || '🏷️',
+      createdAt: new Date().toISOString()
+    };
+    
+    // Check if tag already exists
+    const existingTag = data.productTags.find(t => t.id === newTag.id);
+    if (existingTag) {
+      throw new Error('Tag já existe');
+    }
+    
+    data.productTags.push(newTag);
+    this.saveData(data);
+    return newTag;
+  }
+
+  updateProductTag(id, updates) {
+    const data = this.getData();
+    const index = data.productTags.findIndex(tag => tag.id === id);
+    if (index !== -1) {
+      data.productTags[index] = { ...data.productTags[index], ...updates };
+      this.saveData(data);
+      return data.productTags[index];
+    }
+    return null;
+  }
+
+  deleteProductTag(id) {
+    const data = this.getData();
+    data.productTags = data.productTags.filter(tag => tag.id !== id);
+    
+    // Remove tag from all products
+    data.products.forEach(product => {
+      if (product.tags && product.tags.includes(id)) {
+        product.tags = product.tags.filter(tagId => tagId !== id);
+      }
+    });
+    
+    this.saveData(data);
+    return true;
   }
 
   // Export/Import data

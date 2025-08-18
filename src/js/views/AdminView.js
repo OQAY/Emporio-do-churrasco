@@ -9,7 +9,7 @@ export class AdminView {
         app.innerHTML = `
             <div class="min-h-screen bg-gray-50">
                 <!-- Mobile menu button -->
-                <button id="mobileMenuBtn" class="lg:hidden fixed top-4 left-4 z-50 p-2 bg-orange-600 text-white rounded-lg shadow-lg">
+                <button id="mobileMenuBtn" class="lg:hidden fixed top-4 left-4 z-30 p-2 bg-orange-600 text-white rounded-lg shadow-lg">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
                     </svg>
@@ -119,7 +119,7 @@ export class AdminView {
         const content = document.getElementById('contentArea');
         content.innerHTML = `
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6 mb-8">
-                <div class="bg-white rounded-lg shadow p-4 lg:p-6">
+                <div class="dashboard-card bg-white rounded-lg shadow p-4 lg:p-6 cursor-pointer hover:shadow-lg transition-shadow" data-action="goto-products">
                     <div class="flex items-center justify-between">
                         <div>
                             <p class="text-xs lg:text-sm text-gray-600">Total de Produtos</p>
@@ -133,7 +133,7 @@ export class AdminView {
                     </div>
                 </div>
 
-                <div class="bg-white rounded-lg shadow p-4 lg:p-6">
+                <div class="dashboard-card bg-white rounded-lg shadow p-4 lg:p-6 cursor-pointer hover:shadow-lg transition-shadow" data-action="goto-products-active">
                     <div class="flex items-center justify-between">
                         <div>
                             <p class="text-xs lg:text-sm text-gray-600">Produtos Ativos</p>
@@ -147,7 +147,7 @@ export class AdminView {
                     </div>
                 </div>
 
-                <div class="bg-white rounded-lg shadow p-4 lg:p-6">
+                <div class="dashboard-card bg-white rounded-lg shadow p-4 lg:p-6 cursor-pointer hover:shadow-lg transition-shadow" data-action="goto-categories">
                     <div class="flex items-center justify-between">
                         <div>
                             <p class="text-xs lg:text-sm text-gray-600">Categorias</p>
@@ -161,7 +161,7 @@ export class AdminView {
                     </div>
                 </div>
 
-                <div class="bg-white rounded-lg shadow p-4 lg:p-6">
+                <div class="dashboard-card bg-white rounded-lg shadow p-4 lg:p-6 cursor-pointer hover:shadow-lg transition-shadow" data-action="goto-products-featured">
                     <div class="flex items-center justify-between">
                         <div>
                             <p class="text-xs lg:text-sm text-gray-600">Em Destaque</p>
@@ -220,29 +220,35 @@ export class AdminView {
                     </button>
                 </div>
                 
-                <div class="p-6">
-                    <div class="mb-4 flex gap-4">
+                <div class="p-3 lg:p-6">
+                    <div class="mb-4 flex flex-col sm:flex-row gap-2 sm:gap-4">
                         <input 
                             type="text" 
                             id="productSearch" 
                             placeholder="Buscar produtos..." 
-                            class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-300"
+                            class="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-300"
                         >
-                        <select id="categoryFilter" class="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-300">
-                            <option value="">Todas as categorias</option>
-                            ${categories.map(cat => `<option value="${cat.id}">${cat.name}</option>`).join('')}
-                        </select>
+                        <div class="relative">
+                            <select id="categoryFilter" class="w-full sm:w-auto px-3 py-2 pr-8 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-300 appearance-none bg-white">
+                                <option value="">Todas</option>
+                                ${categories.map(cat => `<option value="${cat.id}">${cat.name.length > 15 ? cat.name.substring(0, 15) + '...' : cat.name}</option>`).join('')}
+                            </select>
+                            <div class="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
+                                <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                </svg>
+                            </div>
+                        </div>
                     </div>
                     
-                    <div class="overflow-x-auto -mx-4 sm:mx-0">
-                        <table class="min-w-full">
+                    <div class="overflow-x-auto">
+                        <table class="w-full">
                             <thead class="bg-gray-50">
                                 <tr>
-                                    <th class="px-3 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Produto</th>
-                                    <th class="px-3 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">Categoria</th>
-                                    <th class="px-3 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Preco</th>
-                                    <th class="px-3 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">Status</th>
-                                    <th class="px-3 lg:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acoes</th>
+                                    <th class="px-2 lg:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style="width: 60%;">Produto</th>
+                                    <th class="px-2 lg:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style="width: 18%;">Preço</th>
+                                    <th class="px-2 lg:px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider" style="width: 18%;">Status</th>
+                                    <th class="w-4 px-1 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider" style="width: 4%;">↕</th>
                                 </tr>
                             </thead>
                             <tbody id="productsTableBody" class="bg-white divide-y divide-gray-200">
@@ -260,40 +266,40 @@ export class AdminView {
         const priceFormatted = product.price ? `R$ ${product.price.toFixed(2).replace('.', ',')}` : 'N/A';
         
         return `
-            <tr>
-                <td class="px-3 lg:px-6 py-4 whitespace-nowrap">
+            <tr class="hover:bg-gray-50 product-row group cursor-pointer edit-product-row" data-id="${product.id}" data-category-id="${product.categoryId}">
+                <td class="px-2 lg:px-4 py-3 whitespace-nowrap" style="width: 60%;">
                     <div class="flex items-center">
-                        <div class="h-8 w-8 lg:h-10 lg:w-10 flex-shrink-0">
+                        <div class="h-10 w-10 lg:h-12 lg:w-12 flex-shrink-0">
                             ${product.image ? 
-                                `<img class="h-8 w-8 lg:h-10 lg:w-10 rounded-full object-cover" src="${product.image}" alt="">` :
-                                `<div class="h-8 w-8 lg:h-10 lg:w-10 rounded-full bg-gray-200 flex items-center justify-center">
-                                    <svg class="w-4 h-4 lg:w-6 lg:h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                `<img class="h-10 w-10 lg:h-12 lg:w-12 object-cover" style="border-radius: 10px;" src="${product.image}" alt="">` :
+                                `<div class="h-10 w-10 lg:h-12 lg:w-12 bg-gray-200 flex items-center justify-center" style="border-radius: 10px;">
+                                    <svg class="w-5 h-5 lg:w-6 lg:h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
                                     </svg>
                                 </div>`
                             }
                         </div>
-                        <div class="ml-2 lg:ml-4">
-                            <div class="text-xs lg:text-sm font-medium text-gray-900">${product.name}</div>
-                            ${product.featured ? '<span class="text-xs text-orange-600">Em destaque</span>' : ''}
-                            <div class="sm:hidden text-xs text-gray-500">${category ? category.name : 'N/A'}</div>
+                        <div class="ml-2 min-w-0 flex-1">
+                            <div class="text-base font-semibold text-gray-900 leading-tight truncate" title="${product.name}">${product.name}</div>
+                            ${this.renderProductTags(product.tags)}
+                            <div class="text-xs text-gray-500 leading-tight truncate" title="${category ? category.name : 'N/A'}">${category ? category.name : 'N/A'}</div>
                         </div>
                     </div>
                 </td>
-                <td class="px-3 lg:px-6 py-4 whitespace-nowrap hidden sm:table-cell">
-                    <span class="text-sm text-gray-900">${category ? category.name : 'N/A'}</span>
+                <td class="px-2 lg:px-4 py-3 whitespace-nowrap" style="width: 18%;">
+                    <span class="text-sm font-medium text-gray-900">${priceFormatted}</span>
                 </td>
-                <td class="px-3 lg:px-6 py-4 whitespace-nowrap">
-                    <span class="text-xs lg:text-sm font-medium text-gray-900">${priceFormatted}</span>
-                </td>
-                <td class="px-3 lg:px-6 py-4 whitespace-nowrap hidden sm:table-cell">
+                <td class="px-2 lg:px-4 py-3 whitespace-nowrap text-center" style="width: 18%;">
                     <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${product.active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
                         ${product.active ? 'Ativo' : 'Inativo'}
                     </span>
                 </td>
-                <td class="px-3 lg:px-6 py-4 whitespace-nowrap text-xs lg:text-sm font-medium">
-                    <button class="text-orange-600 hover:text-orange-900 mr-1 lg:mr-3 edit-product-btn" data-id="${product.id}">Editar</button>
-                    <button class="text-red-600 hover:text-red-900 delete-product-btn" data-id="${product.id}">Excluir</button>
+                <td class="w-4 px-1 py-3 whitespace-nowrap" style="width: 4%;">
+                    <div class="drag-handle cursor-move opacity-50 group-hover:opacity-100 transition-all duration-200 flex justify-center items-center h-full">
+                        <svg class="w-3 h-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16"></path>
+                        </svg>
+                    </div>
                 </td>
             </tr>
         `;
@@ -582,7 +588,7 @@ export class AdminView {
             nestedModal.className = 'nested-modal';
             nestedModal.innerHTML = `
                 <div class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full" style="z-index: 60;">
-                    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+                    <div class="relative top-4 mx-auto p-4 border max-w-lg w-full mx-4 shadow-lg rounded-md bg-white max-h-[calc(100vh-2rem)] overflow-y-auto">
                         <div class="mt-3">
                             <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">${title}</h3>
                             <div class="mt-2">
@@ -598,10 +604,10 @@ export class AdminView {
             // Regular modal replaces everything
             modal.innerHTML = `
                 <div class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full" style="z-index: 50;">
-                    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-                        <div class="mt-3">
-                            <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">${title}</h3>
-                            <div class="mt-2">
+                    <div class="relative top-2 mx-auto p-3 border max-w-2xl w-full mx-2 shadow-lg rounded-md bg-white max-h-[calc(100vh-1rem)] overflow-y-auto">
+                        <div class="mt-1">
+                            <h3 class="text-lg leading-6 font-medium text-gray-900 mb-3">${title}</h3>
+                            <div class="mt-1">
                                 ${content}
                             </div>
                         </div>
@@ -624,6 +630,35 @@ export class AdminView {
             // Close all modals
             modal.innerHTML = '';
         }
+    }
+
+    renderProductTags(productTags = []) {
+        if (!productTags || productTags.length === 0) {
+            return '';
+        }
+        
+        // Get available tags from database
+        const availableTags = window.database?.getProductTags() || [
+            { id: "destaque", name: "Destaque", color: "#f59e0b", icon: "⭐" },
+            { id: "mais-vendido", name: "Mais Vendido", color: "#ef4444", icon: "🔥" },
+            { id: "especial-chef", name: "Especial do Chef", color: "#8b5cf6", icon: "👨‍🍳" },
+            { id: "novo", name: "Novo", color: "#10b981", icon: "✨" },
+            { id: "promocao", name: "Promoção", color: "#f97316", icon: "💰" }
+        ];
+        
+        return `
+            <div class="flex flex-wrap gap-1 mt-1">
+                ${productTags.slice(0, 2).map(tagId => {
+                    const tag = availableTags.find(t => t.id === tagId);
+                    if (!tag) return '';
+                    return `<span class="inline-flex items-center text-xs px-1.5 py-0.5 rounded-full font-medium" 
+                              style="background-color: ${tag.color}20; color: ${tag.color};">
+                              ${tag.icon} ${tag.name}
+                            </span>`;
+                }).join('')}
+                ${productTags.length > 2 ? `<span class="text-xs text-gray-400">+${productTags.length - 2}</span>` : ''}
+            </div>
+        `;
     }
 
     showNotification(message, type = 'success') {
