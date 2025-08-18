@@ -292,7 +292,7 @@ export class MenuView {
                 // Criar seção da categoria
                 const categorySection = document.createElement('section');
                 categorySection.id = `category-${category.id}`;
-                categorySection.className = 'category-section mb-6';
+                categorySection.className = 'category-section mb-4';
                 
                 categorySection.innerHTML = `
                     <h2 class="text-xl font-bold text-gray-800 mb-3">${category.name}</h2>
