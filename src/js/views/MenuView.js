@@ -519,6 +519,8 @@ export class MenuView {
         const closeBtn = document.getElementById('closeProductModal');
 
         const closeModal = () => {
+            // Restore scroll BEFORE removing modal
+            document.body.style.overflow = '';
             modal.remove();
         };
 
@@ -527,13 +529,17 @@ export class MenuView {
             if (e.target === modal) closeModal();
         });
 
+        // Close with ESC key
+        const handleEscape = (e) => {
+            if (e.key === 'Escape') {
+                closeModal();
+                document.removeEventListener('keydown', handleEscape);
+            }
+        };
+        document.addEventListener('keydown', handleEscape);
+
         // Prevent scroll on body when modal is open
         document.body.style.overflow = 'hidden';
-        
-        // Restore scroll when modal closes
-        modal.addEventListener('remove', () => {
-            document.body.style.overflow = '';
-        });
     }
 
     showLoading() {
