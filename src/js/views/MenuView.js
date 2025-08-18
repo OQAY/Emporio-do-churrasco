@@ -52,6 +52,9 @@ export class MenuView {
         
         // Setup do modal de categorias
         this.setupCategoriesModal(categories, totalProducts, onCategoryClick);
+        
+        // Setup do scroll spy para detectar seção ativa
+        this.setupScrollSpy(categories);
     }
 
     selectCategory(categoryId) {
@@ -170,6 +173,56 @@ export class MenuView {
                 });
             });
         });
+    }
+
+    setupScrollSpy(categories) {
+        // Configurar Intersection Observer para detectar seções visíveis
+        const observerOptions = {
+            root: null,
+            rootMargin: '-20% 0px -70% 0px', // Ativar quando a seção estiver 20% visível do topo
+            threshold: 0
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            let activeSection = null;
+            let maxRatio = 0;
+
+            entries.forEach(entry => {
+                if (entry.isIntersecting && entry.intersectionRatio > maxRatio) {
+                    maxRatio = entry.intersectionRatio;
+                    
+                    if (entry.target.id === 'featuredSection') {
+                        activeSection = 'all';
+                    } else {
+                        // Extrair ID da categoria do formato "category-{id}"
+                        const categoryId = entry.target.id.replace('category-', '');
+                        activeSection = categoryId;
+                    }
+                }
+            });
+
+            // Atualizar sublinhado apenas se detectou uma seção ativa
+            if (activeSection) {
+                this.selectCategory(activeSection);
+            }
+        }, observerOptions);
+
+        // Observar seção de destaques
+        const featuredSection = document.getElementById('featuredSection');
+        if (featuredSection) {
+            observer.observe(featuredSection);
+        }
+
+        // Observar todas as seções de categoria
+        categories.forEach(category => {
+            const categorySection = document.getElementById(`category-${category.id}`);
+            if (categorySection) {
+                observer.observe(categorySection);
+            }
+        });
+
+        // Guardar referência do observer para cleanup se necessário
+        this.scrollObserver = observer;
     }
 
     renderProducts(products, categories) {
