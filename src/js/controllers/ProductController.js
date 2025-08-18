@@ -17,10 +17,21 @@ export class ProductController {
             productCount: products.filter(product => product.categoryId === category.id).length
         }));
         
-        this.view.renderCategories(categoriesWithCount, (categoryId) => {
-            this.currentCategory = categoryId; // null = todos, string = categoria especifica
-            this.loadProducts();
+        this.view.renderCategories(categoriesWithCount, () => {
+            // Callback não mais usado para filtrar, apenas para setup inicial
         });
+        
+        // Carregar todos os produtos organizados por seção
+        this.loadAllProducts(categoriesWithCount);
+    }
+
+    loadAllProducts(categories) {
+        this.view.showLoading();
+        
+        setTimeout(() => {
+            const products = this.database.getProducts({ activeOnly: true });
+            this.view.renderProducts(products, categories);
+        }, 100);
     }
 
     loadProducts() {
@@ -33,49 +44,58 @@ export class ProductController {
 
             if (this.searchQuery) {
                 filters.search = this.searchQuery;
-            } else if (this.currentCategory && this.currentCategory !== null) {
-                // Se currentCategory for null, mostra todos os produtos
-                filters.categoryId = this.currentCategory;
             }
-            // Se currentCategory for null, nao adiciona filtro de categoria = mostra todos
 
             const products = this.database.getProducts(filters);
-            this.view.renderProducts(products);
+            
+            // Para busca, usar renderização simples
+            if (this.searchQuery) {
+                this.renderSearchResults(products);
+            } else {
+                // Para exibição normal, usar sistema de seções
+                const categories = this.database.getCategories(true);
+                this.view.renderProducts(products, categories);
+            }
         }, 100);
+    }
+    
+    renderSearchResults(products) {
+        const container = document.getElementById('productsGrid');
+        const emptyState = document.getElementById('emptyState');
+        const featuredSection = document.getElementById('featuredSection');
+        
+        // Esconder seção de destaques durante busca
+        featuredSection.classList.add('hidden');
+        
+        if (products.length === 0) {
+            container.innerHTML = '';
+            emptyState.classList.remove('hidden');
+            return;
+        }
+
+        emptyState.classList.add('hidden');
+        container.innerHTML = '';
+
+        products.forEach(product => {
+            const card = this.view.createProductCard(product);
+            container.appendChild(card);
+        });
     }
 
     searchProducts(query) {
         this.searchQuery = query;
         
         if (query) {
-            // Limpar seleção de categoria durante busca
-            this.currentCategory = null;
-            document.querySelectorAll('.category-menu-item').forEach(btn => {
-                const underline = btn.querySelector('.category-underline');
-                btn.classList.remove('text-red-500');
-                btn.classList.add('text-gray-700');
-                underline.classList.remove('scale-x-100');
-                underline.classList.add('scale-x-0');
-            });
+            // Durante busca, usar sistema de filtro antigo
+            this.loadProducts();
         } else {
-            // Se limpar busca, voltar para "Todos"
-            this.currentCategory = null;
-            document.querySelectorAll('.category-menu-item').forEach(btn => {
-                const underline = btn.querySelector('.category-underline');
-                if (btn.dataset.categoryId === 'all') {
-                    btn.classList.add('text-red-500');
-                    btn.classList.remove('text-gray-700');
-                    underline.classList.add('scale-x-100');
-                    underline.classList.remove('scale-x-0');
-                } else {
-                    btn.classList.remove('text-red-500');
-                    btn.classList.add('text-gray-700');
-                    underline.classList.remove('scale-x-100');
-                    underline.classList.add('scale-x-0');
-                }
-            });
+            // Se limpar busca, voltar para exibição por seções
+            const categories = this.database.getCategories(true);
+            const categoriesWithCount = categories.map(category => ({
+                ...category,
+                productCount: this.database.getProducts({ activeOnly: true }).filter(product => product.categoryId === category.id).length
+            }));
+            this.loadAllProducts(categoriesWithCount);
         }
-        
-        this.loadProducts();
     }
 }

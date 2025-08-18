@@ -21,7 +21,7 @@ export class MenuView {
         
         allButton.addEventListener('click', () => {
             this.selectCategory('all');
-            onCategoryClick(null);
+            this.scrollToTop();
         });
 
         // Selecionar "Todos" por padrão
@@ -44,7 +44,7 @@ export class MenuView {
             
             button.addEventListener('click', () => {
                 this.selectCategory(category.id);
-                onCategoryClick(category.id);
+                this.scrollToCategory(category.id);
             });
 
             menuBarContainer.appendChild(button);
@@ -79,6 +79,22 @@ export class MenuView {
         const selectedBtn = document.querySelector(`button[data-category-id="${categoryId}"]`);
         if (selectedBtn) {
             selectedBtn.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+        }
+    }
+
+    scrollToTop() {
+        const featuredSection = document.getElementById('featuredSection');
+        if (featuredSection) {
+            featuredSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        } else {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    }
+
+    scrollToCategory(categoryId) {
+        const categorySection = document.getElementById(`category-${categoryId}`);
+        if (categorySection) {
+            categorySection.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
     }
 
@@ -143,35 +159,40 @@ export class MenuView {
                 btn.addEventListener('click', () => {
                     const categoryId = btn.dataset.categoryId;
                     this.selectCategory(categoryId);
-                    onCategoryClick(categoryId === 'all' ? null : categoryId);
+                    
+                    if (categoryId === 'all') {
+                        this.scrollToTop();
+                    } else {
+                        this.scrollToCategory(categoryId);
+                    }
+                    
                     closeModal();
                 });
             });
         });
     }
 
-    renderProducts(products) {
-        // Separar produtos em destaque e normais
+    renderProducts(products, categories) {
+        // Renderizar destaques primeiro
         const featuredProducts = products.filter(product => product.featured);
-        const regularProducts = products.filter(product => !product.featured);
-        
-        // Renderizar destaques
         this.renderFeaturedProducts(featuredProducts);
         
-        // Renderizar produtos normais
-        this.renderRegularProducts(regularProducts);
+        // Renderizar seções por categoria
+        this.renderCategorySections(products, categories);
     }
     
     renderFeaturedProducts(featuredProducts) {
         const featuredContainer = document.getElementById('featuredGrid');
         const featuredSection = document.getElementById('featuredSection');
         
+        // Sempre mostrar seção quando renderizar (remove hidden se existir)
+        featuredSection.classList.remove('hidden');
+        
         if (featuredProducts.length === 0) {
             featuredSection.classList.add('hidden');
             return;
         }
         
-        featuredSection.classList.remove('hidden');
         featuredContainer.innerHTML = '';
         
         featuredProducts.forEach((product, index) => {
@@ -180,22 +201,46 @@ export class MenuView {
         });
     }
     
-    renderRegularProducts(regularProducts) {
+    renderCategorySections(products, categories) {
         const container = document.getElementById('productsGrid');
         const emptyState = document.getElementById('emptyState');
         
+        container.innerHTML = '';
+        
+        // Filtrar produtos não-featured
+        const regularProducts = products.filter(product => !product.featured);
+        
         if (regularProducts.length === 0) {
-            container.innerHTML = '';
             emptyState.classList.remove('hidden');
             return;
         }
-
+        
         emptyState.classList.add('hidden');
-        container.innerHTML = '';
-
-        regularProducts.forEach(product => {
-            const card = this.createProductCard(product);
-            container.appendChild(card);
+        
+        // Agrupar produtos por categoria
+        categories.forEach(category => {
+            const categoryProducts = regularProducts.filter(product => product.categoryId === category.id);
+            
+            if (categoryProducts.length > 0) {
+                // Criar seção da categoria
+                const categorySection = document.createElement('section');
+                categorySection.id = `category-${category.id}`;
+                categorySection.className = 'category-section mb-8';
+                
+                categorySection.innerHTML = `
+                    <h2 class="text-xl font-bold text-gray-800 mb-4">${category.name}</h2>
+                    <div class="category-products-grid products-grid gap-3"></div>
+                `;
+                
+                const productsGrid = categorySection.querySelector('.category-products-grid');
+                
+                categoryProducts.forEach(product => {
+                    const card = this.createProductCard(product);
+                    productsGrid.appendChild(card);
+                });
+                
+                container.appendChild(categorySection);
+            }
         });
     }
 
