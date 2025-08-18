@@ -47,6 +47,8 @@ class Database {
             description:
               "Levemente tostado na chapa, recheado com suculentas fatias de picanha, queijo derretido e o exclusivo molho especial da casa.",
             price: 45.9,
+            originalPrice: null, // Preço original (quando em promoção)
+            isOnSale: false, // Se está em promoção
             image: "./images/produtos/pao-com-picanha.svg",
             active: true,
             featured: true,
@@ -58,7 +60,9 @@ class Database {
             name: "Pao com File",
             description:
               "Levemente tostado na chapa, recheado com suculentas fatias de file, queijo derretido e o exclusivo molho especial da casa.",
-            price: 42.9,
+            price: 32.9, // Preço promocional
+            originalPrice: 42.9, // Preço original
+            isOnSale: true, // Em promoção
             image: "./images/produtos/pao-com-file.svg",
             active: true,
             featured: true,

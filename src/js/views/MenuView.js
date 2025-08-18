@@ -391,6 +391,12 @@ export class MenuView {
         const priceFormatted = product.price ? 
             `R$ ${product.price.toFixed(2).replace('.', ',')}` : 
             'Consulte';
+            
+        const originalPriceFormatted = product.originalPrice ? 
+            `R$ ${product.originalPrice.toFixed(2).replace('.', ',')}` : null;
+            
+        const discount = product.isOnSale && product.originalPrice ? 
+            Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100) : null;
 
         // Layout mobile horizontal (até 742px) - layout desktop vertical (743px+)
         card.innerHTML = `
@@ -408,7 +414,14 @@ export class MenuView {
                         `<p class="text-xs text-gray-600 leading-relaxed mb-2 line-clamp-2">${product.description}</p>` : 
                         ''
                     }
-                    <span class="text-orange-600 font-bold text-lg">${priceFormatted}</span>
+                    <!-- Preços com promoção (mobile) -->
+                    <div class="flex items-center gap-2">
+                        <span class="text-orange-600 font-bold text-lg">${priceFormatted}</span>
+                        ${originalPriceFormatted ? `
+                            <span class="text-sm text-gray-400 line-through">${originalPriceFormatted}</span>
+                            <span class="text-xs bg-green-600 text-white px-2 py-1 rounded-md font-bold">-${discount}%</span>
+                        ` : ''}
+                    </div>
                 </div>
                 
                 <!-- Imagem à direita -->
@@ -444,9 +457,15 @@ export class MenuView {
                     </div>
                 </div>
                 <div class="p-4">
-                    <div class="flex justify-between items-start mb-3 gap-3">
-                        <h3 class="font-semibold text-lg leading-tight flex-1 min-w-0">${product.name}</h3>
-                        <span class="text-orange-600 font-bold text-lg whitespace-nowrap flex-shrink-0">${priceFormatted}</span>
+                    <h3 class="font-semibold text-lg leading-tight mb-3">${product.name}</h3>
+                    
+                    <!-- Preços com promoção (desktop) -->
+                    <div class="flex items-center gap-2 mb-3">
+                        <span class="text-orange-600 font-bold text-lg">${priceFormatted}</span>
+                        ${originalPriceFormatted ? `
+                            <span class="text-sm text-gray-400 line-through">${originalPriceFormatted}</span>
+                            <span class="text-xs bg-green-600 text-white px-2 py-1 rounded-md font-bold">-${discount}%</span>
+                        ` : ''}
                     </div>
                     ${product.description ? 
                         `<p class="text-xs text-gray-600 leading-relaxed line-clamp-3">${product.description}</p>` : 
