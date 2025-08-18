@@ -5,57 +5,44 @@ export class MenuView {
     }
 
     renderCategories(categories, onCategoryClick) {
-        const container = document.getElementById('categoryTabs');
-        container.innerHTML = '';
+        const menuBarContainer = document.querySelector('#categoryMenuBar > div');
+        menuBarContainer.innerHTML = '';
 
-        // Icones para cada categoria
-        const categoryIcons = {
-            'all': '🍽️',
-            'Especiais da Casa': '⭐',
-            'Entradas': '🥗',
-            'Petiscos': '🍟',
-            'Pratos com Acompanhamento': '🍖',
-            'Executivos (Pratos Individuais)': '🍱',
-            'Porcoes Adicionais': '➕',
-            'Bebidas': '🥤'
-        };
-
-        // Adicionar botao "Todos" primeiro
-        const allButton = document.createElement('button');
-        allButton.className = 'flex items-center gap-2 px-4 py-2.5 rounded-xl border-2 border-gray-200 text-sm font-medium bg-gray-50 hover:bg-gray-100 hover:border-orange-300 active:bg-gray-200 whitespace-nowrap transition-all touch-manipulation';
         const totalProducts = categories.reduce((sum, cat) => sum + (cat.productCount || 0), 0);
         
+        // Adicionar "Todos" primeiro
+        const allButton = document.createElement('button');
+        allButton.className = 'category-menu-item relative py-3 px-1 text-sm font-medium transition-colors whitespace-nowrap';
         allButton.innerHTML = `
-            <span class="text-base">${categoryIcons['all']}</span>
-            <span>Todos</span>
-            <span class="ml-1 px-2 py-0.5 bg-gray-200 text-xs rounded-full">${totalProducts}</span>
+            Todos
+            <span class="ml-2 text-xs text-gray-500">${totalProducts}</span>
+            <div class="category-underline absolute bottom-0 left-0 right-0 h-0.5 bg-red-500 transform scale-x-0 transition-transform"></div>
         `;
         allButton.dataset.categoryId = 'all';
         
         allButton.addEventListener('click', () => {
             this.selectCategory('all');
-            onCategoryClick(null); // null = mostrar todos
+            onCategoryClick(null);
         });
 
-        // Selecionar "Todos" por padrao
+        // Selecionar "Todos" por padrão
         if (!this.selectedCategory) {
             this.selectCategory('all');
             setTimeout(() => onCategoryClick(null), 0);
         }
 
-        container.appendChild(allButton);
+        menuBarContainer.appendChild(allButton);
 
         categories.forEach((category) => {
             const button = document.createElement('button');
-            button.className = 'flex items-center gap-2 px-4 py-2.5 rounded-xl border-2 border-gray-200 text-sm font-medium bg-gray-50 hover:bg-gray-100 hover:border-orange-300 active:bg-gray-200 whitespace-nowrap transition-all touch-manipulation';
+            button.className = 'category-menu-item relative py-3 px-1 text-sm font-medium transition-colors whitespace-nowrap';
             
-            const icon = categoryIcons[category.name] || '📋';
             const productCount = category.productCount || 0;
             
             button.innerHTML = `
-                <span class="text-base">${icon}</span>
-                <span>${category.name}</span>
-                ${productCount > 0 ? `<span class="ml-1 px-2 py-0.5 bg-gray-200 text-xs rounded-full">${productCount}</span>` : ''}
+                ${category.name}
+                <span class="ml-2 text-xs text-gray-500">${productCount}</span>
+                <div class="category-underline absolute bottom-0 left-0 right-0 h-0.5 bg-red-500 transform scale-x-0 transition-transform"></div>
             `;
             button.dataset.categoryId = category.id;
             
@@ -64,41 +51,107 @@ export class MenuView {
                 onCategoryClick(category.id);
             });
 
-            container.appendChild(button);
+            menuBarContainer.appendChild(button);
         });
+        
+        // Setup do modal de categorias
+        this.setupCategoriesModal(categories, totalProducts, onCategoryClick);
     }
 
     selectCategory(categoryId) {
         this.selectedCategory = categoryId;
         
-        // Atualizar visual dos botoes
-        document.querySelectorAll('#categoryTabs button').forEach(btn => {
+        // Atualizar visual do menu bar
+        document.querySelectorAll('.category-menu-item').forEach(btn => {
+            const underline = btn.querySelector('.category-underline');
             if (btn.dataset.categoryId === categoryId) {
-                btn.classList.add('bg-orange-500', 'text-white', 'border-orange-500');
-                btn.classList.remove('bg-gray-50', 'text-gray-900', 'border-gray-200', 'hover:bg-gray-100');
-                // Atualizar cor do badge de contagem
-                const badge = btn.querySelector('.bg-gray-200');
-                if (badge) {
-                    badge.classList.remove('bg-gray-200');
-                    badge.classList.add('bg-orange-600');
-                }
+                // Ativar categoria
+                btn.classList.add('text-red-500');
+                btn.classList.remove('text-gray-700');
+                underline.classList.add('scale-x-100');
+                underline.classList.remove('scale-x-0');
             } else {
-                btn.classList.remove('bg-orange-500', 'text-white', 'border-orange-500');
-                btn.classList.add('bg-gray-50', 'text-gray-900', 'border-gray-200', 'hover:bg-gray-100');
-                // Restaurar cor do badge de contagem
-                const badge = btn.querySelector('.bg-orange-600');
-                if (badge) {
-                    badge.classList.remove('bg-orange-600');
-                    badge.classList.add('bg-gray-200');
-                }
+                // Desativar categoria
+                btn.classList.remove('text-red-500');
+                btn.classList.add('text-gray-700');
+                underline.classList.remove('scale-x-100');
+                underline.classList.add('scale-x-0');
             }
         });
         
-        // Scroll suave para o botao selecionado (para mobile)
-        const selectedBtn = document.querySelector(`#categoryTabs button[data-category-id="${categoryId}"]`);
+        // Scroll suave para o botão selecionado
+        const selectedBtn = document.querySelector(`button[data-category-id="${categoryId}"]`);
         if (selectedBtn) {
             selectedBtn.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
         }
+    }
+
+    setupCategoriesModal(categories, totalProducts, onCategoryClick) {
+        const menuBtn = document.getElementById('categoriesMenuBtn');
+        
+        menuBtn.addEventListener('click', () => {
+            // Criar modal HTML
+            const modalHtml = `
+                <div id="categoriesModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-end">
+                    <div class="bg-white rounded-t-2xl w-full max-h-[70vh] overflow-hidden">
+                        <!-- Header -->
+                        <div class="px-4 py-4 border-b border-gray-200">
+                            <div class="flex items-center justify-between">
+                                <h3 class="text-lg font-semibold text-gray-800">Cardápio completo</h3>
+                                <button id="closeModalBtn" class="p-2 text-gray-500 hover:text-gray-700">
+                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Lista de categorias -->
+                        <div class="overflow-y-auto max-h-[50vh] py-2">
+                            <!-- Todos -->
+                            <button class="category-modal-item w-full px-4 py-4 text-left hover:bg-gray-50 flex items-center justify-between" data-category-id="all">
+                                <span class="text-base text-gray-800">Todos</span>
+                                <span class="text-gray-500 font-medium">${totalProducts}</span>
+                            </button>
+                            
+                            ${categories.map(category => `
+                                <button class="category-modal-item w-full px-4 py-4 text-left hover:bg-gray-50 flex items-center justify-between" data-category-id="${category.id}">
+                                    <span class="text-base text-gray-800">${category.name}</span>
+                                    <span class="text-gray-500 font-medium">${category.productCount || 0}</span>
+                                </button>
+                            `).join('')}
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Adicionar modal ao body
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+            
+            // Event listeners do modal
+            const modal = document.getElementById('categoriesModal');
+            const closeBtn = document.getElementById('closeModalBtn');
+            
+            // Fechar modal
+            const closeModal = () => {
+                modal.remove();
+            };
+            
+            closeBtn.addEventListener('click', closeModal);
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) closeModal();
+            });
+            
+            // Clique nas categorias
+            document.querySelectorAll('.category-modal-item').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const categoryId = btn.dataset.categoryId;
+                    this.selectCategory(categoryId);
+                    onCategoryClick(categoryId === 'all' ? null : categoryId);
+                    closeModal();
+                });
+            });
+        });
     }
 
     renderProducts(products) {

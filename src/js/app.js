@@ -62,24 +62,21 @@ class App {
                 </div>
             </section>
 
-            <nav class="max-w-4xl mx-auto px-3 py-4 sticky top-[120px] bg-white/95 backdrop-blur-sm z-20 border-b border-gray-50">
-                <div class="relative">
-                    <!-- Gradient fade para indicar scroll -->
-                    <div class="absolute left-0 top-0 bottom-0 w-6 bg-gradient-to-r from-white/95 to-transparent z-10 pointer-events-none"></div>
-                    <div class="absolute right-0 top-0 bottom-0 w-6 bg-gradient-to-l from-white/95 to-transparent z-10 pointer-events-none"></div>
+            <!-- Menu Bar de Categorias -->
+            <nav class="max-w-4xl mx-auto sticky top-[120px] bg-white border-b border-gray-200 z-20">
+                <div class="flex items-center px-3 py-2">
+                    <!-- Botão Menu (para abrir modal de categorias) -->
+                    <button id="categoriesMenuBtn" class="p-2 mr-3" title="Ver todas as categorias">
+                        <svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                        </svg>
+                    </button>
                     
-                    <!-- Container dos filtros -->
-                    <div id="categoryTabs" class="flex gap-2 overflow-x-auto pb-2 pt-1 scrollbar-hide" style="scroll-behavior: smooth; scrollbar-width: none; -ms-overflow-style: none;">
-                        <!-- Tabs will be rendered here -->
-                    </div>
-                </div>
-                
-                <!-- Indicador de scroll (mobile) -->
-                <div class="sm:hidden flex justify-center mt-2">
-                    <div class="flex gap-1">
-                        <div class="w-2 h-1 bg-gray-300 rounded-full"></div>
-                        <div class="w-2 h-1 bg-gray-300 rounded-full"></div>
-                        <div class="w-2 h-1 bg-gray-300 rounded-full"></div>
+                    <!-- Menu Bar Horizontal -->
+                    <div id="categoryMenuBar" class="flex-1 overflow-x-auto scrollbar-hide">
+                        <div class="flex gap-6 whitespace-nowrap">
+                            <!-- Categorias serão renderizadas aqui -->
+                        </div>
                     </div>
                 </div>
             </nav>

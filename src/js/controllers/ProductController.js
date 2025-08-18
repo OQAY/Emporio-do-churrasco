@@ -48,22 +48,30 @@ export class ProductController {
         this.searchQuery = query;
         
         if (query) {
-            // Limpar selecao de categoria durante busca
+            // Limpar seleção de categoria durante busca
             this.currentCategory = null;
-            document.querySelectorAll('#categoryTabs button').forEach(btn => {
-                btn.classList.remove('ring-2', 'ring-orange-300', 'bg-orange-50');
-                btn.classList.add('bg-gray-50');
+            document.querySelectorAll('.category-menu-item').forEach(btn => {
+                const underline = btn.querySelector('.category-underline');
+                btn.classList.remove('text-red-500');
+                btn.classList.add('text-gray-700');
+                underline.classList.remove('scale-x-100');
+                underline.classList.add('scale-x-0');
             });
         } else {
             // Se limpar busca, voltar para "Todos"
             this.currentCategory = null;
-            document.querySelectorAll('#categoryTabs button').forEach(btn => {
+            document.querySelectorAll('.category-menu-item').forEach(btn => {
+                const underline = btn.querySelector('.category-underline');
                 if (btn.dataset.categoryId === 'all') {
-                    btn.classList.add('ring-2', 'ring-orange-300', 'bg-orange-50');
-                    btn.classList.remove('bg-gray-50');
+                    btn.classList.add('text-red-500');
+                    btn.classList.remove('text-gray-700');
+                    underline.classList.add('scale-x-100');
+                    underline.classList.remove('scale-x-0');
                 } else {
-                    btn.classList.remove('ring-2', 'ring-orange-300', 'bg-orange-50');
-                    btn.classList.add('bg-gray-50');
+                    btn.classList.remove('text-red-500');
+                    btn.classList.add('text-gray-700');
+                    underline.classList.remove('scale-x-100');
+                    underline.classList.add('scale-x-0');
                 }
             });
         }
