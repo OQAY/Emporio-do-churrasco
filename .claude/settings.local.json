@@ -68,7 +68,8 @@
       "Bash(\"C:\\Users\\lucas\\AppData\\Local\\Microsoft\\WindowsApps\\MediaPlayer.exe\" \"C:\\Users\\lucas\\.claude\\song\\finish.mp3\")",
       "Bash(call kill.bat)",
       "Bash(mkdir:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(git checkout:*)"
     ]
   },
   "enableAllProjectMcpServers": true,
