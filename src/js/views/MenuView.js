@@ -85,8 +85,8 @@ export class MenuView {
     scrollToTop() {
         const featuredSection = document.getElementById('featuredSection');
         if (featuredSection) {
-            // Calcular offset para ficar abaixo da menu bar (altura aprox 120px)
-            const offsetTop = featuredSection.offsetTop - 120;
+            // Calcular offset para ficar abaixo da menu bar (altura aprox 135px)
+            const offsetTop = featuredSection.offsetTop - 135;
             window.scrollTo({ top: offsetTop, behavior: 'smooth' });
         } else {
             window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -96,8 +96,8 @@ export class MenuView {
     scrollToCategory(categoryId) {
         const categorySection = document.getElementById(`category-${categoryId}`);
         if (categorySection) {
-            // Calcular offset para ficar abaixo da menu bar (altura aprox 120px)
-            const offsetTop = categorySection.offsetTop - 120;
+            // Calcular offset para ficar abaixo da menu bar (altura aprox 135px)
+            const offsetTop = categorySection.offsetTop - 135;
             window.scrollTo({ top: offsetTop, behavior: 'smooth' });
         }
     }
