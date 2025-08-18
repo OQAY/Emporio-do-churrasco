@@ -12,10 +12,9 @@ export class MenuView {
         
         // Adicionar "Todos" primeiro
         const allButton = document.createElement('button');
-        allButton.className = 'category-menu-item relative py-3 px-1 text-sm font-medium transition-colors whitespace-nowrap';
+        allButton.className = 'category-menu-item relative py-3 text-sm font-medium transition-colors whitespace-nowrap';
         allButton.innerHTML = `
             Todos
-            <span class="ml-2 text-xs text-gray-500">${totalProducts}</span>
             <div class="category-underline absolute bottom-0 left-0 right-0 h-0.5 bg-red-500 transform scale-x-0 transition-transform"></div>
         `;
         allButton.dataset.categoryId = 'all';
@@ -35,13 +34,10 @@ export class MenuView {
 
         categories.forEach((category) => {
             const button = document.createElement('button');
-            button.className = 'category-menu-item relative py-3 px-1 text-sm font-medium transition-colors whitespace-nowrap';
-            
-            const productCount = category.productCount || 0;
+            button.className = 'category-menu-item relative py-3 text-sm font-medium transition-colors whitespace-nowrap';
             
             button.innerHTML = `
                 ${category.name}
-                <span class="ml-2 text-xs text-gray-500">${productCount}</span>
                 <div class="category-underline absolute bottom-0 left-0 right-0 h-0.5 bg-red-500 transform scale-x-0 transition-transform"></div>
             `;
             button.dataset.categoryId = category.id;

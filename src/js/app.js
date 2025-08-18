@@ -74,7 +74,7 @@ class App {
                     
                     <!-- Menu Bar Horizontal -->
                     <div id="categoryMenuBar" class="flex-1 overflow-x-auto scrollbar-hide">
-                        <div class="flex gap-6 whitespace-nowrap">
+                        <div class="flex whitespace-nowrap">
                             <!-- Categorias serão renderizadas aqui -->
                         </div>
                     </div>

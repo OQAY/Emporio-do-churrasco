@@ -216,3 +216,19 @@ html {
 .aspect-square {
     aspect-ratio: 1 / 1;
 }
+
+/* Category menu bar styling */
+.category-menu-item {
+    min-width: fit-content;
+    margin-right: 1.5rem; /* Espaçamento adequado entre categorias */
+}
+
+.category-menu-item:last-child {
+    margin-right: 0;
+}
+
+/* Garantir scroll suave no menu bar */
+#categoryMenuBar {
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+}
