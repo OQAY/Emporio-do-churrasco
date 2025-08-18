@@ -52,9 +52,6 @@ export class MenuView {
         
         // Setup do modal de categorias
         this.setupCategoriesModal(categories, totalProducts, onCategoryClick);
-        
-        // Setup do scroll spy para detectar seção ativa
-        this.setupScrollSpy(categories);
     }
 
     selectCategory(categoryId) {
@@ -308,6 +305,11 @@ export class MenuView {
                 container.appendChild(categorySection);
             }
         });
+        
+        // Setup do scroll spy APÓS criar todas as seções
+        setTimeout(() => {
+            this.setupScrollSpy(categories);
+        }, 100);
     }
 
     createFeaturedCard(product, index) {
