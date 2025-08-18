@@ -63,7 +63,7 @@ class App {
             </section>
 
             <!-- Menu Bar de Categorias -->
-            <nav class="max-w-4xl mx-auto sticky top-24 bg-white border-b border-gray-200 z-20">
+            <nav class="max-w-4xl mx-auto sticky top-[88px] bg-white border-b border-gray-200 z-20">
                 <div class="flex items-center px-3 py-2">
                     <!-- Botão Menu (para abrir modal de categorias) -->
                     <button id="categoriesMenuBtn" class="p-2 mr-3" title="Ver todas as categorias">
