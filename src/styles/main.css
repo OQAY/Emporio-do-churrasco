@@ -205,3 +205,14 @@ html {
         grid-template-columns: repeat(3, 1fr);
     }
 }
+
+/* Featured products grid - sempre 2 colunas como no iFood */
+.featured-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+}
+
+/* Aspect ratio for square cards */
+.aspect-square {
+    aspect-ratio: 1 / 1;
+}

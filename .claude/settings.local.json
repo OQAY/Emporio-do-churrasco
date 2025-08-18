@@ -70,7 +70,9 @@
       "Bash(mkdir:*)",
       "Bash(git push:*)",
       "Bash(git checkout:*)",
-      "WebFetch(domain:www.ifood.com.br)"
+      "WebFetch(domain:www.ifood.com.br)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
     ]
   },
   "enableAllProjectMcpServers": true,

@@ -102,10 +102,40 @@ export class MenuView {
     }
 
     renderProducts(products) {
+        // Separar produtos em destaque e normais
+        const featuredProducts = products.filter(product => product.featured);
+        const regularProducts = products.filter(product => !product.featured);
+        
+        // Renderizar destaques
+        this.renderFeaturedProducts(featuredProducts);
+        
+        // Renderizar produtos normais
+        this.renderRegularProducts(regularProducts);
+    }
+    
+    renderFeaturedProducts(featuredProducts) {
+        const featuredContainer = document.getElementById('featuredGrid');
+        const featuredSection = document.getElementById('featuredSection');
+        
+        if (featuredProducts.length === 0) {
+            featuredSection.classList.add('hidden');
+            return;
+        }
+        
+        featuredSection.classList.remove('hidden');
+        featuredContainer.innerHTML = '';
+        
+        featuredProducts.forEach((product, index) => {
+            const card = this.createFeaturedCard(product, index);
+            featuredContainer.appendChild(card);
+        });
+    }
+    
+    renderRegularProducts(regularProducts) {
         const container = document.getElementById('productsGrid');
         const emptyState = document.getElementById('emptyState');
         
-        if (products.length === 0) {
+        if (regularProducts.length === 0) {
             container.innerHTML = '';
             emptyState.classList.remove('hidden');
             return;
@@ -114,10 +144,72 @@ export class MenuView {
         emptyState.classList.add('hidden');
         container.innerHTML = '';
 
-        products.forEach(product => {
+        regularProducts.forEach(product => {
             const card = this.createProductCard(product);
             container.appendChild(card);
         });
+    }
+
+    createFeaturedCard(product, index) {
+        const card = document.createElement('article');
+        card.className = 'featured-card rounded-2xl overflow-hidden bg-white shadow-sm hover:shadow-lg active:scale-[0.98] transition-all duration-200 cursor-pointer touch-manipulation';
+        
+        const priceFormatted = product.price ? 
+            `R$ ${product.price.toFixed(2).replace('.', ',')}` : 
+            'Consulte';
+            
+        // Simular preço original (20-50% maior) e desconto para demonstração
+        const originalPrice = product.price ? product.price * (1 + Math.random() * 0.5 + 0.2) : null;
+        const originalPriceFormatted = originalPrice ? 
+            `R$ ${originalPrice.toFixed(2).replace('.', ',')}` : null;
+        const discount = originalPrice ? 
+            Math.round(((originalPrice - product.price) / originalPrice) * 100) : null;
+
+        card.innerHTML = `
+            <div class="relative aspect-square">
+                <!-- Badge "Mais pedido" apenas no primeiro item -->
+                ${index === 0 ? `
+                    <span class="absolute top-3 left-3 bg-orange-600 text-white text-xs font-medium px-2 py-1 rounded-md z-10 flex items-center gap-1">
+                        🔥 Mais pedido
+                    </span>
+                ` : ''}
+                
+                <!-- Badge de desconto -->
+                ${discount ? `
+                    <span class="absolute top-3 right-3 bg-green-600 text-white text-xs font-bold px-2 py-1 rounded-md z-10">
+                        -${discount}%
+                    </span>
+                ` : ''}
+                
+                <!-- Imagem do produto -->
+                <div class="w-full h-full bg-gray-100">
+                    ${product.image ? 
+                        `<img src="${product.image}" alt="${product.name}" class="w-full h-full object-cover" loading="lazy">` :
+                        `<div class="w-full h-full flex items-center justify-center">
+                            <svg class="w-12 h-12 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                            </svg>
+                        </div>`
+                    }
+                </div>
+            </div>
+            
+            <!-- Conteúdo embaixo da imagem -->
+            <div class="p-3">
+                <!-- Preços -->
+                <div class="flex items-center gap-2 mb-2">
+                    <span class="text-lg font-bold text-gray-900">${priceFormatted}</span>
+                    ${originalPriceFormatted ? `
+                        <span class="text-sm text-gray-400 line-through">${originalPriceFormatted}</span>
+                    ` : ''}
+                </div>
+                
+                <!-- Nome do produto -->
+                <h3 class="font-medium text-sm text-gray-800 leading-tight">${product.name}</h3>
+            </div>
+        `;
+
+        return card;
     }
 
     createProductCard(product) {
@@ -135,11 +227,6 @@ export class MenuView {
             <div class="mobile-horizontal items-center p-4 gap-4">
                 <!-- Conteúdo à esquerda -->
                 <div class="flex-1 min-w-0">
-                    ${product.featured ? `
-                        <span class="inline-block bg-orange-500 text-white text-xs font-medium px-2 py-1 rounded-full mb-2">
-                            ⭐ Destaque
-                        </span>
-                    ` : ''}
                     <h3 class="font-semibold text-base leading-tight mb-2">${product.name}</h3>
                     ${product.description ? 
                         `<p class="text-sm text-gray-600 leading-relaxed mb-2 line-clamp-2">${product.description}</p>` : 
@@ -164,11 +251,6 @@ export class MenuView {
             <!-- Layout Desktop Vertical (743px+) -->
             <div class="desktop-vertical">
                 <div class="relative">
-                    ${product.featured ? `
-                        <span class="absolute top-3 left-3 bg-orange-500 text-white text-xs font-medium px-3 py-1 rounded-full z-10 shadow-lg">
-                            ⭐ Destaque
-                        </span>
-                    ` : ''}
                     <div class="h-48 w-full bg-gray-100">
                         ${product.image ? 
                             `<img src="${product.image}" alt="${product.name}" class="w-full h-full object-cover" loading="lazy">` :
