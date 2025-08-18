@@ -49,7 +49,7 @@ class Database {
             price: 45.9,
             originalPrice: null, // Preço original (quando em promoção)
             isOnSale: false, // Se está em promoção
-            image: "./images/produtos/pao-com-picanha.svg",
+            image: "./images/produtos/steak-sandwich-1.jpg",
             active: true,
             featured: true,
             tags: ["destaque", "especial-chef"],
@@ -64,7 +64,7 @@ class Database {
             price: 32.9, // Preço promocional
             originalPrice: 42.9, // Preço original
             isOnSale: true, // Em promoção
-            image: "./images/produtos/pao-com-file.svg",
+            image: "./images/produtos/steak-sandwich-2.jpg",
             active: true,
             featured: true,
             tags: ["destaque", "promocao"],
@@ -78,7 +78,7 @@ class Database {
             name: "Tabua de Frios",
             description: "Queijos, salame, azeitonas e variacoes.",
             price: 38.0,
-            image: "./images/produtos/tabua-de-frios.svg",
+            image: "./images/produtos/steak-knife.jpg",
             active: true,
             featured: false,
             createdAt: new Date().toISOString(),
@@ -90,7 +90,7 @@ class Database {
             description:
               "Combinacao classica e deliciosa de queijo e goiabada.",
             price: 24.9,
-            image: "./images/produtos/queijo-com-goiabada.svg",
+            image: "./images/produtos/picanha-grill.jpg",
             active: true,
             featured: false,
             createdAt: new Date().toISOString(),
