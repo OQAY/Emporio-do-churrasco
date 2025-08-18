@@ -292,11 +292,11 @@ export class MenuView {
                 // Criar seção da categoria
                 const categorySection = document.createElement('section');
                 categorySection.id = `category-${category.id}`;
-                categorySection.className = 'category-section mb-8';
+                categorySection.className = 'category-section mb-6';
                 
                 categorySection.innerHTML = `
-                    <h2 class="text-xl font-bold text-gray-800 mb-4">${category.name}</h2>
-                    <div class="category-products-grid products-grid gap-3"></div>
+                    <h2 class="text-xl font-bold text-gray-800 mb-3">${category.name}</h2>
+                    <div class="category-products-grid products-grid gap-2"></div>
                 `;
                 
                 const productsGrid = categorySection.querySelector('.category-products-grid');
@@ -400,7 +400,7 @@ export class MenuView {
                     ` : ''}
                     <h3 class="font-semibold text-base leading-tight mb-2">${product.name}</h3>
                     ${product.description ? 
-                        `<p class="text-sm text-gray-600 leading-relaxed mb-2 line-clamp-2">${product.description}</p>` : 
+                        `<p class="text-xs text-gray-600 leading-relaxed mb-2 line-clamp-2">${product.description}</p>` : 
                         ''
                     }
                     <span class="text-orange-600 font-bold text-lg">${priceFormatted}</span>
@@ -444,7 +444,7 @@ export class MenuView {
                         <span class="text-orange-600 font-bold text-lg whitespace-nowrap flex-shrink-0">${priceFormatted}</span>
                     </div>
                     ${product.description ? 
-                        `<p class="text-sm text-gray-600 leading-relaxed line-clamp-3">${product.description}</p>` : 
+                        `<p class="text-xs text-gray-600 leading-relaxed line-clamp-3">${product.description}</p>` : 
                         ''
                     }
                 </div>

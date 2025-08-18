@@ -83,14 +83,14 @@ class App {
 
             <main class="max-w-4xl mx-auto px-3 py-4">
                 <!-- Seção de Destaques -->
-                <section id="featuredSection" class="mb-6">
-                    <h2 class="text-xl font-bold text-gray-800 mb-4">Destaques</h2>
-                    <div id="featuredGrid" class="featured-grid gap-3"></div>
+                <section id="featuredSection" class="mb-5">
+                    <h2 class="text-xl font-bold text-gray-800 mb-3">Destaques</h2>
+                    <div id="featuredGrid" class="featured-grid gap-2"></div>
                 </section>
                 
                 <!-- Seção de Todos os Produtos -->
                 <section id="allProductsSection">
-                    <div id="productsGrid" class="products-grid gap-3"></div>
+                    <div id="productsGrid" class="products-grid gap-2"></div>
                     
                     <div id="emptyState" class="hidden text-center py-12">
                         <svg class="w-20 h-20 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
