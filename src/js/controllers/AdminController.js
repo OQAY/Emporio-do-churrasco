@@ -1689,6 +1689,7 @@ export class AdminController {
         this.view.showGallery(images, false);
         this.selectedImages = new Set();
         this.isSelectionMode = false; // Controla se está em modo seleção
+        this.hadSelections = false; // Controla se já teve seleções para evitar auto-exit prematuro
         this.setupGalleryEventListeners();
     }
     
@@ -1747,81 +1748,190 @@ export class AdminController {
         // Gallery image card clicks - só seleciona se já estiver em modo seleção
         document.querySelectorAll('.gallery-image-card').forEach(card => {
             let longPressTimer;
+            let startPosition = { x: 0, y: 0 };
+            let hasMoved = false;
+            let wasLongPress = false;
+            let longPressActive = false; // Nova flag para controlar se long press está ativo
+            let isCurrentlyPressed = false; // Flag para verificar se ainda está pressionando
+            const moveThreshold = 10; // pixels - igual ao iPhone
             
             // Long press para entrar em modo seleção (iPhone-style) - Mouse events
             card.addEventListener('mousedown', (e) => {
-                if (e.target.closest('button')) return;
+                // Long press funciona em qualquer lugar da imagem (inclusive sobre botões)
+                startPosition = { x: e.clientX, y: e.clientY };
+                hasMoved = false;
+                wasLongPress = false;
+                longPressActive = true; // Ativa o long press
+                isCurrentlyPressed = true; // Marca que está pressionando
                 
                 longPressTimer = setTimeout(() => {
-                    this.enterSelectionMode();
-                    const imageId = card.dataset.imageId;
-                    const checkbox = card.querySelector('.image-checkbox');
-                    if (checkbox) {
-                        checkbox.checked = true;
-                        this.toggleImageSelection(imageId, true);
+                    // Só executa se long press ativo, não moveu E ainda está pressionando
+                    if (longPressActive && !hasMoved && isCurrentlyPressed) {
+                        wasLongPress = true;
+                        const imageId = card.dataset.imageId;
+                        const checkbox = card.querySelector('.image-checkbox');
+                        if (checkbox) {
+                            console.log('✅ Long press completado (mouse) - entrando em modo seleção');
+                            // Primeiro entra em modo seleção
+                            this.enterSelectionMode();
+                            // Depois seleciona a imagem
+                            checkbox.checked = true;
+                            this.toggleImageSelection(imageId, true);
+                        }
+                    } else {
+                        console.log('❌ Long press cancelado (mouse) - não executando, ativo:', longPressActive, 'moveu:', hasMoved, 'pressionando:', isCurrentlyPressed);
                     }
-                }, 500); // 500ms como iPhone
+                }, 350); // 350ms mais responsivo como iPhone real
+            });
+            
+            card.addEventListener('mousemove', (e) => {
+                if (longPressTimer) {
+                    const distance = Math.sqrt(
+                        Math.pow(e.clientX - startPosition.x, 2) + 
+                        Math.pow(e.clientY - startPosition.y, 2)
+                    );
+                    
+                    if (distance > moveThreshold) {
+                        hasMoved = true;
+                        longPressActive = false; // Desativa o long press
+                        clearTimeout(longPressTimer);
+                        longPressTimer = null;
+                        wasLongPress = false; // Reset flag se cancelou por movimento
+                    }
+                }
             });
             
             card.addEventListener('mouseup', () => {
-                clearTimeout(longPressTimer);
+                isCurrentlyPressed = false; // Não está mais pressionando
+                if (longPressTimer) {
+                    longPressActive = false; // Desativa o long press
+                    clearTimeout(longPressTimer);
+                    longPressTimer = null;
+                    wasLongPress = false; // Reset flag se cancelou
+                }
             });
             
             card.addEventListener('mouseleave', () => {
-                clearTimeout(longPressTimer);
+                isCurrentlyPressed = false; // Não está mais pressionando
+                if (longPressTimer) {
+                    longPressActive = false; // Desativa o long press
+                    clearTimeout(longPressTimer);
+                    longPressTimer = null;
+                    wasLongPress = false; // Reset flag se cancelou
+                }
             });
             
-            // Long press para mobile - Touch events
+            // Long press para mobile - Touch events com detecção de movimento
             card.addEventListener('touchstart', (e) => {
-                if (e.target.closest('button')) return;
+                // Long press funciona em qualquer lugar da imagem (inclusive sobre botões)
+                const touch = e.touches[0];
+                startPosition = { x: touch.clientX, y: touch.clientY };
+                hasMoved = false;
+                wasLongPress = false;
+                longPressActive = true; // Ativa o long press
+                isCurrentlyPressed = true; // Marca que está pressionando
                 
                 longPressTimer = setTimeout(() => {
-                    this.enterSelectionMode();
-                    const imageId = card.dataset.imageId;
-                    const checkbox = card.querySelector('.image-checkbox');
-                    if (checkbox) {
-                        checkbox.checked = true;
-                        this.toggleImageSelection(imageId, true);
+                    // Só executa se long press ativo, não moveu E ainda está pressionando
+                    if (longPressActive && !hasMoved && isCurrentlyPressed) {
+                        wasLongPress = true;
+                        const imageId = card.dataset.imageId;
+                        const checkbox = card.querySelector('.image-checkbox');
+                        if (checkbox) {
+                            console.log('✅ Long press completado (mobile) - entrando em modo seleção');
+                            // Primeiro entra em modo seleção
+                            this.enterSelectionMode();
+                            // Depois seleciona a imagem
+                            checkbox.checked = true;
+                            this.toggleImageSelection(imageId, true);
+                        }
+                        
+                        // Vibração no mobile (se disponível)
+                        if (navigator.vibrate) {
+                            navigator.vibrate(50);
+                        }
+                    } else {
+                        console.log('❌ Long press cancelado (mobile) - não executando, ativo:', longPressActive, 'moveu:', hasMoved, 'pressionando:', isCurrentlyPressed);
                     }
+                }, 350); // 350ms mais responsivo como iPhone real
+            });
+            
+            card.addEventListener('touchmove', (e) => {
+                if (longPressTimer) {
+                    const touch = e.touches[0];
+                    const distance = Math.sqrt(
+                        Math.pow(touch.clientX - startPosition.x, 2) + 
+                        Math.pow(touch.clientY - startPosition.y, 2)
+                    );
                     
-                    // Vibração no mobile (se disponível)
-                    if (navigator.vibrate) {
-                        navigator.vibrate(50);
+                    if (distance > moveThreshold) {
+                        hasMoved = true;
+                        longPressActive = false; // Desativa o long press
+                        clearTimeout(longPressTimer);
+                        longPressTimer = null;
+                        wasLongPress = false; // Reset flag se cancelou por movimento
                     }
-                }, 500); // 500ms como iPhone
+                }
             });
             
             card.addEventListener('touchend', () => {
-                clearTimeout(longPressTimer);
+                isCurrentlyPressed = false; // Marca que não está mais pressionando
+                if (longPressTimer) {
+                    longPressActive = false; // Desativa o long press
+                    clearTimeout(longPressTimer);
+                    longPressTimer = null;
+                    wasLongPress = false; // Reset flag se cancelou
+                }
             });
             
             card.addEventListener('touchcancel', () => {
-                clearTimeout(longPressTimer);
+                isCurrentlyPressed = false; // Marca que não está mais pressionando
+                if (longPressTimer) {
+                    longPressActive = false; // Desativa o long press
+                    clearTimeout(longPressTimer);
+                    longPressTimer = null;
+                    wasLongPress = false; // Reset flag se cancelou
+                }
             });
             
             // Clique normal - só seleciona se já estiver em modo seleção
             card.addEventListener('click', (e) => {
-                clearTimeout(longPressTimer);
-                
-                // Don't trigger if clicking on buttons inside the card
-                if (e.target.closest('button')) {
+                // Se foi long press, não executa clique normal
+                if (wasLongPress) {
+                    wasLongPress = false; // Reset para próximo clique
                     return;
                 }
                 
-                // Só seleciona se já estiver em modo seleção
-                if (this.isSelectionMode) {
-                    const imageId = card.dataset.imageId;
-                    const checkbox = card.querySelector('.image-checkbox');
-                    if (checkbox) {
-                        checkbox.checked = !checkbox.checked;
-                        this.toggleImageSelection(imageId, checkbox.checked);
-                    }
-                } else {
-                    // Clique normal - mostra botões no mobile (simulando hover)
-                    this.showMobileButtons(card);
+                // Cancela qualquer timer pendente
+                if (longPressTimer) {
+                    clearTimeout(longPressTimer);
+                    longPressTimer = null;
                 }
+                
+                return this.handleNormalClick(e, card);
             });
         });
+        
+        // Método separado para lidar com clique normal
+        this.handleNormalClick = (e, card) => {
+            // Don't trigger if clicking on buttons inside the card
+            if (e.target.closest('button')) {
+                return;
+            }
+            
+            // Só seleciona se já estiver em modo seleção
+            if (this.isSelectionMode) {
+                const imageId = card.dataset.imageId;
+                const checkbox = card.querySelector('.image-checkbox');
+                if (checkbox) {
+                    checkbox.checked = !checkbox.checked;
+                    this.toggleImageSelection(imageId, checkbox.checked);
+                }
+            } else {
+                // Clique normal - mostra botões no mobile (simulando hover)
+                this.showMobileButtons(card);
+            }
+        };
         
         
         // Select image buttons - entra em modo seleção
@@ -1961,6 +2071,14 @@ export class AdminController {
         
         this.updateSelectionCounter();
         this.updateNonSelectedImagesVisual();
+        
+        // Mostra menu contextual quando há imagens selecionadas
+        if (this.selectedImages.size > 0) {
+            // Pequeno delay para mostrar o menu após a seleção
+            setTimeout(() => {
+                this.showSelectionContextMenu();
+            }, 200);
+        }
     }
     
     updateSelectionCounter() {
@@ -1970,6 +2088,24 @@ export class AdminController {
         const selectAllBtn = document.getElementById('selectAllBtn');
         
         const selectedCount = this.selectedImages.size;
+        
+        // Só faz auto-exit se o usuário realmente desmarcou todas as seleções
+        // (não quando entra no modo pela primeira vez)
+        if (this.isSelectionMode && selectedCount === 0 && this.hadSelections) {
+            // Delay maior para evitar conflito com toggleImageSelection
+            setTimeout(() => {
+                if (this.selectedImages.size === 0 && this.isSelectionMode && this.hadSelections) {
+                    console.log('🚪 Saindo do modo seleção automaticamente - usuário desmarcou todas');
+                    this.exitSelectionMode();
+                }
+            }, 1000); // Delay ainda maior para evitar race conditions
+            return;
+        }
+        
+        // Marca que já teve seleções para controlar o auto-exit
+        if (selectedCount > 0) {
+            this.hadSelections = true;
+        }
         
         if (this.isSelectionMode || selectedCount > 0) {
             // Em modo seleção: mostra controles de seleção
@@ -2086,6 +2222,18 @@ export class AdminController {
         this.isSelectionMode = true;
         console.log('🎯 Entrando em modo seleção');
         
+        // Feedback visual de entrada no modo seleção
+        const notification = document.createElement('div');
+        notification.className = 'fixed top-20 left-1/2 transform -translate-x-1/2 bg-orange-600 text-white px-4 py-2 rounded-lg shadow-lg z-50 transition-all duration-300';
+        notification.innerHTML = '✓ Modo seleção ativo';
+        document.body.appendChild(notification);
+        
+        // Remove notificação após 2 segundos
+        setTimeout(() => {
+            notification.style.opacity = '0';
+            setTimeout(() => notification.remove(), 300);
+        }, 2000);
+        
         // Força atualização visual para mostrar checkboxes
         this.updateSelectionCounter();
     }
@@ -2093,11 +2241,42 @@ export class AdminController {
     exitSelectionMode() {
         this.isSelectionMode = false;
         this.selectedImages.clear();
+        this.hadSelections = false; // Reset para próxima vez
         console.log('🚪 Saindo do modo seleção');
+        
+        // Feedback visual de saída do modo seleção
+        const notification = document.createElement('div');
+        notification.className = 'fixed top-20 left-1/2 transform -translate-x-1/2 bg-gray-600 text-white px-4 py-2 rounded-lg shadow-lg z-50 transition-all duration-300';
+        notification.innerHTML = '← Modo normal';
+        document.body.appendChild(notification);
+        
+        // Remove notificação após 1.5 segundos (mais rápido para saída)
+        setTimeout(() => {
+            notification.style.opacity = '0';
+            setTimeout(() => notification.remove(), 300);
+        }, 1500);
         
         // Limpa todas as seleções visuais
         document.querySelectorAll('.image-checkbox').forEach(checkbox => {
             checkbox.checked = false;
+        });
+        
+        // Limpa efeitos visuais de seleção
+        document.querySelectorAll('.gallery-image-card').forEach(card => {
+            const overlay = card.querySelector('.selection-overlay');
+            const checkboxCircle = card.querySelector('.selection-checkbox div');
+            const indicator = card.querySelector('.selected-indicator');
+            
+            if (overlay) overlay.classList.remove('bg-opacity-20', 'bg-orange-500');
+            if (checkboxCircle) {
+                checkboxCircle.classList.remove('bg-orange-500', 'border-orange-500');
+                checkboxCircle.classList.add('bg-white', 'border-white');
+            }
+            if (indicator) {
+                indicator.classList.add('opacity-0', 'scale-0');
+                indicator.classList.remove('opacity-100', 'scale-100');
+            }
+            card.classList.remove('ring-2', 'ring-orange-500');
         });
         
         // Atualiza visual
@@ -2118,6 +2297,102 @@ export class AdminController {
         setTimeout(() => {
             card.classList.remove('mobile-active');
         }, 3000);
+    }
+    
+    showSelectionContextMenu() {
+        // Remove menu anterior se existir
+        const existingMenu = document.getElementById('selection-context-menu');
+        if (existingMenu) {
+            existingMenu.remove();
+        }
+        
+        const selectedCount = this.selectedImages.size;
+        if (selectedCount === 0) return;
+        
+        // Cria menu contextual
+        const menu = document.createElement('div');
+        menu.id = 'selection-context-menu';
+        menu.className = 'fixed bottom-20 left-1/2 transform -translate-x-1/2 bg-white rounded-lg shadow-xl border border-gray-200 z-50 p-2 flex gap-2';
+        
+        // Botão Compartilhar
+        const shareBtn = document.createElement('button');
+        shareBtn.className = 'flex items-center gap-2 px-4 py-3 hover:bg-gray-100 rounded-lg transition-colors';
+        shareBtn.innerHTML = `
+            <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z"></path>
+            </svg>
+            <span class="text-sm font-medium">Compartilhar</span>
+        `;
+        
+        // Botão Copiar
+        const copyBtn = document.createElement('button');
+        copyBtn.className = 'flex items-center gap-2 px-4 py-3 hover:bg-gray-100 rounded-lg transition-colors';
+        copyBtn.innerHTML = `
+            <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+            </svg>
+            <span class="text-sm font-medium">Copiar</span>
+        `;
+        
+        // Botão Excluir
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'flex items-center gap-2 px-4 py-3 hover:bg-red-50 rounded-lg transition-colors';
+        deleteBtn.innerHTML = `
+            <svg class="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+            </svg>
+            <span class="text-sm font-medium text-red-600">Excluir (${selectedCount})</span>
+        `;
+        
+        // Event listeners
+        shareBtn.addEventListener('click', () => {
+            this.shareSelectedImages();
+            menu.remove();
+        });
+        
+        copyBtn.addEventListener('click', () => {
+            this.copySelectedImages();
+            menu.remove();
+        });
+        
+        deleteBtn.addEventListener('click', () => {
+            this.deleteSelectedImages();
+            menu.remove();
+        });
+        
+        // Adiciona botões ao menu
+        menu.appendChild(shareBtn);
+        menu.appendChild(copyBtn);
+        menu.appendChild(deleteBtn);
+        
+        // Adiciona ao DOM
+        document.body.appendChild(menu);
+        
+        // Remove menu ao clicar fora
+        setTimeout(() => {
+            document.addEventListener('click', (e) => {
+                if (!menu.contains(e.target)) {
+                    menu.remove();
+                }
+            }, { once: true });
+        }, 100);
+        
+        // Auto-remove após 8 segundos
+        setTimeout(() => {
+            if (menu.parentNode) {
+                menu.remove();
+            }
+        }, 8000);
+    }
+    
+    shareSelectedImages() {
+        // Implementar compartilhamento
+        this.view.showNotification(`Compartilhando ${this.selectedImages.size} imagens...`, 'success');
+    }
+    
+    copySelectedImages() {
+        // Implementar cópia
+        this.view.showNotification(`${this.selectedImages.size} imagens copiadas!`, 'success');
     }
     
     async deleteSelectedImages() {
