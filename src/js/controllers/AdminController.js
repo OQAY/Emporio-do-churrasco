@@ -118,10 +118,42 @@ export class AdminController {
         }
     }
 
-    showDashboard() {
-        const stats = this.database.getStatistics();
-        this.view.showDashboard(stats);
+    async showDashboard() {
+        // Show loading skeleton immediately
+        this.view.showLoadingSkeleton();
         
+        try {
+            // Ensure data is loaded
+            await this.database.loadData();
+            
+            // Get fresh statistics
+            const stats = this.database.getStatistics();
+            console.log('📊 Dashboard stats loaded:', stats);
+            
+            // Show dashboard immediately after loading
+            this.view.showDashboard(stats);
+            this.setupDashboardClickListeners();
+            
+        } catch (error) {
+            console.error('❌ Dashboard load failed:', error);
+            this.view.showNotification('Erro ao carregar dashboard', 'error');
+            
+            // Show dashboard with fallback data
+            const fallbackStats = {
+                totalProducts: 0,
+                totalCategories: 0, 
+                activeProducts: 0,
+                onSaleProducts: 0,
+                totalImages: 0,
+                restaurantName: 'Menu Online'
+            };
+            
+            this.view.showDashboard(fallbackStats);
+            this.setupDashboardClickListeners();
+        }
+    }
+        
+    setupDashboardClickListeners() {
         // Setup dashboard card navigation
         document.querySelectorAll('.dashboard-card').forEach(card => {
             card.addEventListener('click', () => {
@@ -175,6 +207,12 @@ export class AdminController {
     showProducts() {
         const products = this.database.getProducts();
         const categories = this.database.getCategories();
+        
+        // DEBUG: Log para verificar dados
+        console.log('📊 AdminController.showProducts() DEBUG:');
+        console.log('  - Products:', products.length, products);
+        console.log('  - Categories:', categories.length, categories);
+        
         this.view.showProducts(products, categories);
         
         
@@ -1633,15 +1671,25 @@ export class AdminController {
         });
     }
 
-    showGallery() {
-        const images = this.database.getGalleryImages();
-        this.view.showGallery(images);
-        this.selectedImages = new Set(); // Track selected images
+    async showGallery() {
+        console.log('🎨 Showing gallery with progressive loading...');
         
-        // Wait for DOM to be fully rendered before setting up event listeners
-        setTimeout(() => {
-            this.setupGalleryEventListeners();
-        }, 100);
+        // Always check if cache is valid (includes cross-browser modification check)
+        const cacheValid = this.database.cache.isValid();
+        
+        if (!cacheValid) {
+            console.log('🔄 Cache invalid or modified by another browser - refreshing...');
+            await this.database.loadData();
+        }
+        
+        // Show current data
+        const images = this.database.getGalleryImages();
+        console.log(`📸 Showing ${images.length} gallery images`);
+        
+        this.view.showGallery(images, false);
+        this.selectedImages = new Set();
+        this.isSelectionMode = false; // Controla se está em modo seleção
+        this.setupGalleryEventListeners();
     }
     
     setupGalleryEventListeners() {
@@ -1680,6 +1728,14 @@ export class AdminController {
             });
         });
         
+        // Select all images button
+        const selectAllBtn = document.getElementById('selectAllBtn');
+        if (selectAllBtn) {
+            selectAllBtn.addEventListener('click', () => {
+                this.selectAllImages();
+            });
+        }
+        
         // Delete selected images button
         const deleteSelectedBtn = document.getElementById('deleteSelectedBtn');
         if (deleteSelectedBtn) {
@@ -1688,16 +1744,100 @@ export class AdminController {
             });
         }
         
-        // Select image buttons (for multiple selection)
+        // Gallery image card clicks - só seleciona se já estiver em modo seleção
+        document.querySelectorAll('.gallery-image-card').forEach(card => {
+            let longPressTimer;
+            
+            // Long press para entrar em modo seleção (iPhone-style) - Mouse events
+            card.addEventListener('mousedown', (e) => {
+                if (e.target.closest('button')) return;
+                
+                longPressTimer = setTimeout(() => {
+                    this.enterSelectionMode();
+                    const imageId = card.dataset.imageId;
+                    const checkbox = card.querySelector('.image-checkbox');
+                    if (checkbox) {
+                        checkbox.checked = true;
+                        this.toggleImageSelection(imageId, true);
+                    }
+                }, 500); // 500ms como iPhone
+            });
+            
+            card.addEventListener('mouseup', () => {
+                clearTimeout(longPressTimer);
+            });
+            
+            card.addEventListener('mouseleave', () => {
+                clearTimeout(longPressTimer);
+            });
+            
+            // Long press para mobile - Touch events
+            card.addEventListener('touchstart', (e) => {
+                if (e.target.closest('button')) return;
+                
+                longPressTimer = setTimeout(() => {
+                    this.enterSelectionMode();
+                    const imageId = card.dataset.imageId;
+                    const checkbox = card.querySelector('.image-checkbox');
+                    if (checkbox) {
+                        checkbox.checked = true;
+                        this.toggleImageSelection(imageId, true);
+                    }
+                    
+                    // Vibração no mobile (se disponível)
+                    if (navigator.vibrate) {
+                        navigator.vibrate(50);
+                    }
+                }, 500); // 500ms como iPhone
+            });
+            
+            card.addEventListener('touchend', () => {
+                clearTimeout(longPressTimer);
+            });
+            
+            card.addEventListener('touchcancel', () => {
+                clearTimeout(longPressTimer);
+            });
+            
+            // Clique normal - só seleciona se já estiver em modo seleção
+            card.addEventListener('click', (e) => {
+                clearTimeout(longPressTimer);
+                
+                // Don't trigger if clicking on buttons inside the card
+                if (e.target.closest('button')) {
+                    return;
+                }
+                
+                // Só seleciona se já estiver em modo seleção
+                if (this.isSelectionMode) {
+                    const imageId = card.dataset.imageId;
+                    const checkbox = card.querySelector('.image-checkbox');
+                    if (checkbox) {
+                        checkbox.checked = !checkbox.checked;
+                        this.toggleImageSelection(imageId, checkbox.checked);
+                    }
+                } else {
+                    // Clique normal - mostra botões no mobile (simulando hover)
+                    this.showMobileButtons(card);
+                }
+            });
+        });
+        
+        
+        // Select image buttons - entra em modo seleção
         document.querySelectorAll('.select-image-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
-                e.stopPropagation(); // Prevent event bubbling
-                console.log('Botão selecionar clicado!'); // Debug
+                e.stopPropagation();
                 const imageId = btn.dataset.imageId;
+                
+                // Entra em modo seleção
+                this.enterSelectionMode();
+                
+                // Seleciona a imagem clicada
                 const checkbox = document.querySelector(`input[data-image-id="${imageId}"]`);
                 if (checkbox) {
-                    checkbox.checked = !checkbox.checked;
-                    this.toggleImageSelection(imageId, checkbox.checked);
+                    checkbox.checked = true;
+                    this.toggleImageSelection(imageId, true);
                 }
             });
         });
@@ -1727,12 +1867,64 @@ export class AdminController {
         
         // Delete image buttons
         document.querySelectorAll('.delete-image-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
+            btn.addEventListener('click', async (e) => {
                 e.stopPropagation(); // Prevent event bubbling
                 if (confirm('Tem certeza que deseja excluir esta imagem?')) {
-                    this.database.deleteGalleryImage(btn.dataset.imageId);
-                    this.view.showNotification('Imagem excluída com sucesso!');
-                    this.showGallery();
+                    try {
+                        const imageId = btn.dataset.imageId;
+                        const imageCard = btn.closest('.gallery-image-card');
+                        
+                        console.log('🗑️ Deletando imagem:', imageId);
+                        
+                        // Immediate visual feedback
+                        if (imageCard) {
+                            imageCard.style.opacity = '0.5';
+                            imageCard.style.pointerEvents = 'none';
+                            imageCard.style.transform = 'scale(0.95)';
+                            imageCard.style.transition = 'all 0.3s ease';
+                            
+                            // Add deleting indicator
+                            const overlay = document.createElement('div');
+                            overlay.className = 'delete-overlay absolute inset-0 bg-red-500 bg-opacity-75 flex items-center justify-center text-white font-semibold z-50 rounded';
+                            overlay.innerHTML = `
+                                <div class="text-center">
+                                    <svg class="animate-spin mx-auto mb-2 h-6 w-6" fill="none" viewBox="0 0 24 24">
+                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                    <div class="text-xs">Excluindo...</div>
+                                </div>
+                            `;
+                            imageCard.appendChild(overlay);
+                        }
+                        
+                        // Perform actual delete in background
+                        await this.database.deleteGalleryImage(imageId);
+                        
+                        // Smooth removal animation
+                        if (imageCard) {
+                            imageCard.style.transform = 'scale(0)';
+                            imageCard.style.opacity = '0';
+                            
+                            setTimeout(() => {
+                                imageCard.remove();
+                                this.view.showNotification('Imagem excluída com sucesso!', 'success');
+                                
+                                // Update counters
+                                const remainingImages = document.querySelectorAll('.gallery-image-card').length;
+                                const counterElement = document.querySelector('.text-sm.text-gray-500');
+                                if (counterElement) {
+                                    counterElement.textContent = `${remainingImages} ${remainingImages === 1 ? 'imagem' : 'imagens'}`;
+                                }
+                            }, 300);
+                        }
+                        
+                        console.log('✅ Delete completo');
+                        
+                    } catch (error) {
+                        console.error('❌ Erro ao deletar imagem:', error);
+                        this.view.showNotification('Erro ao excluir imagem', 'error');
+                    }
                 }
             });
         });
@@ -1743,21 +1935,28 @@ export class AdminController {
         const overlay = card.querySelector('.selection-overlay');
         const indicator = card.querySelector('.selected-indicator');
         
+        const checkbox = card.querySelector('.selection-checkbox');
+        const checkboxCircle = checkbox.querySelector('div');
+        
         if (isSelected) {
             this.selectedImages.add(imageId);
-            // Apply selection visual effects
+            // Apply orange selection visual effects
             overlay.classList.add('bg-opacity-20');
-            overlay.classList.add('bg-blue-500');
+            overlay.classList.add('bg-orange-500');
+            checkboxCircle.classList.remove('bg-white', 'border-white');
+            checkboxCircle.classList.add('bg-orange-500', 'border-orange-500');
             indicator.classList.remove('opacity-0', 'scale-0');
             indicator.classList.add('opacity-100', 'scale-100');
-            card.classList.add('ring-2', 'ring-blue-500');
+            card.classList.add('ring-2', 'ring-orange-500');
         } else {
             this.selectedImages.delete(imageId);
-            // Remove selection visual effects
-            overlay.classList.remove('bg-opacity-20', 'bg-blue-500');
+            // Remove orange selection visual effects
+            overlay.classList.remove('bg-opacity-20', 'bg-orange-500');
+            checkboxCircle.classList.remove('bg-orange-500', 'border-orange-500');
+            checkboxCircle.classList.add('bg-white', 'border-white');
             indicator.classList.add('opacity-0', 'scale-0');
             indicator.classList.remove('opacity-100', 'scale-100');
-            card.classList.remove('ring-2', 'ring-blue-500');
+            card.classList.remove('ring-2', 'ring-orange-500');
         }
         
         this.updateSelectionCounter();
@@ -1768,16 +1967,50 @@ export class AdminController {
         const counter = document.getElementById('selectionCounter');
         const countElement = document.getElementById('selectedCount');
         const deleteBtn = document.getElementById('deleteSelectedBtn');
+        const selectAllBtn = document.getElementById('selectAllBtn');
         
         const selectedCount = this.selectedImages.size;
         
-        if (selectedCount > 0) {
-            counter.classList.remove('hidden');
-            deleteBtn.classList.remove('hidden');
-            countElement.textContent = selectedCount;
+        if (this.isSelectionMode || selectedCount > 0) {
+            // Em modo seleção: mostra controles de seleção
+            if (selectedCount > 0) {
+                counter.classList.remove('hidden');
+                deleteBtn.classList.remove('hidden');
+                countElement.textContent = selectedCount;
+            } else {
+                counter.classList.add('hidden');
+                deleteBtn.classList.add('hidden');
+            }
+            
+            selectAllBtn.classList.remove('hidden');
+            
+            // Mostrar todas as checkboxes quando em modo seleção
+            document.querySelectorAll('.selection-checkbox').forEach(checkbox => {
+                checkbox.classList.remove('opacity-0');
+                checkbox.classList.add('opacity-100');
+            });
+            
+            // Esconder botões de hover quando em modo seleção  
+            document.querySelectorAll('.action-buttons').forEach(btnGroup => {
+                btnGroup.classList.add('hidden');
+            });
+            
         } else {
+            // Modo normal: esconde controles de seleção
             counter.classList.add('hidden');
             deleteBtn.classList.add('hidden');
+            selectAllBtn.classList.add('hidden');
+            
+            // Esconder todas as checkboxes quando não está em modo seleção
+            document.querySelectorAll('.selection-checkbox').forEach(checkbox => {
+                checkbox.classList.remove('opacity-100');
+                checkbox.classList.add('opacity-0');
+            });
+            
+            // Mostrar botões de hover quando não está em modo seleção
+            document.querySelectorAll('.action-buttons').forEach(btnGroup => {
+                btnGroup.classList.remove('hidden');
+            });
         }
     }
     
@@ -1800,7 +2033,94 @@ export class AdminController {
         });
     }
     
-    deleteSelectedImages() {
+    selectAllImages() {
+        const allImages = document.querySelectorAll('.gallery-image-card');
+        const isAllSelected = this.selectedImages.size === allImages.length;
+        
+        if (isAllSelected) {
+            // Deselect all if all are selected
+            allImages.forEach(card => {
+                const imageId = card.dataset.imageId;
+                const checkbox = card.querySelector('.image-checkbox');
+                if (checkbox) {
+                    checkbox.checked = false;
+                    this.toggleImageSelection(imageId, false);
+                }
+            });
+            
+            // Update button text
+            const selectAllBtn = document.getElementById('selectAllBtn');
+            if (selectAllBtn) {
+                selectAllBtn.innerHTML = `
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    Selecionar Todas
+                `;
+            }
+        } else {
+            // Select all images
+            allImages.forEach(card => {
+                const imageId = card.dataset.imageId;
+                const checkbox = card.querySelector('.image-checkbox');
+                if (checkbox && !this.selectedImages.has(imageId)) {
+                    checkbox.checked = true;
+                    this.toggleImageSelection(imageId, true);
+                }
+            });
+            
+            // Update button text
+            const selectAllBtn = document.getElementById('selectAllBtn');
+            if (selectAllBtn) {
+                selectAllBtn.innerHTML = `
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                    Desmarcar Todas
+                `;
+            }
+        }
+    }
+    
+    enterSelectionMode() {
+        this.isSelectionMode = true;
+        console.log('🎯 Entrando em modo seleção');
+        
+        // Força atualização visual para mostrar checkboxes
+        this.updateSelectionCounter();
+    }
+    
+    exitSelectionMode() {
+        this.isSelectionMode = false;
+        this.selectedImages.clear();
+        console.log('🚪 Saindo do modo seleção');
+        
+        // Limpa todas as seleções visuais
+        document.querySelectorAll('.image-checkbox').forEach(checkbox => {
+            checkbox.checked = false;
+        });
+        
+        // Atualiza visual
+        this.updateSelectionCounter();
+        this.updateNonSelectedImagesVisual();
+    }
+    
+    showMobileButtons(card) {
+        // Remove active state de outros cards
+        document.querySelectorAll('.gallery-image-card').forEach(c => {
+            c.classList.remove('mobile-active');
+        });
+        
+        // Adiciona state ativo para mostrar botões no mobile
+        card.classList.add('mobile-active');
+        
+        // Remove depois de alguns segundos
+        setTimeout(() => {
+            card.classList.remove('mobile-active');
+        }, 3000);
+    }
+    
+    async deleteSelectedImages() {
         if (this.selectedImages.size === 0) return;
         
         const count = this.selectedImages.size;
@@ -1809,9 +2129,14 @@ export class AdminController {
             `Tem certeza que deseja excluir ${count} imagens?`;
             
         if (confirm(message)) {
-            this.selectedImages.forEach(imageId => {
-                this.database.deleteGalleryImage(imageId);
-            });
+            // Delete all selected images (await each one)
+            for (const imageId of this.selectedImages) {
+                try {
+                    await this.database.deleteGalleryImage(imageId);
+                } catch (error) {
+                    console.error(`❌ Erro ao deletar imagem ${imageId}:`, error);
+                }
+            }
             
             this.view.showNotification(`${count} imagem(ns) excluída(s) com sucesso!`);
             this.showGallery(); // Refresh gallery
@@ -2160,47 +2485,156 @@ export class AdminController {
             return;
         }
         
+        const uploadPromises = [];
+        const previewCards = [];
+        
         for (let file of files) {
             if (file.size > 5000000) {
                 alert(`Imagem ${file.name} muito grande! Máximo 5MB.`);
                 continue;
             }
             
-            try {
-                const imageData = await this.database.saveImage(file);
-                this.database.addGalleryImage({
-                    name: file.name,
-                    url: imageData,
-                    size: file.size,
-                    type: file.type,
-                    tags: tags
-                });
-            } catch (error) {
-                console.error('Erro ao processar imagem:', error);
+            // Create immediate preview card
+            const tempId = 'temp_' + Date.now() + '_' + Math.random();
+            const previewCard = this.createUploadPreviewCard(file, tempId);
+            previewCards.push({card: previewCard, file: file, tempId: tempId});
+            
+            // Add to gallery grid immediately
+            const galleryGrid = document.getElementById('galleryGrid');
+            if (galleryGrid) {
+                galleryGrid.insertAdjacentHTML('afterbegin', previewCard);
             }
+            
+            // Start upload in background
+            const uploadPromise = this.processImageUpload(file, tags, tempId);
+            uploadPromises.push(uploadPromise);
         }
         
-        this.view.showNotification('Imagens adicionadas com sucesso!');
+        // Wait for all uploads to complete
+        try {
+            await Promise.all(uploadPromises);
+            this.view.showNotification('Todas as imagens foram adicionadas!', 'success');
+        } catch (error) {
+            console.error('❌ Alguns uploads falharam:', error);
+        }
+        
         this.view.closeModal();
-        this.showGallery();
+    }
+    
+    createUploadPreviewCard(file, tempId) {
+        // Create file URL for immediate preview
+        const objectURL = URL.createObjectURL(file);
+        
+        return `
+            <div class="gallery-image-card upload-preview relative group bg-gray-100 rounded-lg overflow-hidden aspect-square" data-temp-id="${tempId}">
+                <!-- Upload progress overlay -->
+                <div class="upload-overlay absolute inset-0 bg-blue-500 bg-opacity-75 flex items-center justify-center text-white font-semibold z-50 rounded">
+                    <div class="text-center">
+                        <svg class="animate-spin mx-auto mb-2 h-8 w-8" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <div class="text-sm">Enviando...</div>
+                        <div class="text-xs opacity-75 mt-1">${file.name}</div>
+                    </div>
+                </div>
+                
+                <img src="${objectURL}" alt="Upload preview" class="w-full h-full object-cover">
+            </div>
+        `;
+    }
+    
+    async processImageUpload(file, tags, tempId) {
+        try {
+            const imageData = await this.database.saveImage(file);
+            const result = await this.database.addGalleryImage({
+                name: file.name,
+                url: imageData.url,
+                size: file.size,
+                type: file.type,
+                tags: tags
+            });
+            
+            // Replace preview card with real gallery card
+            const previewCard = document.querySelector(`[data-temp-id="${tempId}"]`);
+            if (previewCard && result) {
+                // Create real gallery card
+                const realCard = this.view.createGalleryImageCard({
+                    id: result.id,
+                    name: result.name,
+                    url: result.url,
+                    size: result.size,
+                    type: result.type
+                });
+                
+                // Replace with animation
+                previewCard.style.transform = 'scale(0.9)';
+                previewCard.style.transition = 'all 0.3s ease';
+                
+                setTimeout(() => {
+                    previewCard.outerHTML = realCard;
+                    // Re-attach event listeners for new card
+                    this.setupGalleryEventListeners();
+                }, 300);
+            }
+            
+            console.log('✅ Upload completo:', file.name);
+            return result;
+            
+        } catch (error) {
+            console.error('❌ Upload falhou:', file.name, error);
+            
+            // Show error on preview card
+            const previewCard = document.querySelector(`[data-temp-id="${tempId}"]`);
+            if (previewCard) {
+                const overlay = previewCard.querySelector('.upload-overlay');
+                if (overlay) {
+                    overlay.className = 'upload-overlay absolute inset-0 bg-red-500 bg-opacity-75 flex items-center justify-center text-white font-semibold z-50 rounded';
+                    overlay.innerHTML = `
+                        <div class="text-center">
+                            <svg class="mx-auto mb-2 h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                            </svg>
+                            <div class="text-sm">Erro</div>
+                            <div class="text-xs opacity-75">${error.message}</div>
+                        </div>
+                    `;
+                }
+                
+                // Remove failed card after delay
+                setTimeout(() => {
+                    previewCard.style.transform = 'scale(0)';
+                    previewCard.style.opacity = '0';
+                    setTimeout(() => previewCard.remove(), 300);
+                }, 2000);
+            }
+            
+            throw error;
+        }
     }
 
-    uploadFromUrl() {
+    async uploadFromUrl() {
         const url = document.getElementById('imageUrl').value;
         const name = document.getElementById('imageName').value || 'Imagem da URL';
         const tags = document.getElementById('imageTags').value.split(',').map(tag => tag.trim()).filter(tag => tag);
         
-        this.database.addGalleryImage({
-            name: name,
-            url: url,
-            size: 0,
-            type: 'image/jpeg',
-            tags: tags
-        });
-        
-        this.view.showNotification('Imagem adicionada com sucesso!');
+        try {
+            await this.database.addGalleryImage({
+                name: name,
+                url: url,
+                size: 0,
+                type: 'image/jpeg',
+                tags: tags
+            });
+            
+            this.view.showNotification('Imagem adicionada com sucesso!');
+            console.log('✅ Imagem URL adicionada:', name);
+        } catch (error) {
+            console.error('❌ Erro ao adicionar imagem URL:', error);
+            this.view.showNotification(`Erro ao adicionar imagem: ${error.message}`, 'error');
+        }
         this.view.closeModal();
-        this.showGallery();
+        await this.showGallery(); // Force refresh gallery
     }
 
     filterGalleryImages(search) {
@@ -2219,16 +2653,6 @@ export class AdminController {
                 });
             });
             
-            // Select buttons (for multiple selection)
-            document.querySelectorAll('.select-image-btn').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    e.stopPropagation(); // Prevent event bubbling
-                    const imageId = btn.dataset.imageId;
-                    const checkbox = document.querySelector(`input[data-image-id="${imageId}"]`);
-                    checkbox.checked = !checkbox.checked;
-                    this.toggleImageSelection(imageId, checkbox.checked);
-                });
-            });
             
             // Edit buttons
             document.querySelectorAll('.edit-image-btn').forEach(btn => {
