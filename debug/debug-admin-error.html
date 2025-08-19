@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="utf-8">
+    <title>Debug Admin Error</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-red-900 text-white p-4 font-mono">
+    <h1 class="text-2xl mb-4">🚨 DEBUG ADMIN ERROR</h1>
+    <div id="output"></div>
+
+    <script type="module">
+        const output = document.getElementById('output');
+        
+        function log(msg, type = 'info') {
+            const color = type === 'error' ? 'text-red-400' : type === 'success' ? 'text-green-400' : 'text-yellow-400';
+            output.innerHTML += `<div class="${color}">[${new Date().toLocaleTimeString()}] ${msg}</div>`;
+        }
+
+        log('🔍 Starting admin debug...', 'info');
+        
+        // Catch all errors
+        window.addEventListener('error', (event) => {
+            log(`❌ ERROR: ${event.message}`, 'error');
+            log(`📁 File: ${event.filename}`, 'error');
+            log(`📏 Line: ${event.lineno}:${event.colno}`, 'error');
+            log(`📋 Stack: ${event.error?.stack}`, 'error');
+        });
+
+        window.addEventListener('unhandledrejection', (event) => {
+            log(`❌ PROMISE REJECTION: ${event.reason}`, 'error');
+        });
+
+        try {
+            log('📦 Importing database-nasa...', 'info');
+            
+            const { default: database } = await import('./src/js/database-nasa.js');
+            log('✅ Database imported successfully', 'success');
+            
+            log('🔐 Testing auth...', 'info');
+            const isAuth = database.isAuthenticated();
+            log(`Auth status: ${isAuth}`, isAuth ? 'success' : 'info');
+            
+            log('📊 Loading data...', 'info');
+            await database.loadData();
+            log('✅ Data loaded successfully', 'success');
+            
+            const stats = database.getStatistics();
+            log(`Stats: ${JSON.stringify(stats)}`, 'success');
+            
+        } catch (error) {
+            log(`❌ CRITICAL ERROR: ${error.message}`, 'error');
+            log(`Stack: ${error.stack}`, 'error');
+        }
+        
+        // Test all modules individually
+        async function testModules() {
+            log('\n🧪 Testing individual modules...', 'info');
+            
+            const modules = [
+                './src/js/supabase/supabase-client.js',
+                './src/js/supabase/data-fetcher.js', 
+                './src/js/supabase/data-transformer.js',
+                './src/js/supabase/cache-manager.js',
+                './src/js/supabase/data-writer.js'
+            ];
+            
+            for (const module of modules) {
+                try {
+                    await import(module);
+                    log(`✅ ${module.split('/').pop()}`, 'success');
+                } catch (error) {
+                    log(`❌ ${module.split('/').pop()}: ${error.message}`, 'error');
+                }
+            }
+        }
+        
+        testModules();
+    </script>
+</body>
+</html>

@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="utf-8">
+    <title>Test Gallery Upload</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-900 text-white p-4 font-mono">
+    <h1 class="text-2xl mb-4">🧪 TEST GALLERY UPLOAD</h1>
+    <div id="output"></div>
+
+    <script type="module">
+        const output = document.getElementById('output');
+        
+        function log(msg, type = 'info') {
+            const color = type === 'error' ? 'text-red-400' : type === 'success' ? 'text-green-400' : 'text-yellow-400';
+            output.innerHTML += `<div class="${color}">[${new Date().toLocaleTimeString()}] ${msg}</div>`;
+            console.log(msg);
+        }
+
+        // Test gallery upload functionality
+        try {
+            log('🔍 Testing gallery upload system...', 'info');
+            
+            // Import database
+            const { default: database } = await import('./src/js/database-nasa.js');
+            log('✅ Database imported', 'success');
+            
+            // Test authentication
+            const isAuth = database.isAuthenticated();
+            log(`Auth status: ${isAuth}`, isAuth ? 'success' : 'info');
+            
+            if (!isAuth) {
+                log('🔑 Authenticating...', 'info');
+                const authResult = database.authenticate('admin', 'admin123');
+                log(`Auth result: ${authResult}`, authResult ? 'success' : 'error');
+            }
+            
+            // Load data
+            log('📊 Loading data...', 'info');
+            await database.loadData();
+            log('✅ Data loaded', 'success');
+            
+            // Test adding sample image
+            log('📸 Testing image upload...', 'info');
+            
+            const testImageData = {
+                name: 'Test Image',
+                url: 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAMCAgMCAgMDAwMEAwMEBQgFBQQEBQoHBwYIDAoMDAsKCwsNDhIQDQ4RDgsLEBYQERMUFRUVDA8XGBYUGBIUFRT/2wBDAQMEBAUEBQkFBQkUDQsNFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBT/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCdABmX/9k=',
+                size: 1024,
+                type: 'image/jpeg',
+                tags: ['test', 'gallery']
+            };
+            
+            const result = await database.addGalleryImage(testImageData);
+            log(`✅ Image upload result: ${JSON.stringify(result)}`, 'success');
+            
+            // Check if image appears in gallery
+            const galleryImages = database.getGalleryImages();
+            log(`📸 Gallery images count: ${galleryImages.length}`, 'success');
+            
+            if (galleryImages.length > 0) {
+                log(`Latest image: ${galleryImages[0].name}`, 'success');
+            }
+            
+        } catch (error) {
+            log(`❌ ERROR: ${error.message}`, 'error');
+            log(`Stack: ${error.stack}`, 'error');
+        }
+    </script>
+</body>
+</html>

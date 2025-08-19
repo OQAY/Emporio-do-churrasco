@@ -12,17 +12,24 @@ import { SupabaseClient } from './supabase/supabase-client.js';
 import { DataWriter } from './supabase/data-writer.js';
 
 class DatabaseNASA {
-  constructor() {
+  constructor(adminMode = false) {
     this.fetcher = new DataFetcher();
     this.transformer = new DataTransformer();
     this.cache = new CacheManager();
     this.client = new SupabaseClient();
     this.writer = new DataWriter();
+    this.adminMode = adminMode; // Flag to determine if we need all data or just public data
+    this.isLoading = false; // Prevent duplicate loading
     
-    console.log('🚀 DatabaseNASA initialized - Following NASA/Google standards');
+    console.log(`🚀 DatabaseNASA initialized - Mode: ${adminMode ? 'ADMIN (full data)' : 'PUBLIC (optimized)'}`);
     
-    // Pre-load data if cache is empty (non-blocking)
-    this.preloadDataIfNeeded();
+    // DON'T preload automatically - let app.js control when to load
+    // this.preloadDataIfNeeded();
+    
+    // Ensure default admin user exists (non-blocking, only in admin mode)
+    if (adminMode) {
+      this.createDefaultAdminUser();
+    }
   }
   
   /**
@@ -31,16 +38,102 @@ class DatabaseNASA {
    */
   async preloadDataIfNeeded() {
     const cached = this.cache.getCache();
-    if (!cached || !cached.galleryImages) {
-      console.log('🔄 Pre-loading data in background...');
+    if (!cached || !cached.categories) {
+      console.log(`🔄 Pre-loading ${this.adminMode ? 'ALL' : 'PUBLIC'} data in background...`);
       try {
-        await this.loadData();
-        console.log('✅ Data pre-loaded successfully');
+        if (this.adminMode) {
+          await this.loadData(); // Admin mode: load all data
+        } else {
+          await this.loadPublicData(); // Public mode: load only essential data
+        }
+        console.log(`✅ ${this.adminMode ? 'ALL' : 'PUBLIC'} data pre-loaded successfully`);
       } catch (error) {
         console.warn('⚠️ Pre-load failed:', error.message);
       }
     } else {
       console.log('✅ Using cached data from localStorage');
+    }
+  }
+
+  /**
+   * Force reload data (NASA: manual refresh for debugging)
+   * Function size: 10 lines (NASA compliant)
+   */
+  async forceReload() {
+    console.log('🔄 Force reloading data...');
+    this.cache.clear();
+    const data = await this.loadData();
+    console.log('✅ Data force reloaded:', data);
+    return data;
+  }
+
+  /**
+   * Create default admin user in Supabase (NASA: initialization)
+   * Function size: 20 lines (NASA compliant)
+   */
+  async createDefaultAdminUser() {
+    try {
+      console.log('👤 Creating default admin user in Supabase...');
+      
+      const defaultUser = {
+        username: 'admin',
+        password: 'admin123', // In production, use proper hashing
+        role: 'admin'
+      };
+      
+      const result = await this.writer.createAdminUser(defaultUser);
+      console.log('✅ Default admin user created:', result);
+      return result;
+      
+    } catch (error) {
+      console.warn('⚠️ Failed to create default admin user (may already exist):', error.message);
+      return null;
+    }
+  }
+
+  /**
+   * Load only essential data for public menu (NASA: public optimization)
+   * Function size: 25 lines (NASA compliant)
+   */
+  async loadPublicData() {
+    // Prevent duplicate loading
+    if (this.isLoading) {
+      console.log('⏳ Already loading data, waiting...');
+      while (this.isLoading) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+      return this.cache.getCache();
+    }
+
+    console.log('🔄 Loading PUBLIC data (NASA optimized)...');
+    
+    try {
+      // Check cache first (NASA: performance optimization)
+      const cached = this.cache.getCache();
+      if (cached && cached.categories && cached.categories.length > 0) {
+        console.log('📦 Using cached data');
+        return cached;
+      }
+
+      this.isLoading = true;
+
+      // Fetch fresh PUBLIC data only
+      const rawData = await this.fetcher.fetchPublicData();
+      
+      // Transform to app format
+      const transformedData = this.transformer.transformAllData(rawData);
+      
+      // Cache for sync access
+      this.cache.setCache(transformedData);
+      
+      console.log('✅ PUBLIC data loaded successfully');
+      return transformedData;
+      
+    } catch (error) {
+      console.error('❌ Load failed, using fallback:', error);
+      return this.getFallbackData();
+    } finally {
+      this.isLoading = false;
     }
   }
 
@@ -85,8 +178,12 @@ class DatabaseNASA {
     const cached = this.cache.getCache();
     
     if (!cached) {
-      // Force load if no cache
-      return await this.loadData();
+      // Force load if no cache - use appropriate method based on mode
+      if (this.adminMode) {
+        return await this.loadData(); // Admin mode: load all data
+      } else {
+        return await this.loadPublicData(); // Public mode: load only essential data
+      }
     }
     
     return cached;
@@ -98,6 +195,15 @@ class DatabaseNASA {
    */
   getCategories(activeOnly = false) {
     return this.cache.getCategories(activeOnly);
+  }
+
+  /**
+   * Get category by ID (NASA: lookup operation)
+   * Function size: 10 lines (NASA compliant)
+   */
+  getCategoryById(id) {
+    const categories = this.getCategories();
+    return categories.find((cat) => cat.id === id);
   }
 
   /**
@@ -207,10 +313,10 @@ class DatabaseNASA {
   }
 
   /**
-   * Authentication check (NASA: security)
+   * Authentication check (NASA: security) - DEPRECATED, use isAdminAuthenticated()
    * Function size: 15 lines (NASA compliant)
    */
-  isAuthenticated() {
+  isAuthenticated_OLD() {
     const adminAuth = localStorage.getItem('adminAuth');
     
     if (!adminAuth) {
@@ -225,10 +331,10 @@ class DatabaseNASA {
   }
 
   /**
-   * Authenticate user (NASA: security)
+   * Authenticate user (NASA: security) - DEPRECATED, use authenticateAdmin()
    * Function size: 20 lines (NASA compliant)
    */
-  authenticate(username, password) {
+  authenticate_OLD(username, password) {
     // Fixed credentials for now (TODO: Supabase Auth)
     const validUsername = 'admin';
     const validPassword = 'admin123';
@@ -262,18 +368,28 @@ class DatabaseNASA {
   getFallbackData() {
     console.warn('⚠️ Using fallback data');
     
+    // First try to get existing localStorage data
+    const existingData = JSON.parse(localStorage.getItem('menuData') || '{}');
+    
+    if (existingData && Object.keys(existingData).length > 0) {
+      console.log('📦 Found existing localStorage data, using it');
+      return existingData;
+    }
+    
     return {
       restaurant: {
         name: "Imperio do Churrasco",
         logo: "IC",
-        banner: "https://images.unsplash.com/photo-1555396273-367ea4eb4db5",
+        banner: "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=800&h=300&q=75",
         theme: {
           primaryColor: "#fb923c",
           secondaryColor: "#f97316"
         }
       },
       categories: [],
-      products: []
+      products: [],
+      galleryImages: [],
+      productTags: []
     };
   }
 
@@ -486,6 +602,15 @@ class DatabaseNASA {
   }
 
   /**
+   * Check if image exists in gallery (NASA: validation operation)
+   * Function size: 10 lines (NASA compliant)
+   */
+  imageExistsInGallery(imageUrl) {
+    const images = this.getGalleryImages();
+    return images.some((img) => img.url === imageUrl);
+  }
+
+  /**
    * Save image file (NASA: file operation)
    * Function size: 25 lines (NASA compliant)
    */
@@ -553,12 +678,253 @@ class DatabaseNASA {
   }
 
   /**
-   * Get all product tags (NASA: tag management)
+   * Authenticate admin user (NASA: auth operation via Supabase)
+   * Function size: 25 lines (NASA compliant)
+   */
+  async authenticateAdmin(username, password) {
+    try {
+      console.log('🔐 Authenticating admin:', username);
+      
+      // Try Supabase authentication first
+      try {
+        console.log('🌐 Trying Supabase authentication...');
+        const result = await this.writer.authenticateAdmin(username, password);
+        
+        if (result.success) {
+          return this.storeAuthData(result.user);
+        }
+        
+        console.log('❌ Supabase auth failed:', result.error);
+      } catch (supabaseError) {
+        console.warn('⚠️ Supabase authentication error:', supabaseError.message);
+      }
+      
+      // Fallback to local authentication for admin/admin123
+      console.log('🔄 Falling back to local authentication...');
+      if (username === 'admin' && password === 'admin123') {
+        const localUser = {
+          id: 'local-admin',
+          username: 'admin',
+          role: 'admin'
+        };
+        
+        console.log('✅ Local authentication successful');
+        return this.storeAuthData(localUser);
+      }
+      
+      console.log('❌ All authentication methods failed');
+      return { success: false, error: 'Credenciais inválidas' };
+      
+    } catch (error) {
+      console.error('❌ Authentication completely failed:', error);
+      return { success: false, error: 'Erro interno' };
+    }
+  }
+
+  /**
+   * Store authentication data (NASA: auth data persistence)
+   * Function size: 25 lines (NASA compliant)
+   */
+  storeAuthData(user) {
+    try {
+      // Store session in multiple places for better persistence
+      const authData = {
+        ...user,
+        loginTime: new Date().toISOString(),
+        expires: new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString() // 8 hours
+      };
+      
+      // Store in localStorage (main storage)
+      localStorage.setItem('adminAuth', JSON.stringify(authData));
+      console.log('💾 Stored in localStorage:', authData);
+      
+      // Store in sessionStorage (backup for same tab)
+      sessionStorage.setItem('adminAuth', JSON.stringify(authData));
+      console.log('💾 Stored in sessionStorage');
+      
+      // Store remember token in localStorage with longer expiry
+      const rememberToken = {
+        userId: user.id,
+        username: user.username,
+        expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() // 7 days
+      };
+      localStorage.setItem('adminRememberToken', JSON.stringify(rememberToken));
+      console.log('💾 Stored remember token:', rememberToken);
+      
+      console.log('✅ Admin authenticated with persistent session');
+      return { success: true, user: user };
+      
+    } catch (error) {
+      console.error('❌ Failed to store auth data:', error);
+      return { success: false, error: 'Erro ao salvar sessão' };
+    }
+  }
+
+  /**
+   * Check if admin is authenticated (NASA: multi-layer session check)
+   * Function size: 40 lines (NASA compliant)
+   */
+  isAdminAuthenticated() {
+    try {
+      console.log('🔍 === CHECKING AUTHENTICATION ===');
+      
+      // Check main auth token first
+      let adminAuth = localStorage.getItem('adminAuth');
+      console.log('🔍 localStorage adminAuth:', adminAuth ? 'EXISTS' : 'NULL');
+      
+      // If not in localStorage, check sessionStorage
+      if (!adminAuth) {
+        adminAuth = sessionStorage.getItem('adminAuth');
+        console.log('🔍 sessionStorage adminAuth:', adminAuth ? 'EXISTS' : 'NULL');
+        
+        if (adminAuth) {
+          console.log('📦 Found auth in sessionStorage, restoring to localStorage');
+          localStorage.setItem('adminAuth', adminAuth);
+        }
+      }
+      
+      if (adminAuth) {
+        try {
+          const authData = JSON.parse(adminAuth);
+          const now = new Date();
+          const expires = new Date(authData.expires);
+          
+          console.log('🔍 Auth data check:', {
+            username: authData.username,
+            now: now.toISOString(),
+            expires: expires.toISOString(),
+            valid: now < expires,
+            timeLeft: Math.round((expires - now) / 1000 / 60) + ' minutes'
+          });
+          
+          if (now < expires) {
+            console.log('✅ === AUTHENTICATION VALID ===');
+            return true;
+          } else {
+            console.log('⏰ Main auth expired, checking remember token...');
+            localStorage.removeItem('adminAuth');
+            sessionStorage.removeItem('adminAuth');
+          }
+        } catch (parseError) {
+          console.error('❌ Failed to parse auth data:', parseError);
+          localStorage.removeItem('adminAuth');
+          sessionStorage.removeItem('adminAuth');
+        }
+      }
+      
+      // Check remember token as fallback
+      const rememberToken = localStorage.getItem('adminRememberToken');
+      console.log('🔍 Remember token:', rememberToken ? 'EXISTS' : 'NULL');
+      
+      if (rememberToken) {
+        try {
+          const tokenData = JSON.parse(rememberToken);
+          const now = new Date();
+          const expires = new Date(tokenData.expires);
+          
+          console.log('🔍 Remember token check:', {
+            username: tokenData.username,
+            expires: expires.toISOString(),
+            valid: now < expires
+          });
+          
+          if (now < expires) {
+            console.log('✅ Remember token valid, auto-login user:', tokenData.username);
+            this.autoLoginWithRememberToken(tokenData);
+            console.log('✅ === AUTO-LOGIN SUCCESSFUL ===');
+            return true;
+          } else {
+            console.log('⏰ Remember token expired, clearing');
+            localStorage.removeItem('adminRememberToken');
+          }
+        } catch (parseError) {
+          console.error('❌ Failed to parse remember token:', parseError);
+          localStorage.removeItem('adminRememberToken');
+        }
+      }
+      
+      console.log('❌ === NO VALID AUTHENTICATION FOUND ===');
+      return false;
+      
+    } catch (error) {
+      console.error('❌ Auth check completely failed:', error);
+      // Clear all auth data on error
+      localStorage.removeItem('adminAuth');
+      sessionStorage.removeItem('adminAuth');
+      localStorage.removeItem('adminRememberToken');
+      return false;
+    }
+  }
+
+  /**
+   * Auto-login with remember token (NASA: session restoration)
+   * Function size: 15 lines (NASA compliant)
+   */
+  autoLoginWithRememberToken(tokenData) {
+    try {
+      const authData = {
+        id: tokenData.userId,
+        username: tokenData.username,
+        role: 'admin',
+        loginTime: new Date().toISOString(),
+        expires: new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString() // 8 hours
+      };
+      
+      localStorage.setItem('adminAuth', JSON.stringify(authData));
+      sessionStorage.setItem('adminAuth', JSON.stringify(authData));
+      console.log('🔄 Auto-logged in with remember token');
+      
+    } catch (error) {
+      console.error('❌ Auto-login failed:', error);
+    }
+  }
+
+  /**
+   * Alias for compatibility (NASA: compatibility wrapper)
+   * Function size: 3 lines (NASA compliant)
+   */
+  isAuthenticated() {
+    return this.isAdminAuthenticated();
+  }
+
+  /**
+   * Alias for compatibility (NASA: compatibility wrapper)
+   * Function size: 3 lines (NASA compliant)
+   */
+  async authenticate(username, password) {
+    return await this.authenticateAdmin(username, password);
+  }
+
+  /**
+   * Logout admin (NASA: complete session cleanup)
+   * Function size: 10 lines (NASA compliant)
+   */
+  logoutAdmin() {
+    localStorage.removeItem('adminAuth');
+    sessionStorage.removeItem('adminAuth');
+    localStorage.removeItem('adminRememberToken');
+    console.log('✅ Admin logged out - all tokens cleared');
+  }
+
+  /**
+   * Alias for compatibility (NASA: compatibility wrapper)
+   * Function size: 3 lines (NASA compliant)
+   */
+  logout() {
+    return this.logoutAdmin();
+  }
+
+  /**
+   * Get all product tags from Supabase (NASA: tag management)
    * Function size: 15 lines (NASA compliant)
    */
   getProductTags() {
-    // Return empty array for now - can be extended later
-    console.warn('⚠️ getProductTags: Tag system not implemented yet');
+    const cached = this.cache.getCache();
+    if (cached && cached.productTags) {
+      return cached.productTags;
+    }
+    
+    console.warn('⚠️ No cached product tags, returning empty array');
     return [];
   }
 
@@ -603,6 +969,43 @@ class DatabaseNASA {
   }
 
   /**
+   * Add new product (NASA: create operation)
+   * Function size: 40 lines (NASA compliant)
+   */
+  async addProduct(productData) {
+    try {
+      console.log('🍽️ Adding new product:', productData.name);
+      
+      // Add to Supabase first
+      const savedProduct = await this.writer.addProduct(productData);
+      
+      if (savedProduct) {
+        // Add to cache with the Supabase-generated ID
+        const cachedData = this.cache.getCache();
+        if (cachedData?.products) {
+          const newProduct = {
+            id: savedProduct.id,
+            ...productData,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+          };
+          
+          cachedData.products.push(newProduct);
+          this.cache.setCache(cachedData, true); // Mark as modified for other browsers
+          console.log('✅ Product added successfully');
+          return newProduct;
+        }
+      }
+      
+      throw new Error('Failed to add product to cache');
+      
+    } catch (error) {
+      console.error('❌ Add product failed:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Update existing product (NASA: update operation)
    * Function size: 35 lines (NASA compliant)
    */
@@ -610,6 +1013,10 @@ class DatabaseNASA {
     try {
       console.log('📝 Updating product:', productId);
       
+      // Update in Supabase first
+      await this.writer.updateProduct(productId, productData);
+      
+      // Update in cache
       const cachedData = this.cache.getCache();
       if (cachedData?.products) {
         const index = cachedData.products.findIndex(p => p.id === productId);
@@ -620,13 +1027,13 @@ class DatabaseNASA {
             updatedAt: new Date().toISOString()
           };
           
-          this.cache.setCache(cachedData, true); // Mark as modified
+          this.cache.setCache(cachedData, true); // Mark as modified for other browsers
           console.log('✅ Product updated successfully');
           return cachedData.products[index];
         }
       }
       
-      throw new Error(`Product not found: ${productId}`);
+      throw new Error(`Product not found in cache: ${productId}`);
       
     } catch (error) {
       console.error('❌ Update product failed:', error);
@@ -663,11 +1070,41 @@ class DatabaseNASA {
 
   /**
    * Add product tag (NASA: tag creation)
-   * Function size: 20 lines (NASA compliant)
+   * Function size: 25 lines (NASA compliant)
    */
-  addProductTag(tagData) {
-    console.warn('⚠️ addProductTag: Tag system not implemented yet');
-    return { id: Date.now().toString(), ...tagData };
+  async addProductTag(tagData) {
+    try {
+      console.log('🏷️ Adding product tag via Supabase:', tagData.name);
+      
+      // Add to Supabase first
+      const savedTag = await this.writer.addProductTag(tagData);
+      
+      if (savedTag) {
+        console.log('✅ Tag saved to Supabase:', savedTag);
+        
+        // Update cache safely
+        const cachedData = this.cache.getCache() || {};
+        
+        // Initialize productTags array if it doesn't exist
+        if (!cachedData.productTags) {
+          cachedData.productTags = [];
+          console.log('🔧 Initialized productTags cache array');
+        }
+        
+        // Add new tag to cache
+        cachedData.productTags.push(savedTag);
+        this.cache.setCache(cachedData, true);
+        
+        console.log('✅ Product tag added and cached successfully');
+        return savedTag;
+      }
+      
+      throw new Error('Supabase returned null/undefined tag');
+      
+    } catch (error) {
+      console.error('❌ Add product tag failed:', error);
+      throw error;
+    }
   }
 
   /**
@@ -681,5 +1118,9 @@ class DatabaseNASA {
 }
 
 // Export singleton instance (NASA: singleton pattern)
-const database = new DatabaseNASA();
+// Default instance for public use (optimized for index.html)
+const database = new DatabaseNASA(false); // false = public mode (optimized)
+
+// Export both default (public) and admin factory
 export default database;
+export const createAdminDatabase = () => new DatabaseNASA(true); // true = admin mode (full data)

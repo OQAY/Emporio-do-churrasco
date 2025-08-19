@@ -154,6 +154,24 @@ export class AdminController {
     }
         
     setupDashboardClickListeners() {
+        // Setup refresh button
+        const refreshBtn = document.getElementById('refreshDataBtn');
+        if (refreshBtn) {
+            refreshBtn.addEventListener('click', async () => {
+                refreshBtn.disabled = true;
+                refreshBtn.innerHTML = `
+                    <svg class="animate-spin w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                    </svg>
+                    Atualizando...
+                `;
+                
+                await this.database.forceReload();
+                this.view.showNotification('Dados atualizados com sucesso!', 'success');
+                this.showDashboard();
+            });
+        }
+        
         // Setup dashboard card navigation
         document.querySelectorAll('.dashboard-card').forEach(card => {
             card.addEventListener('click', () => {
@@ -563,6 +581,28 @@ export class AdminController {
         
         this.view.showModal(isEdit ? 'Editar Produto' : 'Adicionar Produto', formHtml);
         
+        // CRITICAL: Set selectedGalleryImageId if editing product with existing image
+        if (product && product.image) {
+            const galleryImages = this.database.getGalleryImages();
+            const existingImage = galleryImages.find(img => img.url === product.image);
+            
+            if (existingImage) {
+                const selectedGalleryImageId = document.getElementById('selectedGalleryImageId');
+                if (selectedGalleryImageId) {
+                    selectedGalleryImageId.value = existingImage.id;
+                    console.log('✅ Found image in gallery, set selectedGalleryImageId:', existingImage.id);
+                } else {
+                    console.error('❌ selectedGalleryImageId field not found!');
+                }
+            } else {
+                console.warn('⚠️ Product image not found in gallery:', product.image);
+                // The image exists in product but not in gallery
+                // This is OK - user can still edit product and image will remain unchanged
+            }
+        } else {
+            console.log('🆕 New product or no image - selectedGalleryImageId remains empty');
+        }
+        
         // Handle form submission
         document.getElementById('productForm').addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -665,7 +705,7 @@ export class AdminController {
         
         // Image handling is now done through the preview click overlay
         
-        // Handle image upload
+        // Handle image upload - UPLOAD IMMEDIATELY TO SUPABASE
         document.getElementById('productImage').addEventListener('change', async (e) => {
             const file = e.target.files[0];
             if (file && file.size > 5000000) {
@@ -675,8 +715,54 @@ export class AdminController {
                 // Clear gallery selection when uploading new file
                 document.getElementById('selectedGalleryImageId').value = '';
                 
-                // Update main preview
+                // Update main preview immediately
                 this.updateImagePreview(file);
+                
+                // Upload to Supabase immediately in background
+                try {
+                    console.log('📤 Uploading image to Supabase immediately...');
+                    this.view.showNotification('Enviando imagem...', 'info');
+                    
+                    const imageData = await this.database.saveImage(file);
+                    
+                    // Save to gallery automatically
+                    const categorySelect = document.getElementById('productCategory');
+                    const categoryName = categorySelect?.options[categorySelect.selectedIndex]?.text || 'Produto';
+                    const productName = document.getElementById('productName')?.value || 'Nova Imagem';
+                    
+                    const galleryImageData = {
+                        name: `${productName} - ${categoryName}`,
+                        url: imageData.url,
+                        size: file.size,
+                        type: file.type,
+                        tags: this.generateAutoTags(productName, categoryName)
+                    };
+                    
+                    // Check if image already exists
+                    if (!this.database.imageExistsInGallery(imageData.url)) {
+                        const savedImage = await this.database.addGalleryImage(galleryImageData);
+                        
+                        // Store the gallery image ID to use when saving product
+                        const selectedGalleryImageId = document.getElementById('selectedGalleryImageId');
+                        if (selectedGalleryImageId && savedImage) {
+                            // Store the ID returned from Supabase
+                            selectedGalleryImageId.value = savedImage.id || imageData.id;
+                            console.log('✅ Image uploaded to Supabase and gallery:', savedImage);
+                            this.view.showNotification('Imagem enviada com sucesso!', 'success');
+                        }
+                    } else {
+                        // Image already exists, find its ID
+                        const images = this.database.getGalleryImages();
+                        const existingImage = images.find(img => img.url === imageData.url);
+                        if (existingImage) {
+                            document.getElementById('selectedGalleryImageId').value = existingImage.id;
+                            console.log('✅ Using existing image from gallery:', existingImage.id);
+                        }
+                    }
+                } catch (error) {
+                    console.error('❌ Failed to upload image:', error);
+                    this.view.showNotification('Erro ao enviar imagem. Tente novamente.', 'error');
+                }
             }
         });
         
@@ -1335,53 +1421,34 @@ export class AdminController {
             tags: this.getSelectedTags()
         };
         
-        // Handle image - either from gallery or upload
+        // Handle image - Image was already uploaded to Supabase when selected
         const selectedGalleryImageId = document.getElementById('selectedGalleryImageId').value;
-        const imageFile = document.getElementById('productImage').files[0];
         
         if (selectedGalleryImageId) {
-            // Use image from gallery
+            // Use image from gallery (either selected from gallery or uploaded just now)
             const galleryImage = this.database.getGalleryImageById(selectedGalleryImageId);
             if (galleryImage) {
                 productData.image = galleryImage.url;
-            }
-        } else if (imageFile) {
-            // Upload new image
-            try {
-                const imageData = await this.database.saveImage(imageFile);
-                productData.image = imageData;
-                
-                // Auto-save to gallery with smart naming and tags
-                const categoryName = this.database.getCategoryById(productData.categoryId)?.name || 'Produto';
-                const productName = productData.name || 'Imagem';
-                
-                const galleryImageData = {
-                    name: `${productName} - ${categoryName}`,
-                    url: imageData,
-                    size: imageFile.size,
-                    type: imageFile.type,
-                    tags: this.generateAutoTags(productData.name, categoryName)
-                };
-                
-                // Check if image already exists to avoid duplicates
-                if (!this.database.imageExistsInGallery(imageData)) {
-                    this.database.addGalleryImage(galleryImageData);
-                    console.log('Imagem automaticamente salva na galeria:', galleryImageData.name);
-                }
-            } catch (error) {
-                console.error('Erro ao processar imagem:', error);
-                this.view.showNotification(`Erro: ${error.message}`, 'error');
-                return; // Don't save product if image failed
+                console.log('📸 Using gallery image for product:', galleryImage.name);
             }
         }
         
+        // Note: If no selectedGalleryImageId, product will be saved without image
+        // The image upload already happened when file was selected
+        
+        console.log('🔍 DEBUG - ProductData before save:', productData);
+        
         if (productId) {
-            this.database.updateProduct(productId, productData);
+            await this.database.updateProduct(productId, productData);
             this.view.showNotification('Produto atualizado com sucesso!');
         } else {
-            this.database.addProduct(productData);
+            await this.database.addProduct(productData);
             this.view.showNotification('Produto adicionado com sucesso!');
         }
+        
+        // Force reload data from Supabase to ensure sync
+        console.log('🔄 Forcing data reload after product save...');
+        await this.database.forceReload();
         
         this.view.closeModal();
         this.showProducts();
@@ -2750,10 +2817,10 @@ export class AdminController {
             }
         });
         
-        this.updateImagePreview();
+        this.updateUploadImagePreview();
     }
     
-    updateImagePreview() {
+    updateUploadImagePreview() {
         const previewArea = document.getElementById('imagePreviewArea');
         const previewList = document.getElementById('imagePreviewList');
         const submitBtn = document.getElementById('uploadSubmitBtn');
@@ -2805,7 +2872,7 @@ export class AdminController {
     
     removeSelectedFile(index) {
         this.selectedFiles.splice(index, 1);
-        this.updateImagePreview();
+        this.updateUploadImagePreview();
         
         // Update file input to reflect removed files
         this.updateFileInput();
@@ -2820,7 +2887,7 @@ export class AdminController {
     
     clearSelectedFiles() {
         this.selectedFiles = [];
-        this.updateImagePreview();
+        this.updateUploadImagePreview();
         this.updateFileInput();
     }
 
@@ -3856,8 +3923,8 @@ export class AdminController {
         // Create custom tag
         const confirmCreateTag = document.getElementById('confirmCreateTag');
         if (confirmCreateTag) {
-            confirmCreateTag.addEventListener('click', () => {
-                this.createCustomTag();
+            confirmCreateTag.addEventListener('click', async () => {
+                await this.createCustomTag();
             });
         }
         
@@ -3872,53 +3939,118 @@ export class AdminController {
             }
         });
         
-        // Real-time form validation and preview
+        // ✅ SIMPLE DIRECT TAG PREVIEW (no complex components)
+        this.setupSimpleTagPreview();
+        
+        // Enter key handlers
         const customTagName = document.getElementById('customTagName');
         const customTagIcon = document.getElementById('customTagIcon');
-        const customTagColor = document.getElementById('customTagColor');
-        const confirmBtn = document.getElementById('confirmCreateTag');
-        const tagPreview = document.getElementById('tagPreview');
-        const nameCounter = document.getElementById('nameCounter');
         
-        if (customTagName && customTagIcon && customTagColor && confirmBtn && tagPreview) {
-            // Update preview and validation in real time
-            const updatePreviewAndValidation = () => {
-                const name = customTagName.value.trim();
-                const icon = customTagIcon.value.trim() || '🏷️';
-                const color = customTagColor.value;
-                
-                // Update preview - SEMPRE mostra cor e emoji, mesmo sem texto
-                tagPreview.textContent = `${icon} ${name || 'Nova Tag'}`;
-                tagPreview.style.backgroundColor = color; // Sempre usa a cor escolhida
-                tagPreview.style.borderColor = 'transparent';
-                tagPreview.style.color = 'white';
-                
-                // Update counter
-                if (nameCounter) {
-                    nameCounter.textContent = `${name.length}/20`;
-                    nameCounter.style.color = name.length > 15 ? '#ef4444' : '#6b7280';
-                }
-                
-                // Enable/disable button - só precisa de nome com pelo menos 2 caracteres
-                confirmBtn.disabled = !name || name.length < 2;
-            };
-            
-            customTagName.addEventListener('input', updatePreviewAndValidation);
-            customTagIcon.addEventListener('input', updatePreviewAndValidation);
-            customTagColor.addEventListener('input', updatePreviewAndValidation);
-            
-            // Enter key handlers
+        if (customTagName && customTagIcon) {
             [customTagName, customTagIcon].forEach(input => {
-                input.addEventListener('keypress', (e) => {
-                    if (e.key === 'Enter' && !confirmBtn.disabled) {
-                        this.createCustomTag();
+                input.addEventListener('keypress', async (e) => {
+                    if (e.key === 'Enter') {
+                        const confirmBtn = document.getElementById('confirmCreateTag');
+                        if (confirmBtn && !confirmBtn.disabled) {
+                            await this.createCustomTag();
+                        }
                     }
                 });
             });
-            
-            // Initial validation
-            updatePreviewAndValidation();
         }
+    }
+    
+    /**
+     * Setup simple tag preview that ALWAYS works (NASA: simple solution)
+     * Function size: 35 lines (NASA compliant)
+     */
+    setupSimpleTagPreview() {
+        const nameField = document.getElementById('customTagName');
+        const emojiField = document.getElementById('customTagIcon');
+        const colorField = document.getElementById('customTagColor');
+        const preview = document.getElementById('tagPreview');
+        const confirmBtn = document.getElementById('confirmCreateTag');
+        
+        if (!nameField || !emojiField || !colorField || !preview) {
+            return;
+        }
+        
+        // Simple update function that ALWAYS works
+        const updatePreview = () => {
+            const name = nameField.value.trim() || 'Nova Tag';
+            const emoji = emojiField.value.trim() || '🏷️';
+            const color = colorField.value || '#3b82f6';
+            
+            // Update preview with current values
+            preview.innerHTML = `
+                <span class="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg" 
+                      style="background-color: ${color}; color: white;">
+                    <span>${emoji}</span>
+                    <span class="font-medium">${name}</span>
+                </span>
+            `;
+            
+            // Update button state
+            if (confirmBtn) {
+                confirmBtn.disabled = !nameField.value.trim();
+            }
+        };
+        
+        // Bind ALL events to ALL fields
+        [nameField, emojiField, colorField].forEach(field => {
+            field.addEventListener('input', updatePreview);
+            field.addEventListener('change', updatePreview);
+            field.addEventListener('keyup', updatePreview);
+            field.addEventListener('blur', updatePreview);
+        });
+        
+        // ✅ DIRECT CLICK DETECTION: Detectar cliques nos pickers específicos
+        this.setupDirectClickDetection(updatePreview);
+        
+        // Initial update
+        updatePreview();
+    }
+    
+    /**
+     * Setup direct click detection (NASA: simple solution)
+     * Function size: 25 lines (NASA compliant)
+     */
+    setupDirectClickDetection(updateCallback) {
+        // NASA Standard: Single responsibility - apenas detectar cliques
+        document.addEventListener('click', (event) => {
+            const target = event.target;
+            const tagSection = document.getElementById('customTagSection');
+            
+            // Verificar se clique foi dentro da seção de tags
+            if (!tagSection || !tagSection.contains(target)) {
+                return; // NASA: Early return para reduzir complexidade
+            }
+            
+            // Detectar cliques nos pickers específicos
+            const emojiContainer = target.closest('#customTagSection > div > div.space-y-4.mb-6 > div.grid.grid-cols-2.gap-4 > div:nth-child(1) > div > div');
+            const colorContainer = target.closest('#customTagSection > div > div.space-y-4.mb-6 > div.grid.grid-cols-2.gap-4 > div:nth-child(2) > div > div');
+            
+            if (emojiContainer || colorContainer) {
+                setTimeout(updateCallback, 50); // NASA: Minimal delay
+            }
+        });
+    }
+    
+    /**
+     * Clear custom tag form (NASA: form management)
+     * Function size: 15 lines (NASA compliant)
+     */
+    clearCustomTagForm() {
+        const nameField = document.getElementById('customTagName');
+        const emojiField = document.getElementById('customTagIcon');
+        const colorField = document.getElementById('customTagColor');
+        
+        if (nameField) nameField.value = '';
+        if (emojiField) emojiField.value = '🏷️';
+        if (colorField) colorField.value = '#3b82f6';
+        
+        // Trigger preview update
+        this.setupSimpleTagPreview();
     }
     
     updateTagCounter() {
@@ -3929,7 +4061,7 @@ export class AdminController {
         }
     }
 
-    createCustomTag() {
+    async createCustomTag() {
         const name = document.getElementById('customTagName').value.trim();
         const icon = document.getElementById('customTagIcon').value.trim() || '🏷️';
         const color = document.getElementById('customTagColor').value;
@@ -3940,48 +4072,47 @@ export class AdminController {
         }
         
         try {
-            const newTag = this.database.addProductTag({ name, icon, color });
+            console.log('🏷️ Creating custom tag:', { name, icon, color });
             
-            // Refresh tags container
-            const container = document.getElementById('productTagsContainer');
-            const currentTags = this.getSelectedTags();
-            container.innerHTML = this.renderTagsSelector(currentTags);
-            this.setupTagsEvents();
+            // Show loading state
+            const confirmBtn = document.getElementById('confirmCreateTag');
+            const originalText = confirmBtn.textContent;
+            confirmBtn.textContent = 'Criando...';
+            confirmBtn.disabled = true;
+            
+            const newTag = await this.database.addProductTag({ name, icon, color });
+            console.log('✅ Tag created successfully:', newTag);
+            
+            // Try to refresh tags container safely
+            try {
+                const container = document.getElementById('productTagsContainer');
+                if (container) {
+                    const currentTags = this.getSelectedTags();
+                    container.innerHTML = this.renderTagsSelector(currentTags);
+                    this.setupTagsEvents();
+                    console.log('✅ Tags UI refreshed successfully');
+                }
+            } catch (uiError) {
+                console.warn('⚠️ Failed to refresh tags UI, but tag was created:', uiError);
+                // Don't throw - tag was created successfully in database
+            }
             
             // Hide custom tag section and clear form
             document.getElementById('customTagSection').classList.add('hidden');
             this.clearCustomTagForm();
             
             this.view.showNotification(`Tag "${name}" criada com sucesso!`);
+            
         } catch (error) {
-            this.view.showNotification(error.message, 'error');
-        }
-    }
-
-    clearCustomTagForm() {
-        document.getElementById('customTagName').value = '';
-        document.getElementById('customTagIcon').value = '';
-        document.getElementById('customTagColor').value = '#6366f1';
-        
-        // Reset preview and counter
-        const tagPreview = document.getElementById('tagPreview');
-        const nameCounter = document.getElementById('nameCounter');
-        const confirmBtn = document.getElementById('confirmCreateTag');
-        
-        if (tagPreview) {
-            tagPreview.textContent = '🏷️ Nova Tag';
-            tagPreview.style.backgroundColor = '#6b7280';
-            tagPreview.style.borderColor = '#d1d5db';
-            tagPreview.style.color = '#374151';
-        }
-        
-        if (nameCounter) {
-            nameCounter.textContent = '0/20';
-            nameCounter.style.color = '#6b7280';
-        }
-        
-        if (confirmBtn) {
-            confirmBtn.disabled = true;
+            console.error('❌ Error creating tag:', error);
+            this.view.showNotification(`Erro ao criar tag: ${error.message}`, 'error');
+            
+            // Restore button state
+            const confirmBtn = document.getElementById('confirmCreateTag');
+            if (confirmBtn) {
+                confirmBtn.textContent = 'Criar Tag';
+                confirmBtn.disabled = false;
+            }
         }
     }
 

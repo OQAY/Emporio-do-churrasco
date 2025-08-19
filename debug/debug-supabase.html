@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Debug Supabase Connection</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-900 text-green-400 p-4 font-mono">
+    <h1 class="text-2xl mb-4">🔍 DEBUG SUPABASE CONNECTION</h1>
+    <div id="output"></div>
+
+    <script type="module">
+        const output = document.getElementById('output');
+        
+        function log(msg, type = 'info') {
+            const color = type === 'error' ? 'text-red-500' : type === 'success' ? 'text-green-500' : 'text-yellow-500';
+            output.innerHTML += `<div class="${color}">${msg}</div>`;
+        }
+
+        log('Starting debug...');
+        
+        // Test 1: Direct Supabase API
+        log('\n📡 TEST 1: Direct Supabase API');
+        
+        const SUPABASE_URL = 'https://lypmjnpbpvqkptgmdnnc.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx5cG1qbnBicHZxa3B0Z21kbm5jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU1NDg4NjcsImV4cCI6MjA3MTEyNDg2N30.naWda_QL5W9JLu87gO6LbFZmG3utyWJwFPvgh4V2i3g';
+        
+        try {
+            const response = await fetch(`${SUPABASE_URL}/rest/v1/products?select=*&limit=5`, {
+                headers: {
+                    'apikey': SUPABASE_KEY,
+                    'Authorization': `Bearer ${SUPABASE_KEY}`
+                }
+            });
+            
+            const data = await response.json();
+            log(`✅ Supabase API: ${data.length} produtos encontrados`, 'success');
+            log(`Produtos: ${data.map(p => p.name).join(', ')}`);
+        } catch (error) {
+            log(`❌ Supabase API Error: ${error.message}`, 'error');
+        }
+
+        // Test 2: Import database module
+        log('\n📦 TEST 2: Database Module');
+        
+        try {
+            const { default: database } = await import('./src/js/database-supabase.js');
+            log('✅ Database module imported', 'success');
+            
+            // Test 3: Load data
+            log('\n🔄 TEST 3: Loading Data');
+            await database.loadData();
+            
+            // Test 4: Check cached data
+            log('\n📊 TEST 4: Cached Data');
+            const categories = database.getCategories();
+            const products = database.getProducts();
+            const restaurant = database.getRestaurant();
+            
+            log(`Categories: ${categories.length}`, categories.length > 0 ? 'success' : 'error');
+            log(`Products: ${products.length}`, products.length > 0 ? 'success' : 'error');
+            log(`Restaurant: ${restaurant ? restaurant.name : 'NOT LOADED'}`, restaurant ? 'success' : 'error');
+            
+            // Show some data
+            if (categories.length > 0) {
+                log(`\nCategorias:`);
+                categories.slice(0, 3).forEach(c => {
+                    log(`  - ${c.name} (${c.id})`);
+                });
+            }
+            
+            if (products.length > 0) {
+                log(`\nProdutos:`);
+                products.slice(0, 5).forEach(p => {
+                    log(`  - ${p.name}: R$ ${p.price}`);
+                });
+            }
+            
+        } catch (error) {
+            log(`❌ Module Error: ${error.message}`, 'error');
+            log(`Stack: ${error.stack}`, 'error');
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>DOM Validation Test - Menu Online</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .test-result { margin: 10px 0; padding: 10px; border-radius: 5px; }
+        .pass { background-color: #d4edda; border: 1px solid #c3e6cb; color: #155724; }
+        .fail { background-color: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; }
+        .info { background-color: #d1ecf1; border: 1px solid #bee5eb; color: #0c5460; }
+    </style>
+</head>
+<body class="bg-gray-50 p-6">
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl font-bold mb-6 text-center">🔍 Teste de Validação DOM</h1>
+        <div id="test-results"></div>
+        
+        <div class="mt-8">
+            <h2 class="text-xl font-semibold mb-4">🎯 Testes Automatizados:</h2>
+            <button id="run-tests" class="bg-blue-500 text-white px-6 py-3 rounded-lg hover:bg-blue-600">
+                Executar Todos os Testes
+            </button>
+        </div>
+        
+        <div class="mt-8">
+            <h2 class="text-xl font-semibold mb-4">📊 Enterprise System Debug:</h2>
+            <div class="bg-black text-green-400 p-4 rounded-lg font-mono text-sm" id="console-output">
+                Aguardando testes...
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class DOMValidator {
+            constructor() {
+                this.results = [];
+                this.testResults = document.getElementById('test-results');
+                this.consoleOutput = document.getElementById('console-output');
+            }
+
+            addResult(test, passed, message, details = null) {
+                this.results.push({ test, passed, message, details });
+                const div = document.createElement('div');
+                div.className = `test-result ${passed ? 'pass' : 'fail'}`;
+                div.innerHTML = `
+                    <strong>${passed ? '✅' : '❌'} ${test}</strong><br>
+                    ${message}
+                    ${details ? `<br><small>${details}</small>` : ''}
+                `;
+                this.testResults.appendChild(div);
+            }
+
+            addInfo(message) {
+                const div = document.createElement('div');
+                div.className = 'test-result info';
+                div.innerHTML = `<strong>ℹ️ Info:</strong> ${message}`;
+                this.testResults.appendChild(div);
+            }
+
+            updateConsole(message) {
+                this.consoleOutput.innerHTML += message + '\\n';
+                this.consoleOutput.scrollTop = this.consoleOutput.scrollHeight;
+            }
+
+            async testMainPageDOM() {
+                this.addInfo('Testando DOM da página principal...');
+                
+                try {
+                    const response = await fetch('http://localhost:8080/');
+                    const html = await response.text();
+                    
+                    // Test 1: Basic HTML structure
+                    const hasAppDiv = html.includes('<div id="app">');
+                    this.addResult('HTML Structure', hasAppDiv, 
+                        hasAppDiv ? 'Elemento #app encontrado' : 'Elemento #app não encontrado');
+
+                    // Test 2: Essential scripts
+                    const hasAppJS = html.includes('src/js/app.js');
+                    this.addResult('App JS Import', hasAppJS, 
+                        hasAppJS ? 'app.js carregado via module' : 'app.js não encontrado');
+
+                    // Test 3: CSS Loading
+                    const hasMainCSS = html.includes('src/styles/main.css');
+                    this.addResult('CSS Loading', hasMainCSS, 
+                        hasMainCSS ? 'main.css encontrado' : 'main.css não encontrado');
+
+                } catch (error) {
+                    this.addResult('Page Loading', false, `Erro ao carregar página: ${error.message}`);
+                }
+            }
+
+            async testModuleAvailability() {
+                this.addInfo('Testando disponibilidade dos módulos enterprise...');
+                
+                const modules = [
+                    'src/js/core/circuit-breaker.js',
+                    'src/js/core/app-coordinator.js', 
+                    'src/js/performance/core/metrics-collector.js',
+                    'src/js/performance/core/performance-optimizer.js',
+                    'src/js/enterprise-system-lite.js'
+                ];
+
+                for (const module of modules) {
+                    try {
+                        const response = await fetch(`http://localhost:8080/${module}`);
+                        const isAvailable = response.status === 200;
+                        this.addResult(`Module: ${module.split('/').pop()}`, isAvailable, 
+                            isAvailable ? 'Módulo carrega corretamente' : `HTTP ${response.status}`);
+                    } catch (error) {
+                        this.addResult(`Module: ${module.split('/').pop()}`, false, 
+                            `Erro de rede: ${error.message}`);
+                    }
+                }
+            }
+
+            async testEnterpriseEndpoints() {
+                this.addInfo('Testando endpoints do sistema...');
+                
+                const endpoints = [
+                    { path: '/', name: 'Página Principal' },
+                    { path: '/admin.html', name: 'Painel Admin' },
+                    { path: '/enterprise-dashboard.html', name: 'Enterprise Dashboard' }
+                ];
+
+                for (const endpoint of endpoints) {
+                    try {
+                        const response = await fetch(`http://localhost:8080${endpoint.path}`);
+                        const isAvailable = response.status === 200;
+                        this.addResult(`Endpoint: ${endpoint.name}`, isAvailable, 
+                            isAvailable ? 'Endpoint acessível' : `HTTP ${response.status}`);
+                    } catch (error) {
+                        this.addResult(`Endpoint: ${endpoint.name}`, false, 
+                            `Erro de conexão: ${error.message}`);
+                    }
+                }
+            }
+
+            async testJavaScriptExecution() {
+                this.addInfo('Testando execução JavaScript no contexto da página...');
+                
+                try {
+                    // Test if we can access localStorage
+                    const hasLocalStorage = typeof Storage !== 'undefined';
+                    this.addResult('LocalStorage API', hasLocalStorage, 
+                        hasLocalStorage ? 'localStorage disponível' : 'localStorage não disponível');
+
+                    // Test performance API
+                    const hasPerformance = typeof performance !== 'undefined';
+                    this.addResult('Performance API', hasPerformance, 
+                        hasPerformance ? 'Performance API disponível' : 'Performance API não disponível');
+
+                    // Test console
+                    const hasConsole = typeof console !== 'undefined';
+                    this.addResult('Console API', hasConsole, 
+                        hasConsole ? 'Console API disponível' : 'Console API não disponível');
+
+                } catch (error) {
+                    this.addResult('JavaScript Execution', false, `Erro JS: ${error.message}`);
+                }
+            }
+
+            async runAllTests() {
+                this.results = [];
+                this.testResults.innerHTML = '';
+                this.consoleOutput.innerHTML = 'Iniciando testes de validação DOM...\\n';
+                
+                this.updateConsole('🔍 Fase 1: Testando estrutura da página principal...');
+                await this.testMainPageDOM();
+                
+                this.updateConsole('📦 Fase 2: Testando disponibilidade dos módulos...');
+                await this.testModuleAvailability();
+                
+                this.updateConsole('🌐 Fase 3: Testando endpoints do sistema...');
+                await this.testEnterpriseEndpoints();
+                
+                this.updateConsole('⚙️ Fase 4: Testando execução JavaScript...');
+                await this.testJavaScriptExecution();
+
+                // Summary
+                const passed = this.results.filter(r => r.passed).length;
+                const total = this.results.length;
+                const passRate = ((passed / total) * 100).toFixed(1);
+                
+                this.updateConsole(`\\n✅ Testes concluídos: ${passed}/${total} passaram (${passRate}%)`);
+                
+                if (passRate >= 90) {
+                    this.addInfo(`🎉 Sistema em excelente estado: ${passed}/${total} testes passaram (${passRate}%)`);
+                } else if (passRate >= 70) {
+                    this.addInfo(`⚠️ Sistema funcional com alertas: ${passed}/${total} testes passaram (${passRate}%)`);
+                } else {
+                    this.addInfo(`❌ Sistema com problemas críticos: ${passed}/${total} testes passaram (${passRate}%)`);
+                }
+            }
+        }
+
+        // Initialize validator
+        const validator = new DOMValidator();
+
+        // Auto-run tests when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('run-tests').addEventListener('click', () => {
+                validator.runAllTests();
+            });
+            
+            // Auto-run after 1 second
+            setTimeout(() => {
+                validator.runAllTests();
+            }, 1000);
+        });
+    </script>
+</body>
+</html>

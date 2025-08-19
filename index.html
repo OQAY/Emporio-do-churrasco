@@ -4,7 +4,21 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Imperio do Churrasco - Cardapio Digital</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Optimized Tailwind CSS - smaller and faster -->
+    <script>
+        // Inline critical CSS loading for better performance
+        window.tailwindConfig = {
+            theme: {
+                extend: {
+                    colors: {
+                        'brand-orange': '#fb923c',
+                        'brand-orange-dark': '#f97316'
+                    }
+                }
+            }
+        }
+    </script>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,typography,aspect-ratio,line-clamp" defer></script>
     <link rel="icon" href="favicon.ico">
     <meta name="theme-color" content="#fb923c">
     <link rel="stylesheet" href="src/styles/main.css">

@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="utf-8">
+    <title>🚨 Error Detector - Admin Panel</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-red-900 text-white p-6">
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl font-bold mb-6 text-center">🚨 ERROR DETECTOR</h1>
+        
+        <div class="bg-red-800 rounded-lg p-4 mb-6">
+            <h2 class="text-xl font-semibold mb-4">🎯 Mission</h2>
+            <p>Capturar todos os erros JavaScript que impedem a Galeria de carregar</p>
+        </div>
+
+        <div class="bg-gray-800 rounded-lg p-4 mb-6">
+            <h2 class="text-xl font-semibold mb-4 text-yellow-400">📋 Error Log</h2>
+            <div id="errorLog" class="space-y-2 text-sm font-mono max-h-96 overflow-y-auto"></div>
+        </div>
+        
+        <div class="bg-gray-800 rounded-lg p-4">
+            <h2 class="text-xl font-semibold mb-4 text-blue-400">🔧 Actions</h2>
+            <div class="space-y-4">
+                <button id="loadAdmin" class="w-full bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded">
+                    📱 Load Admin Panel
+                </button>
+                
+                <button id="testGallery" class="w-full bg-green-600 hover:bg-green-700 px-4 py-2 rounded">
+                    📸 Test Gallery Navigation
+                </button>
+                
+                <button id="clearLog" class="w-full bg-red-600 hover:bg-red-700 px-4 py-2 rounded">
+                    🗑️ Clear Log
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const errorLog = document.getElementById('errorLog');
+        let errorCount = 0;
+        
+        function logError(message, type = 'error') {
+            errorCount++;
+            const colors = {
+                error: 'text-red-400',
+                warning: 'text-yellow-400',
+                info: 'text-blue-400',
+                success: 'text-green-400'
+            };
+            
+            const timestamp = new Date().toLocaleTimeString();
+            const div = document.createElement('div');
+            div.className = colors[type] || 'text-gray-300';
+            div.innerHTML = `[${errorCount}] [${timestamp}] ${message}`;
+            errorLog.appendChild(div);
+            errorLog.scrollTop = errorLog.scrollHeight;
+            
+            console.log(`[ERROR ${errorCount}] ${message}`);
+        }
+        
+        // Capture all JavaScript errors
+        window.addEventListener('error', (event) => {
+            logError(`JS ERROR: ${event.message} at ${event.filename}:${event.lineno}:${event.colno}`, 'error');
+            if (event.error && event.error.stack) {
+                logError(`Stack: ${event.error.stack}`, 'error');
+            }
+        });
+        
+        // Capture unhandled promise rejections
+        window.addEventListener('unhandledrejection', (event) => {
+            logError(`PROMISE REJECTION: ${event.reason}`, 'error');
+        });
+        
+        // Override console.error to catch manual errors
+        const originalError = console.error;
+        console.error = function(...args) {
+            logError(`CONSOLE ERROR: ${args.join(' ')}`, 'warning');
+            originalError.apply(console, args);
+        };
+        
+        // Load Admin Panel
+        document.getElementById('loadAdmin').addEventListener('click', async () => {
+            try {
+                logError('🔄 Loading admin panel modules...', 'info');
+                
+                // Import database
+                const { default: database } = await import('../src/js/database-nasa.js');
+                logError('✅ Database module loaded', 'success');
+                
+                // Import AdminView
+                const AdminViewModule = await import('../src/js/views/AdminView.js');
+                const adminView = new AdminViewModule.AdminView();
+                logError('✅ AdminView loaded', 'success');
+                
+                // Import AdminController
+                const AdminControllerModule = await import('../src/js/controllers/AdminController.js');
+                const adminController = new AdminControllerModule.AdminController(database, adminView);
+                logError('✅ AdminController loaded', 'success');
+                
+                // Store globally for testing
+                window.testAdmin = adminController;
+                window.testDatabase = database;
+                window.testView = adminView;
+                
+                // Test authentication
+                if (!database.isAuthenticated()) {
+                    database.authenticate('admin', 'admin123');
+                }
+                
+                await database.loadData();
+                logError('✅ Admin panel loaded successfully', 'success');
+                
+            } catch (error) {
+                logError(`❌ Failed to load admin: ${error.message}`, 'error');
+                logError(`Stack: ${error.stack}`, 'error');
+            }
+        });
+        
+        // Test Gallery Navigation
+        document.getElementById('testGallery').addEventListener('click', async () => {
+            try {
+                if (!window.testAdmin) {
+                    logError('❌ Load admin panel first', 'error');
+                    return;
+                }
+                
+                logError('🔄 Testing gallery navigation...', 'info');
+                
+                // Create mock content area
+                if (!document.getElementById('contentArea')) {
+                    const contentArea = document.createElement('div');
+                    contentArea.id = 'contentArea';
+                    contentArea.className = 'mt-6 bg-white rounded-lg p-4';
+                    document.body.appendChild(contentArea);
+                    logError('✅ Mock contentArea created', 'success');
+                }
+                
+                // Test navigateTo
+                logError('🖱️ Calling navigateTo("gallery")...', 'info');
+                await window.testAdmin.navigateTo('gallery');
+                
+                // Check if content was created
+                const contentArea = document.getElementById('contentArea');
+                if (contentArea.innerHTML.includes('Galeria de Imagens')) {
+                    logError('✅ Gallery content generated successfully', 'success');
+                    logError(`Content length: ${contentArea.innerHTML.length} characters`, 'info');
+                } else {
+                    logError('❌ Gallery content not generated', 'error');
+                    logError(`Content: ${contentArea.innerHTML.substring(0, 200)}...`, 'warning');
+                }
+                
+            } catch (error) {
+                logError(`❌ Gallery test failed: ${error.message}`, 'error');
+                logError(`Stack: ${error.stack}`, 'error');
+            }
+        });
+        
+        // Clear log
+        document.getElementById('clearLog').addEventListener('click', () => {
+            errorLog.innerHTML = '';
+            errorCount = 0;
+            logError('🗑️ Error log cleared', 'info');
+        });
+        
+        logError('🚨 Error detector initialized', 'success');
+        logError('Ready to catch all JavaScript errors', 'info');
+    </script>
+</body>
+</html>
