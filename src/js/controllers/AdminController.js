@@ -2093,7 +2093,7 @@ export class AdminController {
         // Evita auto-exit imediato quando entra no modo através de long press
         if (this.isSelectionMode && selectedCount === 0 && this.hadSelections) {
             // Evita auto-exit se acabou de entrar no modo seleção (debounce)
-            if (this.lastSelectionModeEntry && (Date.now() - this.lastSelectionModeEntry) < 200) {
+            if (this.lastSelectionModeEntry && (Date.now() - this.lastSelectionModeEntry) < 350) {
                 console.log('⏸️ Auto-exit cancelado - acabou de entrar no modo seleção');
                 return;
             }
