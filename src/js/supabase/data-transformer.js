@@ -88,16 +88,17 @@ class DataTransformer {
 
   /**
    * Transform all data (NASA: orchestration)
-   * Function size: 25 lines (NASA compliant)
+   * Function size: 30 lines (NASA compliant)
    */
   transformAllData(rawData) {
-    const { restaurant, categories, products, galleryImages } = rawData;
+    const { restaurant, categories, products, galleryImages, productTags } = rawData;
 
     return {
       restaurant: this.transformRestaurant(restaurant),
       categories: this.transformCategories(categories),
       products: this.transformProducts(products),
-      galleryImages: this.transformGalleryImages(galleryImages)
+      galleryImages: this.transformGalleryImages(galleryImages),
+      productTags: productTags || [] // ✅ CRITICAL FIX: Include productTags
     };
   }
 

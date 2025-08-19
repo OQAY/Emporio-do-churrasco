@@ -920,11 +920,11 @@ class DatabaseNASA {
    */
   getProductTags() {
     const cached = this.cache.getCache();
+    
     if (cached && cached.productTags) {
       return cached.productTags;
     }
     
-    console.warn('⚠️ No cached product tags, returning empty array');
     return [];
   }
 
