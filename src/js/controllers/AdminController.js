@@ -2090,15 +2090,21 @@ export class AdminController {
         const selectedCount = this.selectedImages.size;
         
         // Só faz auto-exit se o usuário realmente desmarcou todas as seleções
-        // (não quando entra no modo pela primeira vez)
+        // Evita auto-exit imediato quando entra no modo através de long press
         if (this.isSelectionMode && selectedCount === 0 && this.hadSelections) {
-            // Delay maior para evitar conflito com toggleImageSelection
+            // Evita auto-exit se acabou de entrar no modo seleção (debounce)
+            if (this.lastSelectionModeEntry && (Date.now() - this.lastSelectionModeEntry) < 500) {
+                console.log('⏸️ Auto-exit cancelado - acabou de entrar no modo seleção');
+                return;
+            }
+            
+            // Delay para evitar conflito com toggleImageSelection
             setTimeout(() => {
                 if (this.selectedImages.size === 0 && this.isSelectionMode && this.hadSelections) {
                     console.log('🚪 Saindo do modo seleção automaticamente - usuário desmarcou todas');
                     this.exitSelectionMode();
                 }
-            }, 1000); // Delay ainda maior para evitar race conditions
+            }, 100); // Delay menor mas suficiente
             return;
         }
         
@@ -2220,6 +2226,7 @@ export class AdminController {
     
     enterSelectionMode() {
         this.isSelectionMode = true;
+        this.lastSelectionModeEntry = Date.now(); // Marca timestamp de entrada
         console.log('🎯 Entrando em modo seleção');
         
         // Força atualização visual para mostrar checkboxes
