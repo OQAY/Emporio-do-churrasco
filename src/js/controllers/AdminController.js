@@ -2222,18 +2222,6 @@ export class AdminController {
         this.isSelectionMode = true;
         console.log('🎯 Entrando em modo seleção');
         
-        // Feedback visual de entrada no modo seleção
-        const notification = document.createElement('div');
-        notification.className = 'fixed top-20 left-1/2 transform -translate-x-1/2 bg-orange-600 text-white px-4 py-2 rounded-lg shadow-lg z-50 transition-all duration-300';
-        notification.innerHTML = '✓ Modo seleção ativo';
-        document.body.appendChild(notification);
-        
-        // Remove notificação após 2 segundos
-        setTimeout(() => {
-            notification.style.opacity = '0';
-            setTimeout(() => notification.remove(), 300);
-        }, 2000);
-        
         // Força atualização visual para mostrar checkboxes
         this.updateSelectionCounter();
     }
@@ -2244,17 +2232,6 @@ export class AdminController {
         this.hadSelections = false; // Reset para próxima vez
         console.log('🚪 Saindo do modo seleção');
         
-        // Feedback visual de saída do modo seleção
-        const notification = document.createElement('div');
-        notification.className = 'fixed top-20 left-1/2 transform -translate-x-1/2 bg-gray-600 text-white px-4 py-2 rounded-lg shadow-lg z-50 transition-all duration-300';
-        notification.innerHTML = '← Modo normal';
-        document.body.appendChild(notification);
-        
-        // Remove notificação após 1.5 segundos (mais rápido para saída)
-        setTimeout(() => {
-            notification.style.opacity = '0';
-            setTimeout(() => notification.remove(), 300);
-        }, 1500);
         
         // Limpa todas as seleções visuais
         document.querySelectorAll('.image-checkbox').forEach(checkbox => {
@@ -2309,34 +2286,14 @@ export class AdminController {
         const selectedCount = this.selectedImages.size;
         if (selectedCount === 0) return;
         
-        // Cria menu contextual
+        // Cria menu contextual mais leve com transparência
         const menu = document.createElement('div');
         menu.id = 'selection-context-menu';
-        menu.className = 'fixed bottom-20 left-1/2 transform -translate-x-1/2 bg-white rounded-lg shadow-xl border border-gray-200 z-50 p-2 flex gap-2';
+        menu.className = 'fixed bottom-20 left-1/2 transform -translate-x-1/2 bg-white bg-opacity-90 backdrop-blur-sm rounded-lg shadow-lg border border-gray-200 border-opacity-50 z-50 p-2 flex gap-2';
         
-        // Botão Compartilhar
-        const shareBtn = document.createElement('button');
-        shareBtn.className = 'flex items-center gap-2 px-4 py-3 hover:bg-gray-100 rounded-lg transition-colors';
-        shareBtn.innerHTML = `
-            <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z"></path>
-            </svg>
-            <span class="text-sm font-medium">Compartilhar</span>
-        `;
-        
-        // Botão Copiar
-        const copyBtn = document.createElement('button');
-        copyBtn.className = 'flex items-center gap-2 px-4 py-3 hover:bg-gray-100 rounded-lg transition-colors';
-        copyBtn.innerHTML = `
-            <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
-            </svg>
-            <span class="text-sm font-medium">Copiar</span>
-        `;
-        
-        // Botão Excluir
+        // Botão Excluir (único botão mantido)
         const deleteBtn = document.createElement('button');
-        deleteBtn.className = 'flex items-center gap-2 px-4 py-3 hover:bg-red-50 rounded-lg transition-colors';
+        deleteBtn.className = 'flex items-center gap-2 px-4 py-3 hover:bg-red-50 hover:bg-opacity-60 rounded-lg transition-all duration-200';
         deleteBtn.innerHTML = `
             <svg class="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
@@ -2344,25 +2301,13 @@ export class AdminController {
             <span class="text-sm font-medium text-red-600">Excluir (${selectedCount})</span>
         `;
         
-        // Event listeners
-        shareBtn.addEventListener('click', () => {
-            this.shareSelectedImages();
-            menu.remove();
-        });
-        
-        copyBtn.addEventListener('click', () => {
-            this.copySelectedImages();
-            menu.remove();
-        });
-        
+        // Event listener apenas para o botão excluir
         deleteBtn.addEventListener('click', () => {
             this.deleteSelectedImages();
             menu.remove();
         });
         
-        // Adiciona botões ao menu
-        menu.appendChild(shareBtn);
-        menu.appendChild(copyBtn);
+        // Adiciona apenas o botão excluir ao menu
         menu.appendChild(deleteBtn);
         
         // Adiciona ao DOM
