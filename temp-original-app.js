@@ -1,78 +1,25 @@
-// Aplicacao principal do cardapio digital com Enterprise Integration
+// Aplicacao principal do cardapio digital
 import database from './database.js';
 import { MenuView } from './views/MenuView.js';
 import { ProductController } from './controllers/ProductController.js';
-import enterpriseSystemLite from './enterprise-system-lite.js';
 
 class App {
     constructor() {
         this.database = database;
         this.view = new MenuView();
         this.controller = new ProductController(this.database, this.view);
-        this.enterpriseSystem = enterpriseSystemLite;
         this.init();
     }
 
-    async init() {
+    init() {
         // Renderizar estrutura inicial
         this.render();
-        
-        // Inicializar sistema enterprise (não-bloqueante)
-        await this.initializeEnterpriseFeatures();
         
         // Configurar event listeners
         this.setupEventListeners();
         
         // Carregar dados iniciais
         this.loadInitialData();
-    }
-
-    /**
-     * Initialize enterprise features (NASA: enterprise integration)
-     * Function size: 25 lines (NASA compliant)
-     */
-    async initializeEnterpriseFeatures() {
-        try {
-            console.log('🚀 Initializing enterprise features...');
-            
-            const initResult = await this.enterpriseSystem.initialize();
-            
-            if (initResult.success) {
-                console.log('✅ Enterprise features active:', {
-                    initTime: initResult.initializationTime,
-                    components: initResult.componentsLoaded
-                });
-                
-                // Add enterprise status indicator to UI
-                this.addEnterpriseStatusIndicator();
-            } else {
-                console.warn('⚠️ Enterprise features unavailable:', initResult.error);
-            }
-        } catch (error) {
-            console.warn('⚠️ Enterprise initialization failed:', error.message);
-            // App continues normally without enterprise features
-        }
-    }
-
-    /**
-     * Add enterprise status indicator (NASA: status display)
-     * Function size: 20 lines (NASA compliant)
-     */
-    addEnterpriseStatusIndicator() {
-        const header = document.querySelector('header .max-w-4xl');
-        if (!header) return;
-        
-        const indicator = document.createElement('div');
-        indicator.className = 'enterprise-status';
-        indicator.innerHTML = `
-            <div class="flex items-center gap-2 text-xs">
-                <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                <span class="text-gray-500">Enterprise Active</span>
-            </div>
-        `;
-        
-        // Insert enterprise indicator
-        header.appendChild(indicator);
     }
 
     render() {

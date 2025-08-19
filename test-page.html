@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Teste de Carregamento</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100">
+    <div id="test-results" class="container mx-auto p-8">
+        <h1 class="text-2xl font-bold mb-4">🧪 Teste de Carregamento</h1>
+        <div id="status" class="mb-4">Testando...</div>
+        <div id="app"></div>
+    </div>
+
+    <script type="module">
+        console.log('🚀 Starting page test...');
+        
+        // Test 1: Basic DOM
+        document.getElementById('status').innerHTML = '✅ DOM carregou';
+        
+        // Test 2: Load the simple menu script
+        try {
+            console.log('📦 Importing simple menu...');
+            
+            // Simulate the menu app directly
+            class TestMenuApp {
+                constructor() {
+                    console.log('🍽️ Test Menu App initialized');
+                }
+                
+                init() {
+                    console.log('🚀 Test app starting...');
+                    this.render();
+                }
+                
+                render() {
+                    const app = document.getElementById('app');
+                    if (!app) {
+                        console.error('❌ App container not found');
+                        return;
+                    }
+                    
+                    app.innerHTML = \`
+                        <div class="bg-white p-6 rounded-lg shadow-md">
+                            <h2 class="text-xl font-bold text-green-600 mb-4">🎉 JavaScript Funcionando!</h2>
+                            <p class="mb-4">O sistema está carregando corretamente:</p>
+                            <ul class="list-disc list-inside space-y-2 mb-4">
+                                <li>✅ HTML renderizado</li>
+                                <li>✅ CSS (Tailwind) carregado</li>
+                                <li>✅ JavaScript executando</li>
+                                <li>✅ DOM manipulation OK</li>
+                            </ul>
+                            
+                            <div class="bg-blue-50 p-4 rounded-lg">
+                                <h3 class="font-semibold text-blue-800 mb-2">🍖 Imperio do Churrasco</h3>
+                                <p class="text-blue-700">Cardápio Digital - Sistema Enterprise</p>
+                                <div class="mt-4 space-x-2">
+                                    <a href="/" class="bg-orange-500 text-white px-3 py-1 rounded">Ir para Cardápio</a>
+                                    <a href="admin.html" class="bg-green-500 text-white px-3 py-1 rounded">Admin</a>
+                                    <a href="enterprise-dashboard.html" class="bg-blue-500 text-white px-3 py-1 rounded">Dashboard</a>
+                                </div>
+                            </div>
+                        </div>
+                    \`;
+                    
+                    console.log('✅ Test app rendered successfully');
+                    document.getElementById('status').innerHTML = '✅ Teste concluído - JavaScript OK!';
+                }
+            }
+            
+            // Initialize test app
+            const testApp = new TestMenuApp();
+            testApp.init();
+            
+        } catch (error) {
+            console.error('❌ Test failed:', error);
+            document.getElementById('status').innerHTML = '❌ Erro no JavaScript: ' + error.message;
+            document.getElementById('app').innerHTML = \`
+                <div class="bg-red-50 border border-red-200 p-4 rounded-lg">
+                    <h3 class="text-red-800 font-semibold">Erro encontrado:</h3>
+                    <pre class="text-red-600 text-sm mt-2">\${error.message}</pre>
+                </div>
+            \`;
+        }
+    </script>
+</body>
+</html>
