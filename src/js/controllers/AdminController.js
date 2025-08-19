@@ -2340,17 +2340,109 @@ export class AdminController {
             `Tem certeza que deseja excluir ${count} imagens?`;
             
         if (confirm(message)) {
+            // Mostrar feedback visual durante exclusão
+            this.showDeletionProgress(count);
+            
+            let deletedCount = 0;
+            
             // Delete all selected images (await each one)
             for (const imageId of this.selectedImages) {
                 try {
+                    // Adicionar overlay de "excluindo" na imagem específica
+                    this.addDeletingOverlay(imageId);
+                    
                     await this.database.deleteGalleryImage(imageId);
+                    deletedCount++;
+                    
+                    // Atualizar progresso
+                    this.updateDeletionProgress(deletedCount, count);
+                    
                 } catch (error) {
                     console.error(`❌ Erro ao deletar imagem ${imageId}:`, error);
                 }
             }
             
-            this.view.showNotification(`${count} imagem(ns) excluída(s) com sucesso!`);
+            // Remover overlay de progresso
+            this.hideDeletionProgress();
+            
+            this.view.showNotification(`${deletedCount} imagem(ns) excluída(s) com sucesso!`);
             this.showGallery(); // Refresh gallery
+        }
+    }
+    
+    showDeletionProgress(totalCount) {
+        // Criar overlay global de progresso de exclusão
+        const overlay = document.createElement('div');
+        overlay.id = 'deletion-progress-overlay';
+        overlay.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+        
+        overlay.innerHTML = `
+            <div class="bg-white rounded-lg p-6 mx-4 max-w-sm text-center shadow-2xl">
+                <div class="mb-4">
+                    <svg class="w-12 h-12 text-red-600 mx-auto mb-3 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                    </svg>
+                    <h3 class="text-lg font-semibold text-gray-900 mb-2">Excluindo imagens</h3>
+                    <p class="text-sm text-gray-600" id="deletion-status">Preparando exclusão...</p>
+                </div>
+                <div class="w-full bg-gray-200 rounded-full h-3">
+                    <div id="deletion-progress-bar" class="bg-red-600 h-3 rounded-full transition-all duration-300" style="width: 0%"></div>
+                </div>
+                <p class="text-xs text-gray-500 mt-2" id="deletion-counter">0 de ${totalCount}</p>
+            </div>
+        `;
+        
+        document.body.appendChild(overlay);
+    }
+    
+    updateDeletionProgress(deletedCount, totalCount) {
+        const statusElement = document.getElementById('deletion-status');
+        const progressBar = document.getElementById('deletion-progress-bar');
+        const counterElement = document.getElementById('deletion-counter');
+        
+        if (statusElement) {
+            statusElement.textContent = `Excluindo imagem ${deletedCount} de ${totalCount}...`;
+        }
+        
+        if (progressBar) {
+            const percentage = (deletedCount / totalCount) * 100;
+            progressBar.style.width = `${percentage}%`;
+        }
+        
+        if (counterElement) {
+            counterElement.textContent = `${deletedCount} de ${totalCount}`;
+        }
+    }
+    
+    hideDeletionProgress() {
+        const overlay = document.getElementById('deletion-progress-overlay');
+        if (overlay) {
+            overlay.remove();
+        }
+    }
+    
+    addDeletingOverlay(imageId) {
+        const imageCard = document.querySelector(`[data-image-id="${imageId}"]`);
+        if (imageCard) {
+            // Remove overlay existente se houver
+            const existingOverlay = imageCard.querySelector('.deleting-overlay');
+            if (existingOverlay) {
+                existingOverlay.remove();
+            }
+            
+            // Adicionar overlay de "excluindo"
+            const overlay = document.createElement('div');
+            overlay.className = 'deleting-overlay absolute inset-0 bg-red-500 bg-opacity-75 flex items-center justify-center text-white font-semibold z-50 rounded';
+            overlay.innerHTML = `
+                <div class="text-center">
+                    <svg class="animate-spin mx-auto mb-2 h-6 w-6" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <div class="text-xs">Excluindo...</div>
+                </div>
+            `;
+            imageCard.appendChild(overlay);
         }
     }
     
