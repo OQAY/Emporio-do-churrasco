@@ -445,33 +445,6 @@ export class AdminView {
                         >
                         
                         <div class="flex items-center gap-4">
-                            <!-- Contador de selecionadas -->
-                            <div id="selectionCounter" class="text-sm text-gray-500 hidden">
-                                <span id="selectedCount">0</span> selecionada(s)
-                            </div>
-                            
-                            <!-- Botão de selecionar todas (só aparece quando há seleção) -->
-                            <button 
-                                id="selectAllBtn"
-                                class="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 flex items-center gap-2 hidden"
-                            >
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                </svg>
-                                Selecionar Todas
-                            </button>
-                            
-                            <!-- Botão de apagar selecionadas -->
-                            <button 
-                                id="deleteSelectedBtn"
-                                class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 flex items-center gap-2 hidden"
-                            >
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                                </svg>
-                                Apagar
-                            </button>
-                            
                             <div class="text-sm text-gray-500">
                                 ${images.length} ${images.length === 1 ? 'imagem' : 'imagens'}
                                 ${showLoading ? '<span class="text-blue-500 ml-2">🔄 Atualizando...</span>' : ''}
@@ -497,6 +470,12 @@ export class AdminView {
             
             <!-- CSS adicional para mobile -->
             <style>
+                /* Desabilitar zoom por double-tap na galeria */
+                #galleryGrid {
+                    touch-action: manipulation;
+                    -ms-touch-action: manipulation;
+                }
+                
                 /* Mobile active state - mostra botões quando clicado */
                 .gallery-image-card.mobile-active .action-buttons {
                     background-color: rgba(0, 0, 0, 0.3);
@@ -506,11 +485,25 @@ export class AdminView {
                     opacity: 1 !important;
                 }
                 
-                /* Melhora o long press no mobile */
+                /* Melhora o long press no mobile e desabilita zoom */
                 .gallery-image-card {
                     -webkit-touch-callout: none;
                     -webkit-user-select: none;
                     user-select: none;
+                    touch-action: manipulation;
+                    -ms-touch-action: manipulation;
+                }
+                
+                /* Desabilitar zoom em toda a área da galeria */
+                .gallery-image-card img {
+                    touch-action: manipulation;
+                    -ms-touch-action: manipulation;
+                    pointer-events: none; /* Evita zoom na imagem */
+                }
+                
+                /* Re-abilitar pointer events apenas nos botões */
+                .gallery-image-card button {
+                    pointer-events: auto;
                 }
             </style>
         `;
@@ -533,7 +526,7 @@ export class AdminView {
 
     createGalleryImageCard(image) {
         return `
-            <div class="gallery-image-card relative group bg-gray-100 rounded-lg overflow-hidden aspect-square hover:shadow-lg transition-all duration-300" data-image-id="${image.id}">
+            <div class="gallery-image-card relative group bg-gray-100 rounded-lg overflow-hidden aspect-square" data-image-id="${image.id}">
                 <!-- Overlay de seleção -->
                 <div class="selection-overlay absolute inset-0 bg-black bg-opacity-0 transition-opacity duration-300 z-10"></div>
                 

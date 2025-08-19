@@ -1729,21 +1729,6 @@ export class AdminController {
             });
         });
         
-        // Select all images button
-        const selectAllBtn = document.getElementById('selectAllBtn');
-        if (selectAllBtn) {
-            selectAllBtn.addEventListener('click', () => {
-                this.selectAllImages();
-            });
-        }
-        
-        // Delete selected images button
-        const deleteSelectedBtn = document.getElementById('deleteSelectedBtn');
-        if (deleteSelectedBtn) {
-            deleteSelectedBtn.addEventListener('click', () => {
-                this.deleteSelectedImages();
-            });
-        }
         
         // Gallery image card clicks - só seleciona se já estiver em modo seleção
         document.querySelectorAll('.gallery-image-card').forEach(card => {
@@ -2082,11 +2067,6 @@ export class AdminController {
     }
     
     updateSelectionCounter() {
-        const counter = document.getElementById('selectionCounter');
-        const countElement = document.getElementById('selectedCount');
-        const deleteBtn = document.getElementById('deleteSelectedBtn');
-        const selectAllBtn = document.getElementById('selectAllBtn');
-        
         const selectedCount = this.selectedImages.size;
         
         // Só faz auto-exit se o usuário realmente desmarcou todas as seleções
@@ -2114,18 +2094,6 @@ export class AdminController {
         }
         
         if (this.isSelectionMode || selectedCount > 0) {
-            // Em modo seleção: mostra controles de seleção
-            if (selectedCount > 0) {
-                counter.classList.remove('hidden');
-                deleteBtn.classList.remove('hidden');
-                countElement.textContent = selectedCount;
-            } else {
-                counter.classList.add('hidden');
-                deleteBtn.classList.add('hidden');
-            }
-            
-            selectAllBtn.classList.remove('hidden');
-            
             // Mostrar todas as checkboxes quando em modo seleção
             document.querySelectorAll('.selection-checkbox').forEach(checkbox => {
                 checkbox.classList.remove('opacity-0');
@@ -2138,11 +2106,6 @@ export class AdminController {
             });
             
         } else {
-            // Modo normal: esconde controles de seleção
-            counter.classList.add('hidden');
-            deleteBtn.classList.add('hidden');
-            selectAllBtn.classList.add('hidden');
-            
             // Esconder todas as checkboxes quando não está em modo seleção
             document.querySelectorAll('.selection-checkbox').forEach(checkbox => {
                 checkbox.classList.remove('opacity-100');
@@ -2190,16 +2153,6 @@ export class AdminController {
                 }
             });
             
-            // Update button text
-            const selectAllBtn = document.getElementById('selectAllBtn');
-            if (selectAllBtn) {
-                selectAllBtn.innerHTML = `
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                    </svg>
-                    Selecionar Todas
-                `;
-            }
         } else {
             // Select all images
             allImages.forEach(card => {
@@ -2211,16 +2164,6 @@ export class AdminController {
                 }
             });
             
-            // Update button text
-            const selectAllBtn = document.getElementById('selectAllBtn');
-            if (selectAllBtn) {
-                selectAllBtn.innerHTML = `
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                    </svg>
-                    Desmarcar Todas
-                `;
-            }
         }
     }
     
@@ -2298,7 +2241,25 @@ export class AdminController {
         menu.id = 'selection-context-menu';
         menu.className = 'fixed bottom-20 left-1/2 transform -translate-x-1/2 bg-white bg-opacity-90 backdrop-blur-sm rounded-lg shadow-lg border border-gray-200 border-opacity-50 z-50 p-2 flex gap-2';
         
-        // Botão Excluir (único botão mantido)
+        // Botão Selecionar Todas / Cancelar
+        const selectAllBtn = document.createElement('button');
+        const totalImages = document.querySelectorAll('.gallery-image-card').length;
+        const allSelected = selectedCount === totalImages;
+        
+        selectAllBtn.className = 'flex items-center gap-2 px-4 py-3 hover:bg-orange-50 hover:bg-opacity-60 rounded-lg transition-all duration-200';
+        selectAllBtn.innerHTML = allSelected ? `
+            <svg class="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+            <span class="text-sm font-medium text-orange-600">Cancelar</span>
+        ` : `
+            <svg class="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            <span class="text-sm font-medium text-orange-600">Selecionar Todas</span>
+        `;
+        
+        // Botão Excluir
         const deleteBtn = document.createElement('button');
         deleteBtn.className = 'flex items-center gap-2 px-4 py-3 hover:bg-red-50 hover:bg-opacity-60 rounded-lg transition-all duration-200';
         deleteBtn.innerHTML = `
@@ -2308,13 +2269,25 @@ export class AdminController {
             <span class="text-sm font-medium text-red-600">Excluir (${selectedCount})</span>
         `;
         
-        // Event listener apenas para o botão excluir
+        // Event listeners
+        selectAllBtn.addEventListener('click', () => {
+            if (allSelected) {
+                // Cancelar = sair do modo seleção
+                this.exitSelectionMode();
+            } else {
+                // Selecionar todas
+                this.selectAllImages();
+            }
+            menu.remove();
+        });
+        
         deleteBtn.addEventListener('click', () => {
             this.deleteSelectedImages();
             menu.remove();
         });
         
-        // Adiciona apenas o botão excluir ao menu
+        // Adiciona botões ao menu
+        menu.appendChild(selectAllBtn);
         menu.appendChild(deleteBtn);
         
         // Adiciona ao DOM
