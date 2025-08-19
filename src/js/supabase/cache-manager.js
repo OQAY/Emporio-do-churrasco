@@ -72,12 +72,15 @@ class CacheManager {
       const dataString = JSON.stringify(data);
       const sizeKB = Math.round(dataString.length / 1024);
       
-      // Check if cache is too large (> 4MB)
-      if (sizeKB > 4000) {
+      // Check if cache is too large (> 2MB for safety)
+      if (sizeKB > 2000) {
         console.warn(`⚠️ Cache too large (${sizeKB}KB), optimizing...`);
         // For admin, keep essential data but reduce image data
         const optimizedData = this.optimizeForStorage(data);
-        localStorage.setItem(this.cacheKey, JSON.stringify(optimizedData));
+        const optimizedString = JSON.stringify(optimizedData);
+        const optimizedSizeKB = Math.round(optimizedString.length / 1024);
+        console.log(`📦 Optimized cache size: ${optimizedSizeKB}KB`);
+        localStorage.setItem(this.cacheKey, optimizedString);
       } else {
         localStorage.setItem(this.cacheKey, dataString);
       }

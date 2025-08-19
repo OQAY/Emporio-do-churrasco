@@ -72,23 +72,9 @@ class DatabaseNASA {
    * Function size: 20 lines (NASA compliant)
    */
   async createDefaultAdminUser() {
-    try {
-      console.log('👤 Creating default admin user in Supabase...');
-      
-      const defaultUser = {
-        username: 'admin',
-        password: 'admin123', // In production, use proper hashing
-        role: 'admin'
-      };
-      
-      const result = await this.writer.createAdminUser(defaultUser);
-      console.log('✅ Default admin user created:', result);
-      return result;
-      
-    } catch (error) {
-      console.warn('⚠️ Failed to create default admin user (may already exist):', error.message);
-      return null;
-    }
+    // Skip admin user creation - schema mismatch with Supabase
+    console.log('👤 Admin user creation skipped (managed externally)');
+    return null;
   }
 
   /**
