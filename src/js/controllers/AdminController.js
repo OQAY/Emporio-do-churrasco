@@ -2241,23 +2241,30 @@ export class AdminController {
         menu.id = 'selection-context-menu';
         menu.className = 'fixed bottom-20 left-1/2 transform -translate-x-1/2 bg-white bg-opacity-90 backdrop-blur-sm rounded-lg shadow-lg border border-gray-200 border-opacity-50 z-50 p-2 flex gap-2';
         
-        // Botão Selecionar Todas / Cancelar
+        // Botão Cancelar (sempre presente)
+        const cancelBtn = document.createElement('button');
+        cancelBtn.className = 'flex items-center gap-2 px-4 py-3 hover:bg-gray-50 hover:bg-opacity-60 rounded-lg transition-all duration-200';
+        cancelBtn.innerHTML = `
+            <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+            <span class="text-sm font-medium text-gray-600">Cancelar</span>
+        `;
+        
+        // Botão Selecionar Todas (só aparece se nem todas estão selecionadas)
         const selectAllBtn = document.createElement('button');
         const totalImages = document.querySelectorAll('.gallery-image-card').length;
         const allSelected = selectedCount === totalImages;
         
-        selectAllBtn.className = 'flex items-center gap-2 px-4 py-3 hover:bg-orange-50 hover:bg-opacity-60 rounded-lg transition-all duration-200';
-        selectAllBtn.innerHTML = allSelected ? `
-            <svg class="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-            </svg>
-            <span class="text-sm font-medium text-orange-600">Cancelar</span>
-        ` : `
-            <svg class="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-            </svg>
-            <span class="text-sm font-medium text-orange-600">Selecionar Todas</span>
-        `;
+        if (!allSelected) {
+            selectAllBtn.className = 'flex items-center gap-2 px-4 py-3 hover:bg-orange-50 hover:bg-opacity-60 rounded-lg transition-all duration-200';
+            selectAllBtn.innerHTML = `
+                <svg class="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <span class="text-sm font-medium text-orange-600">Selecionar Todas</span>
+            `;
+        }
         
         // Botão Excluir
         const deleteBtn = document.createElement('button');
@@ -2270,16 +2277,17 @@ export class AdminController {
         `;
         
         // Event listeners
-        selectAllBtn.addEventListener('click', () => {
-            if (allSelected) {
-                // Cancelar = sair do modo seleção
-                this.exitSelectionMode();
-            } else {
-                // Selecionar todas
-                this.selectAllImages();
-            }
+        cancelBtn.addEventListener('click', () => {
+            this.exitSelectionMode();
             menu.remove();
         });
+        
+        if (!allSelected) {
+            selectAllBtn.addEventListener('click', () => {
+                this.selectAllImages();
+                menu.remove();
+            });
+        }
         
         deleteBtn.addEventListener('click', () => {
             this.deleteSelectedImages();
@@ -2287,7 +2295,10 @@ export class AdminController {
         });
         
         // Adiciona botões ao menu
-        menu.appendChild(selectAllBtn);
+        menu.appendChild(cancelBtn);
+        if (!allSelected) {
+            menu.appendChild(selectAllBtn);
+        }
         menu.appendChild(deleteBtn);
         
         // Adiciona ao DOM
