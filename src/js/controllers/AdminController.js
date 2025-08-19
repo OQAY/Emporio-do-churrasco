@@ -2675,6 +2675,15 @@ export class AdminController {
                     <p class="text-xs text-gray-500 mt-1">Pode selecionar múltiplas imagens (máx 5MB cada)</p>
                 </div>
                 
+                <!-- Preview area for selected images -->
+                <div id="imagePreviewArea" class="hidden">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Imagens Selecionadas</label>
+                    <div id="imagePreviewList" class="grid grid-cols-4 gap-2 p-3 bg-gray-50 border border-gray-200 rounded-md max-h-32 overflow-y-auto">
+                        <!-- Preview thumbnails will be added here -->
+                    </div>
+                    <p class="text-xs text-gray-500 mt-1">Clique no ✕ para remover uma imagem</p>
+                </div>
+                
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">Tags (opcional)</label>
                     <input 
@@ -2695,7 +2704,9 @@ export class AdminController {
                     </button>
                     <button 
                         type="submit" 
-                        class="px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700"
+                        id="uploadSubmitBtn"
+                        class="px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                        disabled
                     >
                         Upload Imagens
                     </button>
@@ -2705,14 +2716,116 @@ export class AdminController {
         
         this.view.showModal('Upload de Imagens', formHtml);
         
+        // Initialize selected files storage
+        this.selectedFiles = [];
+        
+        // Handle file selection
+        document.getElementById('imageFiles').addEventListener('change', (e) => {
+            this.handleFileSelection(e.target.files);
+        });
+        
         document.getElementById('imageUploadForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             await this.uploadImages();
         });
         
         document.getElementById('cancelBtn').addEventListener('click', () => {
+            this.clearSelectedFiles();
             this.view.closeModal();
         });
+    }
+    
+    handleFileSelection(files) {
+        // Add new files to selected files array
+        Array.from(files).forEach(file => {
+            // Check file size
+            if (file.size > 5000000) {
+                alert(`Imagem ${file.name} muito grande! Máximo 5MB.`);
+                return;
+            }
+            
+            // Check if file already selected
+            const alreadySelected = this.selectedFiles.some(f => 
+                f.name === file.name && f.size === file.size && f.lastModified === file.lastModified
+            );
+            
+            if (!alreadySelected) {
+                this.selectedFiles.push(file);
+            }
+        });
+        
+        this.updateImagePreview();
+    }
+    
+    updateImagePreview() {
+        const previewArea = document.getElementById('imagePreviewArea');
+        const previewList = document.getElementById('imagePreviewList');
+        const submitBtn = document.getElementById('uploadSubmitBtn');
+        
+        if (this.selectedFiles.length === 0) {
+            previewArea.classList.add('hidden');
+            submitBtn.disabled = true;
+            return;
+        }
+        
+        previewArea.classList.remove('hidden');
+        submitBtn.disabled = false;
+        
+        // Clear existing previews
+        previewList.innerHTML = '';
+        
+        // Create preview for each file
+        this.selectedFiles.forEach((file, index) => {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const previewItem = document.createElement('div');
+                previewItem.className = 'relative group';
+                previewItem.innerHTML = `
+                    <div class="aspect-square bg-gray-100 rounded border overflow-hidden">
+                        <img src="${e.target.result}" alt="${file.name}" class="w-full h-full object-cover">
+                    </div>
+                    <button 
+                        type="button" 
+                        class="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white rounded-full text-xs font-bold hover:bg-red-600 flex items-center justify-center"
+                        data-file-index="${index}"
+                        title="Remover ${file.name}"
+                    >
+                        ✕
+                    </button>
+                    <p class="text-xs text-gray-600 mt-1 truncate" title="${file.name}">${file.name}</p>
+                `;
+                
+                // Add remove functionality
+                const removeBtn = previewItem.querySelector('button');
+                removeBtn.addEventListener('click', () => {
+                    this.removeSelectedFile(index);
+                });
+                
+                previewList.appendChild(previewItem);
+            };
+            reader.readAsDataURL(file);
+        });
+    }
+    
+    removeSelectedFile(index) {
+        this.selectedFiles.splice(index, 1);
+        this.updateImagePreview();
+        
+        // Update file input to reflect removed files
+        this.updateFileInput();
+    }
+    
+    updateFileInput() {
+        const fileInput = document.getElementById('imageFiles');
+        if (this.selectedFiles.length === 0) {
+            fileInput.value = '';
+        }
+    }
+    
+    clearSelectedFiles() {
+        this.selectedFiles = [];
+        this.updateImagePreview();
+        this.updateFileInput();
     }
 
     showUrlUploadForm() {
@@ -2780,7 +2893,7 @@ export class AdminController {
     }
 
     async uploadImages() {
-        const files = document.getElementById('imageFiles').files;
+        const files = this.selectedFiles; // Use selected files from preview
         const tags = document.getElementById('imageTags').value.split(',').map(tag => tag.trim()).filter(tag => tag);
         
         if (!files.length) {
