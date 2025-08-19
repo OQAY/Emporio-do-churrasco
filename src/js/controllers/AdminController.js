@@ -458,22 +458,6 @@ export class AdminController {
                 <input type="hidden" id="selectedGalleryImageId" value="">
                 <input type="file" id="productImage" accept="image/*" class="hidden">
                 
-                <!-- Selected gallery image preview -->
-                <div id="selectedImagePreview" class="${product?.image ? '' : 'hidden'} mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                    <div class="flex items-center gap-3">
-                        <img id="previewImage" src="${product?.image || ''}" alt="Preview" class="w-12 h-12 object-cover rounded border">
-                        <div class="flex-1">
-                            <p class="text-sm font-medium text-blue-900">Imagem atual do produto:</p>
-                            <p id="selectedImageName" class="text-xs text-blue-700">${product?.name || 'Imagem do produto'}</p>
-                        </div>
-                        <button type="button" onclick="this.closest('#selectedImagePreview').classList.add('hidden')" class="text-blue-400 hover:text-blue-600">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                            </svg>
-                        </button>
-                    </div>
-                </div>
-                
                 <!-- Opções do Produto -->
                 <div class="bg-gray-50 border border-gray-200 rounded-lg p-4 mt-5">
                     <h3 class="text-sm font-semibold text-gray-800 mb-3 flex items-center">
@@ -690,7 +674,6 @@ export class AdminController {
             } else if (file) {
                 // Clear gallery selection when uploading new file
                 document.getElementById('selectedGalleryImageId').value = '';
-                document.getElementById('selectedImagePreview').classList.add('hidden');
                 
                 // Update main preview
                 this.updateImagePreview(file);
@@ -1204,15 +1187,12 @@ export class AdminController {
             productImage: !!productImage
         });
         
-        if (!selectedGalleryImageId || !previewImage || !selectedImageName || !selectedImagePreview) {
-            console.error('Alguns elementos não foram encontrados!');
+        if (!selectedGalleryImageId) {
+            console.error('selectedGalleryImageId não encontrado!');
             return;
         }
         
         selectedGalleryImageId.value = image.id;
-        previewImage.src = image.url;
-        selectedImageName.textContent = image.name;
-        selectedImagePreview.classList.remove('hidden');
         
         // Clear file input
         if (productImage) {
