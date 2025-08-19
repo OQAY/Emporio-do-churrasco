@@ -247,7 +247,7 @@ class DataWriter {
         body: JSON.stringify({
           restaurant_id: restaurantId,
           username: userData.username,
-          password: userData.password, // In production, this should be hashed
+          // ✅ REMOVED: password field (doesn't exist in Supabase schema)
           role: userData.role || 'admin',
           active: true,
           created_at: new Date().toISOString()

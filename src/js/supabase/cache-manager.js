@@ -69,26 +69,76 @@ class CacheManager {
     
     // Save to localStorage for persistence
     try {
-      localStorage.setItem(this.cacheKey, JSON.stringify(data));
+      const dataString = JSON.stringify(data);
+      const sizeKB = Math.round(dataString.length / 1024);
+      
+      // Check if cache is too large (> 4MB)
+      if (sizeKB > 4000) {
+        console.warn(`⚠️ Cache too large (${sizeKB}KB), optimizing...`);
+        // For admin, keep essential data but reduce image data
+        const optimizedData = this.optimizeForStorage(data);
+        localStorage.setItem(this.cacheKey, JSON.stringify(optimizedData));
+      } else {
+        localStorage.setItem(this.cacheKey, dataString);
+      }
+      
       localStorage.setItem(this.timestampKey, this.cacheTimestamp.toString());
       localStorage.setItem(this.versionKey, this.currentVersion);
       
-      // Log cache stats
-      const sizeKB = Math.round(JSON.stringify(data).length / 1024);
       console.log('💾 Cache updated', {
         size: `${sizeKB}KB`,
         forceUpdate: forceUpdate,
         items: {
           products: data?.products?.length || 0,
           categories: data?.categories?.length || 0,
-          galleryImages: data?.galleryImages?.length || 0
+          galleryImages: data?.galleryImages?.length || 0,
+          productTags: data?.productTags?.length || 0
         }
       });
     } catch (error) {
       console.warn('⚠️ Failed to save cache to localStorage:', error);
+      // Try with optimized data as fallback
+      try {
+        const optimizedData = this.optimizeForStorage(data);
+        localStorage.setItem(this.cacheKey, JSON.stringify(optimizedData));
+        console.log('✅ Saved optimized cache as fallback');
+      } catch (fallbackError) {
+        console.error('❌ Failed to save even optimized cache:', fallbackError);
+      }
     }
   }
 
+  /**
+   * Optimize data for storage when cache is too large (NASA: optimization)
+   * Function size: 25 lines (NASA compliant)
+   */
+  optimizeForStorage(data) {
+    if (!data) return data;
+    
+    // Keep structure but optimize large fields
+    const optimized = { ...data };
+    
+    // Optimize products - keep URLs instead of base64
+    if (data.products) {
+      optimized.products = data.products.map(product => ({
+        ...product,
+        // Keep image URL but remove base64 data to save space
+        image: product.image?.startsWith('data:') ? null : product.image
+      }));
+    }
+    
+    // Optimize gallery images - keep metadata but reduce base64
+    if (data.galleryImages) {
+      optimized.galleryImages = data.galleryImages.map(img => ({
+        ...img,
+        // Keep URL but remove base64 to save space
+        url: img.url?.startsWith('data:') ? null : img.url
+      }));
+    }
+    
+    return optimized;
+  }
+  
   /**
    * Mark cache as modified (NASA: invalidation helper)
    * Function size: 10 lines (NASA compliant)
