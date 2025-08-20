@@ -347,7 +347,7 @@ export class AdminView {
                             }
                         </div>
                         <div class="ml-2 min-w-0 flex-1">
-                            ${this.renderProductTags(product.tags)}
+                            ${this.renderProductTags(product.tags, product.featured)}
                             <div class="text-base font-semibold text-gray-900 leading-tight truncate ${product.tags && product.tags.length > 0 ? 'mt-1' : ''}" title="${product.name}">${product.name}</div>
                             <div class="text-xs text-gray-500 leading-tight truncate" title="${category ? category.name : 'N/A'}">${category ? category.name : 'N/A'}</div>
                         </div>
@@ -748,8 +748,14 @@ export class AdminView {
         }
     }
 
-    renderProductTags(productTags = []) {
-        if (!productTags || productTags.length === 0) {
+    renderProductTags(productTags = [], isFeatured = false) {
+        // Always show Destaque tag for featured products
+        const tagsToShow = [...(productTags || [])];
+        if (isFeatured && !tagsToShow.includes('destaque')) {
+            tagsToShow.unshift('destaque'); // Add destaque at the beginning
+        }
+        
+        if (tagsToShow.length === 0) {
             return '';
         }
         
@@ -764,7 +770,7 @@ export class AdminView {
         
         return `
             <div class="flex flex-wrap gap-1 mt-1">
-                ${productTags.slice(0, 2).map(tagId => {
+                ${tagsToShow.slice(0, 2).map(tagId => {
                     const tag = availableTags.find(t => t.id === tagId);
                     if (!tag) return '';
                     return `<span class="inline-flex items-center text-xs px-1.5 py-0.5 rounded-full font-medium" 
@@ -772,7 +778,7 @@ export class AdminView {
                               ${tag.icon} ${tag.name}
                             </span>`;
                 }).join('')}
-                ${productTags.length > 2 ? `<span class="text-xs text-gray-400">+${productTags.length - 2}</span>` : ''}
+                ${tagsToShow.length > 2 ? `<span class="text-xs text-gray-400">+${tagsToShow.length - 2}</span>` : ''}
             </div>
         `;
     }

@@ -971,8 +971,14 @@ export class AdminController {
         };
 
         // Get available tags for preview
-        const renderPreviewTags = (tagIds = []) => {
-            if (!tagIds || tagIds.length === 0) return '';
+        const renderPreviewTags = (tagIds = [], isFeatured = false) => {
+            // Always show Destaque tag for featured products
+            const tagsToShow = [...(tagIds || [])];
+            if (isFeatured && !tagsToShow.includes('destaque')) {
+                tagsToShow.unshift('destaque'); // Add destaque at the beginning
+            }
+            
+            if (tagsToShow.length === 0) return '';
             
             const availableTags = this.database.getProductTags() || [
                 { id: "destaque", name: "Destaque", color: "#f59e0b", icon: "⭐" },
@@ -982,7 +988,7 @@ export class AdminController {
                 { id: "promocao", name: "Promoção", color: "#f97316", icon: "💰" }
             ];
             
-            return tagIds.slice(0, 2).map(tagId => {
+            return tagsToShow.slice(0, 2).map(tagId => {
                 const tag = availableTags.find(t => t.id === tagId);
                 if (!tag) return '';
                 return `<span class="inline-flex items-center text-xs px-2 py-1 rounded-md font-medium text-white" 
@@ -1001,7 +1007,7 @@ export class AdminController {
                         <!-- Conteúdo à esquerda -->
                         <div class="flex-1 min-w-0">
                             <!-- Tags do produto -->
-                            ${renderPreviewTags(product.tags)}
+                            ${renderPreviewTags(product.tags, product.featured)}
                             <h3 class="font-semibold text-base leading-tight mb-2 ${product.tags && product.tags.length > 0 ? 'mt-2' : ''}">${product.name}</h3>
                             ${product.description ? 
                                 `<p class="text-xs text-gray-600 leading-relaxed mb-2" style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">${product.description}</p>` : 
@@ -1059,8 +1065,8 @@ export class AdminController {
                     <!-- Conteúdo -->
                     <div class="p-6">
                         <!-- Tags do produto -->
-                        ${renderPreviewTags(product.tags) ? 
-                            `<div class="mb-3">${renderPreviewTags(product.tags)}</div>` : 
+                        ${renderPreviewTags(product.tags, product.featured) ? 
+                            `<div class="mb-3">${renderPreviewTags(product.tags, product.featured)}</div>` : 
                             ''
                         }
                         
