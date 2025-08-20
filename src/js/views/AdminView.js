@@ -784,7 +784,11 @@ export class AdminView {
             <div class="flex flex-wrap gap-1 mt-1">
                 ${tagsToShow.slice(0, 2).map(tagId => {
                     const tag = availableTags.find(t => t.id === tagId);
-                    if (!tag) return '';
+                    console.log(`🎯 Looking for tag: ${tagId}, found:`, tag);
+                    if (!tag) {
+                        console.log(`❌ Tag not found: ${tagId}, available tags:`, availableTags.map(t => t.id));
+                        return '';
+                    }
                     return `<span class="inline-flex items-center text-xs px-1.5 py-0.5 rounded-full font-medium" 
                               style="background-color: ${tag.color}20; color: ${tag.color};">
                               ${tag.icon} ${tag.name}
