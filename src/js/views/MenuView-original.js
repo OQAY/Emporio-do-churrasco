@@ -358,11 +358,11 @@ export class MenuView {
                     </span>
                     <!-- Tags do produto (limitado a 1 para não sobrecarregar) -->
                     ${product.tags && product.tags.length > 0 ? 
-                        this.resolveProductTags(product.tags).slice(0, 1).map(tag => `
-                            <span class="text-white text-xs font-medium px-2 py-1 rounded-md flex items-center gap-1" style="background-color: ${tag.color || '#fb923c'};">
+                        this.resolveProductTags(product.tags).slice(0, 1).map(tag => 
+                            `<span class="text-white text-xs font-medium px-2 py-1 rounded-md flex items-center gap-1" style="background-color: ${tag.color || '#fb923c'};">
                                 ${tag.icon || '🏷️'} ${tag.name}
-                            </span>
-                        `).join('') 
+                            </span>`
+                        ).join('') 
                         : ''
                     }
                 </div>
