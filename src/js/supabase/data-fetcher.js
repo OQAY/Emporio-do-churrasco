@@ -119,10 +119,11 @@ class DataFetcher {
     
     try {
       // Only fetch what's needed for public menu
-      const [restaurant, categories, products] = await Promise.all([
+      const [restaurant, categories, products, productTags] = await Promise.all([
         this.fetchRestaurant(),
         this.fetchCategories(), 
-        this.fetchProducts()
+        this.fetchProducts(),
+        this.fetchProductTags() // ✅ CRITICAL FIX: Include productTags for tag display
       ]);
       
       const result = {
@@ -130,13 +131,14 @@ class DataFetcher {
         categories,
         products,
         galleryImages: [], // Not needed for public menu
-        productTags: []    // Not needed for public menu
+        productTags       // ✅ CRITICAL FIX: Include productTags
       };
       
       console.log('✅ PUBLIC data loaded:', {
         restaurant: restaurant ? 'OK' : 'Missing',
         categories: categories?.length || 0,
-        products: products?.length || 0
+        products: products?.length || 0,
+        productTags: productTags?.length || 0
       });
       
       return result;

@@ -6,7 +6,7 @@ import { ProductController } from './controllers/ProductController.js';
 class App {
     constructor() {
         this.database = database;
-        this.view = new MenuView();
+        this.view = new MenuView(this.database); // ✅ CRITICAL FIX: Pass database for tag resolution
         this.controller = new ProductController(this.database, this.view);
         this.init();
     }

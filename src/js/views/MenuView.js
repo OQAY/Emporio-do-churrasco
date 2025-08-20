@@ -2,8 +2,25 @@
 import lazyLoader from '../services/lazy-loader.js';
 
 export class MenuView {
-    constructor() {
+    constructor(database = null) {
         this.selectedCategory = null;
+        this.database = database;
+    }
+
+    /**
+     * Resolve tag IDs to tag objects (NASA: helper function)
+     * Function size: 15 lines (NASA compliant)
+     */
+    resolveProductTags(tagIds = []) {
+        if (!this.database || !Array.isArray(tagIds) || tagIds.length === 0) {
+            return [];
+        }
+
+        const availableTags = this.database.getProductTags() || [];
+        return tagIds.map(tagId => {
+            const tag = availableTags.find(t => t.id === tagId);
+            return tag || { id: tagId, name: tagId, icon: '🏷️', color: '#3b82f6' };
+        });
     }
 
     /**
@@ -434,9 +451,9 @@ export class MenuView {
                 <!-- Product Tags -->
                 ${product.tags && product.tags.length > 0 ? `
                     <div class="absolute top-3 left-3 z-10 flex flex-wrap gap-1">
-                        ${product.tags.slice(0, 2).map(tag => `
-                            <span class="bg-orange-600 text-white text-xs font-medium px-2 py-1 rounded-md flex items-center gap-1">
-                                ${tag.icon || '🏷️'} ${tag.name || tag}
+                        ${this.resolveProductTags(product.tags).slice(0, 2).map(tag => `
+                            <span class="text-white text-xs font-medium px-2 py-1 rounded-md flex items-center gap-1" style="background-color: ${tag.color || '#fb923c'};">
+                                ${tag.icon || '🏷️'} ${tag.name}
                             </span>
                         `).join('')}
                     </div>

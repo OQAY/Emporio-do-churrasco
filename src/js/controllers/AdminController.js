@@ -3632,6 +3632,18 @@ export class AdminController {
     renderTagsSelector(selectedTags = []) {
         const availableTags = this.database.getProductTags();
         
+        // Debug log to see what tags are available
+        console.log('🏷️ Available tags for selector:', availableTags);
+        
+        // If no tags from database, use fallback tags
+        const tagsToShow = availableTags.length > 0 ? availableTags : [
+            { id: "destaque", name: "Destaque", color: "#f59e0b", icon: "⭐" },
+            { id: "mais-vendido", name: "Mais Vendido", color: "#ef4444", icon: "🔥" },
+            { id: "especial-chef", name: "Especial do Chef", color: "#8b5cf6", icon: "👨‍🍳" },
+            { id: "novo", name: "Novo", color: "#10b981", icon: "✨" },
+            { id: "promocao", name: "Promoção", color: "#f97316", icon: "💰" }
+        ];
+        
         return `
             <div class="space-y-4">
                 <!-- Section Header -->
@@ -3645,7 +3657,7 @@ export class AdminController {
 
                 <!-- Tags Grid - Modern Layout -->
                 <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
-                    ${availableTags.map(tag => {
+                    ${tagsToShow.map(tag => {
                         const isSelected = selectedTags.includes(tag.id);
                         return `
                             <label class="group relative cursor-pointer transform transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]">
