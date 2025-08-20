@@ -332,6 +332,12 @@ export class AdminView {
         const category = categories.find(c => c.id === product.categoryId);
         const priceFormatted = product.price ? `R$ ${product.price.toFixed(2).replace('.', ',')}` : 'N/A';
         
+        // Debug log for product
+        console.log(`📦 Creating row for product: ${product.name}`, { 
+            featured: product.featured, 
+            tags: product.tags 
+        });
+        
         return `
             <tr class="hover:bg-gray-50 product-row group cursor-pointer edit-product-row" data-id="${product.id}" data-category-id="${product.categoryId}">
                 <td class="px-2 lg:px-4 py-3 whitespace-nowrap" style="width: 60%;">
