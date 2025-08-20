@@ -350,16 +350,22 @@ export class MenuView {
 
         card.innerHTML = `
             <div class="relative aspect-square">
-                <!-- Product Tags -->
-                ${product.tags && product.tags.length > 0 ? `
-                    <div class="absolute top-3 left-3 z-10 flex flex-wrap gap-1">
-                        ${this.resolveProductTags(product.tags).slice(0, 2).map(tag => `
+                <!-- Product Tags + Destaque Badge -->
+                <div class="absolute top-3 left-3 z-10 flex flex-wrap gap-1">
+                    <!-- Tag Destaque (sempre presente na seção Featured) -->
+                    <span class="text-white text-xs font-medium px-2 py-1 rounded-md flex items-center gap-1" style="background-color: #f59e0b;">
+                        ⭐ Destaque
+                    </span>
+                    <!-- Tags do produto (limitado a 1 para não sobrecarregar) -->
+                    ${product.tags && product.tags.length > 0 ? 
+                        this.resolveProductTags(product.tags).slice(0, 1).map(tag => `
                             <span class="text-white text-xs font-medium px-2 py-1 rounded-md flex items-center gap-1" style="background-color: ${tag.color || '#fb923c'};">
                                 ${tag.icon || '🏷️'} ${tag.name}
                             </span>
-                        `).join('')}
-                    </div>
-                ` : ''}
+                        `).join('') 
+                        : ''
+                    }
+                </div>
                 
                 <!-- Badge de desconto -->
                 ${discount ? `
