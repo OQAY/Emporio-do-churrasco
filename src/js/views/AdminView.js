@@ -749,11 +749,17 @@ export class AdminView {
     }
 
     renderProductTags(productTags = [], isFeatured = false) {
+        // Debug log
+        console.log('🏷️ renderProductTags called with:', { productTags, isFeatured });
+        
         // Always show Destaque tag for featured products
         const tagsToShow = [...(productTags || [])];
         if (isFeatured && !tagsToShow.includes('destaque')) {
             tagsToShow.unshift('destaque'); // Add destaque at the beginning
+            console.log('✅ Added destaque tag for featured product');
         }
+        
+        console.log('🔍 Final tags to show:', tagsToShow);
         
         if (tagsToShow.length === 0) {
             return '';
