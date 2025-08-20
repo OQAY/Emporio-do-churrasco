@@ -347,8 +347,8 @@ export class AdminView {
                             }
                         </div>
                         <div class="ml-2 min-w-0 flex-1">
-                            <div class="text-base font-semibold text-gray-900 leading-tight truncate" title="${product.name}">${product.name}</div>
                             ${this.renderProductTags(product.tags)}
+                            <div class="text-base font-semibold text-gray-900 leading-tight truncate ${product.tags && product.tags.length > 0 ? 'mt-1' : ''}" title="${product.name}">${product.name}</div>
                             <div class="text-xs text-gray-500 leading-tight truncate" title="${category ? category.name : 'N/A'}">${category ? category.name : 'N/A'}</div>
                         </div>
                     </div>

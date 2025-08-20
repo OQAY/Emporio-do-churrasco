@@ -910,7 +910,8 @@ export class AdminController {
             image: productImage,
             categoryId: categoryId,
             featured: featured,
-            active: true
+            active: true,
+            tags: this.getSelectedTags() // ✅ CRITICAL FIX: Include selected tags in preview
         };
         
         // Create preview modal content
