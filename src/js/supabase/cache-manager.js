@@ -12,7 +12,7 @@ class CacheManager {
     this.versionKey = 'menu_admin_cache_version';
     this.lastModifiedKey = 'menu_admin_last_modified';
     this.cacheTimeout = 5 * 60 * 1000; // 5 minutes (shorter for better sync)
-    this.currentVersion = '2.1'; // Update when data structure changes
+    this.currentVersion = '2.2'; // Updated to force cache refresh
     
     // Performance tracking
     this.hits = 0;
@@ -72,15 +72,12 @@ class CacheManager {
       const dataString = JSON.stringify(data);
       const sizeKB = Math.round(dataString.length / 1024);
       
-      // Check if cache is too large (> 2MB for safety)
-      if (sizeKB > 2000) {
-        console.warn(`⚠️ Cache too large (${sizeKB}KB), optimizing...`);
-        // For admin, keep essential data but reduce image data
-        const optimizedData = this.optimizeForStorage(data);
-        const optimizedString = JSON.stringify(optimizedData);
-        const optimizedSizeKB = Math.round(optimizedString.length / 1024);
-        console.log(`📦 Optimized cache size: ${optimizedSizeKB}KB`);
-        localStorage.setItem(this.cacheKey, optimizedString);
+      // Check if cache is too large (> 4MB limit)
+      if (sizeKB > 4000) {
+        console.warn(`⚠️ Cache too large (${sizeKB}KB), cannot store in localStorage`);
+        // Don't cache if too large - localStorage has 5-10MB limit
+        console.log('💾 Skipping cache storage - data too large');
+        return;
       } else {
         localStorage.setItem(this.cacheKey, dataString);
       }
@@ -121,21 +118,21 @@ class CacheManager {
     // Keep structure but optimize large fields
     const optimized = { ...data };
     
-    // Optimize products - keep URLs instead of base64
+    // Optimize products - DON'T truncate images on public mode
     if (data.products) {
       optimized.products = data.products.map(product => ({
         ...product,
-        // Keep image URL but remove base64 data to save space
-        image: product.image?.startsWith('data:') ? null : product.image
+        // Keep full image data for now (will optimize differently later)
+        image: product.image
       }));
     }
     
-    // Optimize gallery images - keep metadata but reduce base64
+    // Optimize gallery images - keep full data
     if (data.galleryImages) {
       optimized.galleryImages = data.galleryImages.map(img => ({
         ...img,
-        // Keep URL but remove base64 to save space
-        url: img.url?.startsWith('data:') ? null : img.url
+        // Keep full image URL
+        url: img.url
       }));
     }
     

@@ -3,6 +3,8 @@ import database from './database-nasa.js';
 import { MenuView } from './views/MenuView.js';
 import { ProductController } from './controllers/ProductController.js';
 import enterpriseSystemLite from './enterprise-system-lite.js';
+import lazyLoader from './services/lazy-loader.js';
+import { createDataLazyLoader } from './services/data-lazy-loader.js';
 
 class App {
     constructor() {
@@ -10,12 +12,24 @@ class App {
         this.view = new MenuView();
         this.controller = new ProductController(this.database, this.view);
         this.enterpriseSystem = enterpriseSystemLite;
+        this.dataLazyLoader = createDataLazyLoader(this.database);
         this.init();
     }
 
     async init() {
+        // CRÍTICO: Prevent layout shifts during load
+        document.body.classList.add('no-transition');
+        
+        // CRÍTICO: Registrar Service Worker primeiro (performance)
+        this.registerServiceWorker();
+        
         // Renderizar estrutura inicial
         this.render();
+        
+        // Enable transitions after initial render
+        setTimeout(() => {
+            document.body.classList.remove('no-transition');
+        }, 100);
         
         // CRÍTICO: Carregar apenas dados essenciais do Supabase para o cardápio público
         console.log('🔄 Carregando dados PÚBLICOS do Supabase (otimizado)...');
@@ -25,11 +39,36 @@ class App {
         // Inicializar sistema enterprise (não-bloqueante)
         await this.initializeEnterpriseFeatures();
         
+        // Carregamento progressivo (sem lazy loading para melhor UX)
+        // Progressive loading initialized
+        
         // Configurar event listeners
         this.setupEventListeners();
         
-        // Carregar dados iniciais na interface
-        this.loadInitialData();
+        // NOVO: Carregar dados com padrão iFood (carregamento progressivo)
+        await this.loadDataWithiFoodPattern();
+    }
+
+    /**
+     * Register Service Worker for performance (NASA: 20 lines)
+     */
+    registerServiceWorker() {
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/sw.js')
+                .then(registration => {
+                    console.log('✅ Service Worker registered:', registration.scope);
+                    
+                    // Update on new version
+                    registration.addEventListener('updatefound', () => {
+                        console.log('🔄 Service Worker update found');
+                    });
+                })
+                .catch(error => {
+                    console.warn('⚠️ Service Worker registration failed:', error);
+                });
+        } else {
+            console.warn('⚠️ Service Worker not supported');
+        }
     }
 
     /**
@@ -201,10 +240,58 @@ class App {
         window.addEventListener('databaseUpdated', () => {
             this.loadInitialData();
         });
+
+        // Setup mobile gestures
+        this.setupMobileGestures();
     }
 
-    loadInitialData() {
-        // Carregar informacoes do restaurante
+    /**
+     * Load data with iFood pattern (NASA: 30 lines)
+     * Progressive loading: Restaurant info → Categories → Featured → Products on demand
+     */
+    async loadDataWithiFoodPattern() {
+        // Loading menu data
+        
+        // 1. Load restaurant info immediately (critical)
+        this.loadRestaurantInfo();
+        
+        // 2. Show skeletons immediately (prevent layout shifts)
+        this.view.showCategoriesSkeleton();
+        this.view.showFeaturedSkeleton();
+        this.view.showProductsSkeleton(6);
+        
+        // 3. Load categories first (iFood pattern)
+        const categories = await this.dataLazyLoader.loadCategoriesFirst();
+        this.view.renderCategories(categories, (categoryId) => {
+            this.handleCategoryChange(categoryId, categories);
+        });
+        
+        // 4. Load featured products (hero section)
+        const featured = await this.dataLazyLoader.loadFeaturedFirst();
+        this.view.renderFeaturedProducts(featured);
+        
+        // 5. Load first category products (above the fold)
+        if (categories.length > 0) {
+            const firstCategoryProducts = await this.dataLazyLoader.loadProductsByCategory(categories[0].id);
+            this.view.renderProducts(firstCategoryProducts, categories);
+            
+            // 6. Preload next category (anticipatory)
+            this.dataLazyLoader.preloadNextCategory(categories[0].id, categories);
+        }
+        
+        // 7. Setup category switching with lazy loading
+        this.setupCategoryLazyLoading(categories);
+        
+        // 8. Setup search with debouncing
+        this.setupSearchLazyLoading();
+        
+        // Menu loading complete
+    }
+
+    /**
+     * Load restaurant info immediately (NASA: 15 lines)
+     */
+    loadRestaurantInfo() {
         const restaurant = this.database.getRestaurant();
         document.getElementById('restaurantLogo').textContent = restaurant.logo;
         document.getElementById('restaurantName').textContent = restaurant.name;
@@ -215,6 +302,101 @@ class App {
         if (restaurant.theme) {
             document.documentElement.style.setProperty('--primary-color', restaurant.theme.primaryColor);
         }
+    }
+
+    /**
+     * Handle category change (NASA: 20 lines)
+     */
+    async handleCategoryChange(categoryId, categories) {
+        console.log(`🏷️ Loading products for category: ${categoryId}`);
+        
+        // Show skeleton while loading
+        this.view.showProductsSkeleton(6);
+        
+        if (categoryId === 'all' || !categoryId) {
+            // Load all products when "Todos" is selected
+            const allProducts = await this.dataLazyLoader.loadProductsByCategory(null);
+            this.view.renderProducts(allProducts, categories);
+        } else {
+            // Load products for selected category
+            const products = await this.dataLazyLoader.loadProductsByCategory(categoryId);
+            this.view.renderProducts(products, categories);
+            
+            // Preload next category
+            this.dataLazyLoader.preloadNextCategory(categoryId, categories);
+        }
+    }
+
+    /**
+     * Setup category lazy loading (NASA: 15 lines)
+     */
+    setupCategoryLazyLoading(categories) {
+        document.addEventListener('categoryChanged', async (e) => {
+            const categoryId = e.detail.categoryId;
+            await this.handleCategoryChange(categoryId, categories);
+        });
+    }
+
+    /**
+     * Setup search lazy loading (NASA: 15 lines)
+     */
+    setupSearchLazyLoading() {
+        document.getElementById('searchInput').addEventListener('input', async (e) => {
+            const query = e.target.value;
+            
+            if (query.length < 2) {
+                // Show all products if search is cleared
+                this.controller.loadProducts();
+                return;
+            }
+            
+            const results = await this.dataLazyLoader.searchProducts(query);
+            this.view.renderProducts(results);
+        });
+    }
+
+    /**
+     * Setup mobile gestures (NASA: 30 lines)
+     * Swipe navigation for better mobile UX
+     */
+    setupMobileGestures() {
+        let startX, startY, startTime;
+        const categoryMenuBar = document.getElementById('categoryMenuBar');
+        
+        if (!categoryMenuBar) return;
+
+        categoryMenuBar.addEventListener('touchstart', (e) => {
+            startX = e.touches[0].clientX;
+            startY = e.touches[0].clientY;
+            startTime = Date.now();
+        }, { passive: true });
+
+        categoryMenuBar.addEventListener('touchmove', (e) => {
+            // Allow horizontal scroll
+            if (Math.abs(e.touches[0].clientX - startX) > Math.abs(e.touches[0].clientY - startY)) {
+                e.stopPropagation();
+            }
+        }, { passive: false });
+
+        categoryMenuBar.addEventListener('touchend', (e) => {
+            const endX = e.changedTouches[0].clientX;
+            const endTime = Date.now();
+            const deltaX = endX - startX;
+            const deltaTime = endTime - startTime;
+            
+            // Fast swipe detection
+            if (Math.abs(deltaX) > 50 && deltaTime < 300) {
+                console.log('🏃‍♂️ Fast swipe detected for better mobile UX');
+            }
+        }, { passive: true });
+    }
+
+    loadInitialData() {
+        // Legacy method - replaced by loadDataWithiFoodPattern
+        console.log('⚠️ Using legacy loadInitialData - consider using iFood pattern');
+        
+        // Carregar informacoes do restaurante
+        this.loadRestaurantInfo();
 
         // Carregar categorias e produtos
         this.controller.loadCategories();

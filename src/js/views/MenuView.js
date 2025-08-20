@@ -1,14 +1,64 @@
 // View para o menu do cliente
+import lazyLoader from '../services/lazy-loader.js';
+
 export class MenuView {
     constructor() {
         this.selectedCategory = null;
     }
 
     /**
+     * Show skeleton loading for categories (NASA: 15 lines)
+     * Prevents layout shifts during loading
+     */
+    showCategoriesSkeleton() {
+        const menuBar = document.querySelector('#categoryMenuBar .flex');
+        if (!menuBar) return;
+
+        menuBar.innerHTML = Array(5).fill(0).map(() => 
+            `<div class="skeleton skeleton-category"></div>`
+        ).join('');
+    }
+
+    /**
+     * Show skeleton loading for products (NASA: 20 lines)
+     * Maintains grid layout during loading
+     */
+    showProductsSkeleton(count = 6) {
+        const productsGrid = document.getElementById('productsGrid');
+        if (!productsGrid) return;
+
+        const skeletonHtml = Array(count).fill(0).map(() => `
+            <div class="skeleton-product">
+                <div class="p-4">
+                    <div class="skeleton skeleton-text title"></div>
+                    <div class="skeleton skeleton-text subtitle"></div>
+                    <div class="skeleton skeleton-text price"></div>
+                </div>
+            </div>
+        `).join('');
+
+        productsGrid.innerHTML = `<div class="skeleton-grid">${skeletonHtml}</div>`;
+    }
+
+    /**
+     * Show skeleton loading for featured products (NASA: 15 lines)
+     */
+    showFeaturedSkeleton() {
+        const featuredGrid = document.getElementById('featuredGrid');
+        if (!featuredGrid) return;
+
+        const skeletonHtml = Array(4).fill(0).map(() => `
+            <div class="skeleton-product aspect-square"></div>
+        `).join('');
+
+        featuredGrid.innerHTML = `<div class="skeleton-featured-grid">${skeletonHtml}</div>`;
+    }
+
+    /**
      * Create optimized image with loading state (NASA: performance optimization)
      * Function size: 25 lines (NASA compliant)
      */
-    createOptimizedImage(src, alt, className = "w-full h-full object-cover", showSkeleton = true) {
+    createOptimizedImage(src, alt, className = "w-full h-full object-cover", showSkeleton = true, useLazyLoading = false) {
         if (!src) {
             return `<div class="w-full h-full flex items-center justify-center bg-gray-100">
                 <svg class="w-12 h-12 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -18,6 +68,7 @@ export class MenuView {
         }
 
         const uniqueId = `img-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
+        const placeholderSrc = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" fill="%23d1d5db" viewBox="0 0 24 24"%3E%3Cpath d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/%3E%3C/svg%3E';
         
         return `
             <div class="image-container relative ${className.includes('w-full') ? 'w-full h-full' : ''}">
@@ -30,11 +81,17 @@ export class MenuView {
                 ` : ''}
                 <img 
                     id="${uniqueId}" 
-                    src="${src}" 
+                    ${useLazyLoading ? 
+                        `src="${placeholderSrc}" data-lazy-src="${src}" data-placeholder="${placeholderSrc}"` : 
+                        `src="${src}"`
+                    }
                     alt="${alt}" 
-                    class="${className} transition-opacity duration-300 ${showSkeleton ? 'opacity-0' : ''}" 
+                    class="${className} transition-opacity duration-300 ${useLazyLoading && showSkeleton ? 'opacity-0' : ''}" 
                     loading="lazy"
-                    onload="this.style.opacity='1'; document.getElementById('skeleton-${uniqueId}')?.remove();"
+                    ${useLazyLoading ? 
+                        '' : // Don't use onload for lazy images - let lazy loader handle it
+                        `onload="this.style.opacity='1'; document.getElementById('skeleton-${uniqueId}')?.remove();"`
+                    }
                     onerror="this.style.display='none'; document.getElementById('skeleton-${uniqueId}')?.classList.remove('animate-pulse');"
                 >
             </div>
@@ -222,32 +279,32 @@ export class MenuView {
         };
 
         const observer = new IntersectionObserver((entries) => {
-            console.log('🔍 Scroll spy detectou:', entries.length, 'entradas');
+            // Scroll spy tracking
             
             let activeSection = null;
             let maxRatio = 0;
 
             entries.forEach(entry => {
-                console.log(`📍 Seção: ${entry.target.id}, Visível: ${entry.isIntersecting}, Ratio: ${entry.intersectionRatio}`);
+                // Entry tracking
                 
                 if (entry.isIntersecting && entry.intersectionRatio > maxRatio) {
                     maxRatio = entry.intersectionRatio;
                     
                     if (entry.target.id === 'featuredSection') {
                         activeSection = 'all';
-                        console.log('✅ Seção ativa: Destaques (all)');
+                        // Featured section active
                     } else {
                         // Extrair ID da categoria do formato "category-{id}"
                         const categoryId = entry.target.id.replace('category-', '');
                         activeSection = categoryId;
-                        console.log(`✅ Seção ativa: ${categoryId}`);
+                        // Category section active
                     }
                 }
             });
 
             // Atualizar sublinhado apenas se detectou uma seção ativa
             if (activeSection) {
-                console.log(`🎯 Atualizando menu para: ${activeSection}`);
+                // Menu updated
                 this.selectCategory(activeSection);
             }
         }, observerOptions);
@@ -283,6 +340,8 @@ export class MenuView {
         
         // Renderizar seções por categoria
         this.renderCategorySections(products, categories);
+        
+        // Carregamento progressivo ativo - imagens carregam automaticamente
     }
     
     renderFeaturedProducts(featuredProducts) {
@@ -303,6 +362,8 @@ export class MenuView {
             const card = this.createFeaturedCard(product, index);
             featuredContainer.appendChild(card);
         });
+        
+        // Imagens featured carregam automaticamente (sem lazy loading)
     }
     
     renderCategorySections(products, categories) {

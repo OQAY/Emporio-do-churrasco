@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste Simples Lazy Loading</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .container { max-width: 600px; margin: 0 auto; }
+        .image-box { width: 300px; height: 200px; border: 2px solid #ccc; margin: 20px 0; }
+        img { width: 100%; height: 100%; object-fit: cover; }
+        .log { background: #f0f0f0; padding: 10px; margin: 10px 0; font-size: 12px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Teste Simples Lazy Loading</h1>
+        
+        <h2>Imagem Normal (sem lazy)</h2>
+        <div class="image-box">
+            <img id="normal-img" src="https://picsum.photos/300/200?random=1" alt="Imagem normal">
+        </div>
+        
+        <h2>Imagem com Lazy Loading</h2>
+        <div class="image-box">
+            <img id="lazy-img" 
+                 src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='%23ddd' viewBox='0 0 24 24'%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.3em'%3ECarregando...%3C/text%3E%3C/svg%3E" 
+                 data-lazy-src="https://picsum.photos/300/200?random=2" 
+                 alt="Imagem lazy">
+        </div>
+        
+        <div class="log" id="log"></div>
+    </div>
+
+    <script type="module">
+        const startTime = performance.now();
+        let normalImageStartTime, normalImageEndTime;
+        let lazyImageStartTime, lazyImageEndTime;
+        
+        function log(msg) {
+            const logDiv = document.getElementById('log');
+            const timestamp = new Date().toLocaleTimeString();
+            const elapsed = ((performance.now() - startTime) / 1000).toFixed(3);
+            logDiv.innerHTML += `<div>${timestamp} (+${elapsed}s): ${msg}</div>`;
+            console.log(`${timestamp} (+${elapsed}s): ${msg}`);
+        }
+        
+        // Setup timing for normal image
+        const normalImg = document.getElementById('normal-img');
+        normalImageStartTime = performance.now();
+        log('🟦 NORMAL IMAGE: Iniciando carregamento...');
+        
+        normalImg.onload = () => {
+            normalImageEndTime = performance.now();
+            const duration = ((normalImageEndTime - normalImageStartTime) / 1000).toFixed(3);
+            log(`🟦 NORMAL IMAGE: ✅ Carregada em ${duration}s`);
+        };
+        
+        normalImg.onerror = () => {
+            log('🟦 NORMAL IMAGE: ❌ Erro no carregamento');
+        };
+        
+        try {
+            // Import lazy loader
+            const { default: lazyLoader } = await import('../src/js/services/lazy-loader.js');
+            
+            log('✅ Lazy loader importado com sucesso');
+            
+            // Test if Intersection Observer is available
+            if ('IntersectionObserver' in window) {
+                log('✅ IntersectionObserver disponível');
+            } else {
+                log('❌ IntersectionObserver não disponível');
+            }
+            
+            // Setup timing for lazy image
+            const lazyImg = document.getElementById('lazy-img');
+            
+            // Test lazy loading
+            setTimeout(() => {
+                log('🟩 LAZY IMAGE: 🔄 Iniciando refresh do lazy loader...');
+                lazyImageStartTime = performance.now();
+                
+                // Setup onload event for lazy image
+                const originalDataSrc = lazyImg.getAttribute('data-lazy-src');
+                
+                // Monitor src changes to detect when lazy loading happens
+                const observer = new MutationObserver((mutations) => {
+                    mutations.forEach((mutation) => {
+                        if (mutation.type === 'attributes' && mutation.attributeName === 'src') {
+                            const currentSrc = lazyImg.src;
+                            if (currentSrc === originalDataSrc) {
+                                log('🟩 LAZY IMAGE: 🔄 Começou a carregar a imagem real...');
+                                
+                                lazyImg.onload = () => {
+                                    lazyImageEndTime = performance.now();
+                                    const duration = ((lazyImageEndTime - lazyImageStartTime) / 1000).toFixed(3);
+                                    log(`🟩 LAZY IMAGE: ✅ Carregada em ${duration}s (tempo total desde o trigger)`);
+                                    observer.disconnect();
+                                };
+                                
+                                lazyImg.onerror = () => {
+                                    log('🟩 LAZY IMAGE: ❌ Erro no carregamento');
+                                    observer.disconnect();
+                                };
+                            }
+                        }
+                    });
+                });
+                
+                observer.observe(lazyImg, { attributes: true, attributeFilter: ['src'] });
+                
+                lazyLoader.refresh();
+                
+                log(`🟩 LAZY IMAGE: 📷 Placeholder: "${lazyImg.src.substring(0, 30)}..."`);
+                log(`🟩 LAZY IMAGE: 📷 Target: "${lazyImg.getAttribute('data-lazy-src')}"`);
+                
+                // Force scroll to trigger intersection observer
+                lazyImg.scrollIntoView({ behavior: 'smooth' });
+                log('🟩 LAZY IMAGE: 📍 Scrolled para trigger lazy loading');
+                
+            }, 1000);
+            
+            // Final comparison after 8 seconds
+            setTimeout(() => {
+                log('📊 === COMPARAÇÃO FINAL ===');
+                
+                if (normalImageEndTime && lazyImageEndTime) {
+                    const normalDuration = ((normalImageEndTime - normalImageStartTime) / 1000).toFixed(3);
+                    const lazyDuration = ((lazyImageEndTime - lazyImageStartTime) / 1000).toFixed(3);
+                    const difference = (lazyDuration - normalDuration).toFixed(3);
+                    
+                    log(`🟦 Imagem Normal: ${normalDuration}s`);
+                    log(`🟩 Lazy Loading: ${lazyDuration}s`);
+                    log(`⚖️ Diferença: ${difference}s ${difference > 0 ? '(lazy é mais lenta)' : '(lazy é mais rápida)'}`);
+                    
+                    if (difference > 0) {
+                        log(`❓ EXPLICAÇÃO: Lazy loading demora mais porque:`);
+                        log(`   1. Aguarda o Intersection Observer detectar visibilidade`);
+                        log(`   2. Só então inicia o download da imagem`);
+                        log(`   3. Troca do placeholder para a imagem real`);
+                        log(`   ✅ VANTAGEM: Em páginas com muitas imagens, lazy loading é MUITO mais rápido no carregamento inicial!`);
+                    }
+                } else {
+                    log('❌ Não foi possível comparar - alguma imagem não carregou');
+                }
+            }, 8000);
+            
+        } catch (error) {
+            log(`❌ Erro ao importar lazy loader: ${error.message}`);
+            console.error(error);
+        }
+    </script>
+</body>
+</html>
