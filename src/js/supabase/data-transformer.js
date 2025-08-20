@@ -63,7 +63,9 @@ class DataTransformer {
       isOnSale: prod.is_on_sale,
       image: prod.image_url,
       active: prod.active,
-      featured: prod.featured
+      featured: prod.featured,
+      tags: prod.tags || [],
+      order: prod.display_order || 999
     }));
   }
 
@@ -87,6 +89,23 @@ class DataTransformer {
   }
 
   /**
+   * Transform product tags (NASA: pure function)
+   * Function size: 15 lines (NASA compliant)
+   */
+  transformProductTags(supabaseProductTags) {
+    if (!Array.isArray(supabaseProductTags)) {
+      return [];
+    }
+
+    return supabaseProductTags.map(tag => ({
+      id: tag.id,
+      name: tag.name,
+      icon: tag.icon || '🏷️',
+      color: tag.color || '#3b82f6'
+    }));
+  }
+
+  /**
    * Transform all data (NASA: orchestration)
    * Function size: 30 lines (NASA compliant)
    */
@@ -98,7 +117,7 @@ class DataTransformer {
       categories: this.transformCategories(categories),
       products: this.transformProducts(products),
       galleryImages: this.transformGalleryImages(galleryImages),
-      productTags: productTags || [] // ✅ CRITICAL FIX: Include productTags
+      productTags: this.transformProductTags(productTags)
     };
   }
 

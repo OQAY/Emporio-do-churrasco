@@ -431,11 +431,15 @@ export class MenuView {
 
         card.innerHTML = `
             <div class="relative aspect-square">
-                <!-- Badge "Mais pedido" apenas no primeiro item -->
-                ${index === 0 ? `
-                    <span class="absolute top-3 left-3 bg-orange-600 text-white text-xs font-medium px-2 py-1 rounded-md z-10 flex items-center gap-1">
-                        🔥 Mais pedido
-                    </span>
+                <!-- Product Tags -->
+                ${product.tags && product.tags.length > 0 ? `
+                    <div class="absolute top-3 left-3 z-10 flex flex-wrap gap-1">
+                        ${product.tags.slice(0, 2).map(tag => `
+                            <span class="bg-orange-600 text-white text-xs font-medium px-2 py-1 rounded-md flex items-center gap-1">
+                                ${tag.icon || '🏷️'} ${tag.name || tag}
+                            </span>
+                        `).join('')}
+                    </div>
                 ` : ''}
                 
                 <!-- Badge de desconto -->
