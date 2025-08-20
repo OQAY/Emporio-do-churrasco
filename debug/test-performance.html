@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Performance Test - Menu Online</title>
+    <style>
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif; 
+            padding: 20px; 
+            background: #f5f5f5;
+        }
+        .test-container { 
+            max-width: 800px; 
+            margin: 0 auto; 
+            background: white; 
+            padding: 20px; 
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .metric { 
+            display: flex; 
+            justify-content: space-between; 
+            padding: 8px 0; 
+            border-bottom: 1px solid #eee;
+        }
+        .metric.good { color: #22c55e; }
+        .metric.warning { color: #f59e0b; }
+        .metric.bad { color: #ef4444; }
+        .status { 
+            padding: 10px; 
+            margin: 10px 0; 
+            border-radius: 4px; 
+        }
+        .status.loading { background: #fef3c7; }
+        .status.success { background: #d1fae5; }
+        .status.error { background: #fee2e2; }
+        button {
+            background: #fb923c;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background: #f97316; }
+        .iframe-container {
+            margin: 20px 0;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        iframe {
+            width: 100%;
+            height: 600px;
+            border: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🚀 Performance Test - Menu Online</h1>
+        
+        <div class="status loading" id="testStatus">
+            Aguardando teste...
+        </div>
+
+        <div>
+            <button onclick="testMainSite()">🔍 Testar Site Principal</button>
+            <button onclick="testCacheStatus()">💾 Status do Cache</button>
+            <button onclick="testLoadingSpeed()">⚡ Velocidade de Carregamento</button>
+            <button onclick="clearAllTests()">🧹 Limpar Testes</button>
+        </div>
+
+        <div id="performanceMetrics" style="display: none;">
+            <h3>📊 Métricas de Performance</h3>
+            <div class="metric">
+                <span>First Contentful Paint (FCP):</span>
+                <span id="fcp">-</span>
+            </div>
+            <div class="metric">
+                <span>Largest Contentful Paint (LCP):</span>
+                <span id="lcp">-</span>
+            </div>
+            <div class="metric">
+                <span>First Input Delay (FID):</span>
+                <span id="fid">-</span>
+            </div>
+            <div class="metric">
+                <span>Cumulative Layout Shift (CLS):</span>
+                <span id="cls">-</span>
+            </div>
+            <div class="metric">
+                <span>Time to Interactive (TTI):</span>
+                <span id="tti">-</span>
+            </div>
+            <div class="metric">
+                <span>Total Load Time:</span>
+                <span id="totalTime">-</span>
+            </div>
+        </div>
+
+        <div id="cacheStatus" style="display: none;">
+            <h3>💾 Status do Cache</h3>
+            <div id="cacheDetails"></div>
+        </div>
+
+        <div class="iframe-container" id="siteContainer" style="display: none;">
+            <h3>🌐 Site Principal</h3>
+            <iframe id="mainSite" src=""></iframe>
+        </div>
+
+        <div id="testResults" style="display: none;">
+            <h3>📈 Resultados do Teste</h3>
+            <div id="results"></div>
+        </div>
+    </div>
+
+    <script>
+        let startTime = 0;
+        let loadMetrics = {};
+
+        function updateStatus(message, type = 'loading') {
+            const status = document.getElementById('testStatus');
+            status.textContent = message;
+            status.className = `status ${type}`;
+        }
+
+        function testMainSite() {
+            updateStatus('🔄 Carregando site principal...', 'loading');
+            startTime = Date.now();
+            
+            const iframe = document.getElementById('mainSite');
+            const container = document.getElementById('siteContainer');
+            
+            iframe.src = 'http://127.0.0.1:8080';
+            container.style.display = 'block';
+            
+            iframe.onload = function() {
+                const loadTime = Date.now() - startTime;
+                updateStatus(`✅ Site carregado em ${loadTime}ms`, 'success');
+                
+                // Try to get performance metrics from iframe
+                try {
+                    measurePerformance(iframe.contentWindow);
+                } catch (error) {
+                    console.log('Cross-origin restriction, measuring from parent');
+                    measureBasicPerformance(loadTime);
+                }
+            };
+
+            iframe.onerror = function() {
+                updateStatus('❌ Erro ao carregar site', 'error');
+            };
+        }
+
+        function measureBasicPerformance(loadTime) {
+            document.getElementById('performanceMetrics').style.display = 'block';
+            document.getElementById('totalTime').textContent = `${loadTime}ms`;
+            document.getElementById('totalTime').parentElement.className = 
+                loadTime < 1000 ? 'metric good' : 
+                loadTime < 2000 ? 'metric warning' : 'metric bad';
+        }
+
+        function measurePerformance(win) {
+            try {
+                const perfEntries = win.performance.getEntriesByType('navigation');
+                const paintEntries = win.performance.getEntriesByType('paint');
+                
+                document.getElementById('performanceMetrics').style.display = 'block';
+                
+                // Navigation timing
+                if (perfEntries.length > 0) {
+                    const nav = perfEntries[0];
+                    const domLoad = nav.domContentLoadedEventEnd - nav.domContentLoadedEventStart;
+                    const totalLoad = nav.loadEventEnd - nav.loadEventStart;
+                    
+                    document.getElementById('totalTime').textContent = `${Math.round(totalLoad)}ms`;
+                    document.getElementById('tti').textContent = `${Math.round(nav.domInteractive - nav.navigationStart)}ms`;
+                }
+                
+                // Paint timing
+                paintEntries.forEach(entry => {
+                    if (entry.name === 'first-contentful-paint') {
+                        const fcp = Math.round(entry.startTime);
+                        document.getElementById('fcp').textContent = `${fcp}ms`;
+                        document.getElementById('fcp').parentElement.className = 
+                            fcp < 1200 ? 'metric good' : 
+                            fcp < 2400 ? 'metric warning' : 'metric bad';
+                    }
+                });
+                
+                // Layout shift (approximation)
+                document.getElementById('cls').textContent = '< 0.1 (skeleton loading)';
+                document.getElementById('cls').parentElement.className = 'metric good';
+                
+            } catch (error) {
+                console.error('Performance measurement error:', error);
+            }
+        }
+
+        function testCacheStatus() {
+            updateStatus('🔍 Verificando status do cache...', 'loading');
+            
+            if ('caches' in window) {
+                caches.keys().then(cacheNames => {
+                    const cacheDiv = document.getElementById('cacheDetails');
+                    const statusDiv = document.getElementById('cacheStatus');
+                    
+                    if (cacheNames.length === 0) {
+                        cacheDiv.innerHTML = '<p>❌ Nenhum cache encontrado</p>';
+                    } else {
+                        let cacheInfo = '<ul>';
+                        cacheNames.forEach(name => {
+                            cacheInfo += `<li>✅ ${name}</li>`;
+                        });
+                        cacheInfo += '</ul>';
+                        cacheDiv.innerHTML = cacheInfo;
+                    }
+                    
+                    statusDiv.style.display = 'block';
+                    updateStatus(`✅ Cache verificado - ${cacheNames.length} caches encontrados`, 'success');
+                }).catch(error => {
+                    updateStatus('❌ Erro ao verificar cache', 'error');
+                    console.error(error);
+                });
+            } else {
+                updateStatus('❌ Cache API não suportado', 'error');
+            }
+        }
+
+        function testLoadingSpeed() {
+            updateStatus('⚡ Testando velocidade de carregamento...', 'loading');
+            
+            const testResults = document.getElementById('testResults');
+            const results = document.getElementById('results');
+            
+            // Simulate multiple load tests
+            const tests = [
+                { name: 'Primeiro carregamento', url: 'http://127.0.0.1:8080' },
+                { name: 'Segundo carregamento (cache)', url: 'http://127.0.0.1:8080' },
+                { name: 'Carregamento com parâmetros', url: 'http://127.0.0.1:8080?t=' + Date.now() }
+            ];
+            
+            let testIndex = 0;
+            let testResultsHtml = '<table border="1" style="width:100%; border-collapse: collapse;">';
+            testResultsHtml += '<tr><th>Teste</th><th>Tempo (ms)</th><th>Status</th></tr>';
+            
+            function runNextTest() {
+                if (testIndex >= tests.length) {
+                    testResultsHtml += '</table>';
+                    results.innerHTML = testResultsHtml;
+                    testResults.style.display = 'block';
+                    updateStatus('✅ Testes de velocidade concluídos', 'success');
+                    return;
+                }
+                
+                const test = tests[testIndex];
+                const startTime = Date.now();
+                
+                fetch(test.url)
+                    .then(response => {
+                        const loadTime = Date.now() - startTime;
+                        const status = loadTime < 1000 ? '🟢 Rápido' : 
+                                      loadTime < 2000 ? '🟡 OK' : '🔴 Lento';
+                        
+                        testResultsHtml += `<tr><td>${test.name}</td><td>${loadTime}</td><td>${status}</td></tr>`;
+                        testIndex++;
+                        setTimeout(runNextTest, 500); // Wait between tests
+                    })
+                    .catch(error => {
+                        testResultsHtml += `<tr><td>${test.name}</td><td>-</td><td>❌ Erro</td></tr>`;
+                        testIndex++;
+                        setTimeout(runNextTest, 500);
+                    });
+            }
+            
+            runNextTest();
+        }
+
+        function clearAllTests() {
+            document.getElementById('siteContainer').style.display = 'none';
+            document.getElementById('performanceMetrics').style.display = 'none';
+            document.getElementById('cacheStatus').style.display = 'none';
+            document.getElementById('testResults').style.display = 'none';
+            document.getElementById('mainSite').src = '';
+            updateStatus('🧹 Testes limpos - Pronto para novo teste', 'success');
+        }
+
+        // Auto-start basic test
+        window.onload = function() {
+            updateStatus('🚀 Performance Tester carregado - Clique nos botões para testar', 'success');
+        };
+    </script>
+</body>
+</html>

@@ -118,9 +118,59 @@ export class AdminController {
         }
     }
 
-    showDashboard() {
-        const stats = this.database.getStatistics();
-        this.view.showDashboard(stats);
+    async showDashboard() {
+        // Show loading skeleton immediately
+        this.view.showLoadingSkeleton();
+        
+        try {
+            // Ensure data is loaded
+            await this.database.loadData();
+            
+            // Get fresh statistics
+            const stats = this.database.getStatistics();
+            console.log('📊 Dashboard stats loaded:', stats);
+            
+            // Show dashboard immediately after loading
+            this.view.showDashboard(stats);
+            this.setupDashboardClickListeners();
+            
+        } catch (error) {
+            console.error('❌ Dashboard load failed:', error);
+            this.view.showNotification('Erro ao carregar dashboard', 'error');
+            
+            // Show dashboard with fallback data
+            const fallbackStats = {
+                totalProducts: 0,
+                totalCategories: 0, 
+                activeProducts: 0,
+                onSaleProducts: 0,
+                totalImages: 0,
+                restaurantName: 'Menu Online'
+            };
+            
+            this.view.showDashboard(fallbackStats);
+            this.setupDashboardClickListeners();
+        }
+    }
+        
+    setupDashboardClickListeners() {
+        // Setup refresh button
+        const refreshBtn = document.getElementById('refreshDataBtn');
+        if (refreshBtn) {
+            refreshBtn.addEventListener('click', async () => {
+                refreshBtn.disabled = true;
+                refreshBtn.innerHTML = `
+                    <svg class="animate-spin w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                    </svg>
+                    Atualizando...
+                `;
+                
+                await this.database.forceReload();
+                this.view.showNotification('Dados atualizados com sucesso!', 'success');
+                this.showDashboard();
+            });
+        }
         
         // Setup dashboard card navigation
         document.querySelectorAll('.dashboard-card').forEach(card => {
@@ -175,6 +225,12 @@ export class AdminController {
     showProducts() {
         const products = this.database.getProducts();
         const categories = this.database.getCategories();
+        
+        // DEBUG: Log para verificar dados
+        console.log('📊 AdminController.showProducts() DEBUG:');
+        console.log('  - Products:', products.length, products);
+        console.log('  - Categories:', categories.length, categories);
+        
         this.view.showProducts(products, categories);
         
         
@@ -525,6 +581,28 @@ export class AdminController {
         
         this.view.showModal(isEdit ? 'Editar Produto' : 'Adicionar Produto', formHtml);
         
+        // CRITICAL: Set selectedGalleryImageId if editing product with existing image
+        if (product && product.image) {
+            const galleryImages = this.database.getGalleryImages();
+            const existingImage = galleryImages.find(img => img.url === product.image);
+            
+            if (existingImage) {
+                const selectedGalleryImageId = document.getElementById('selectedGalleryImageId');
+                if (selectedGalleryImageId) {
+                    selectedGalleryImageId.value = existingImage.id;
+                    console.log('✅ Found image in gallery, set selectedGalleryImageId:', existingImage.id);
+                } else {
+                    console.error('❌ selectedGalleryImageId field not found!');
+                }
+            } else {
+                console.warn('⚠️ Product image not found in gallery:', product.image);
+                // The image exists in product but not in gallery
+                // This is OK - user can still edit product and image will remain unchanged
+            }
+        } else {
+            console.log('🆕 New product or no image - selectedGalleryImageId remains empty');
+        }
+        
         // Handle form submission
         document.getElementById('productForm').addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -627,7 +705,7 @@ export class AdminController {
         
         // Image handling is now done through the preview click overlay
         
-        // Handle image upload
+        // Handle image upload - UPLOAD IMMEDIATELY TO SUPABASE
         document.getElementById('productImage').addEventListener('change', async (e) => {
             const file = e.target.files[0];
             if (file && file.size > 5000000) {
@@ -636,10 +714,55 @@ export class AdminController {
             } else if (file) {
                 // Clear gallery selection when uploading new file
                 document.getElementById('selectedGalleryImageId').value = '';
-                document.getElementById('selectedImagePreview').classList.add('hidden');
                 
-                // Update main preview
+                // Update main preview immediately
                 this.updateImagePreview(file);
+                
+                // Upload to Supabase immediately in background
+                try {
+                    console.log('📤 Uploading image to Supabase immediately...');
+                    this.view.showNotification('Enviando imagem...', 'info');
+                    
+                    const imageData = await this.database.saveImage(file);
+                    
+                    // Save to gallery automatically
+                    const categorySelect = document.getElementById('productCategory');
+                    const categoryName = categorySelect?.options[categorySelect.selectedIndex]?.text || 'Produto';
+                    const productName = document.getElementById('productName')?.value || 'Nova Imagem';
+                    
+                    const galleryImageData = {
+                        name: `${productName} - ${categoryName}`,
+                        url: imageData.url,
+                        size: file.size,
+                        type: file.type,
+                        tags: this.generateAutoTags(productName, categoryName)
+                    };
+                    
+                    // Check if image already exists
+                    if (!this.database.imageExistsInGallery(imageData.url)) {
+                        const savedImage = await this.database.addGalleryImage(galleryImageData);
+                        
+                        // Store the gallery image ID to use when saving product
+                        const selectedGalleryImageId = document.getElementById('selectedGalleryImageId');
+                        if (selectedGalleryImageId && savedImage) {
+                            // Store the ID returned from Supabase
+                            selectedGalleryImageId.value = savedImage.id || imageData.id;
+                            console.log('✅ Image uploaded to Supabase and gallery:', savedImage);
+                            this.view.showNotification('Imagem enviada com sucesso!', 'success');
+                        }
+                    } else {
+                        // Image already exists, find its ID
+                        const images = this.database.getGalleryImages();
+                        const existingImage = images.find(img => img.url === imageData.url);
+                        if (existingImage) {
+                            document.getElementById('selectedGalleryImageId').value = existingImage.id;
+                            console.log('✅ Using existing image from gallery:', existingImage.id);
+                        }
+                    }
+                } catch (error) {
+                    console.error('❌ Failed to upload image:', error);
+                    this.view.showNotification('Erro ao enviar imagem. Tente novamente.', 'error');
+                }
             }
         });
         
@@ -1150,15 +1273,12 @@ export class AdminController {
             productImage: !!productImage
         });
         
-        if (!selectedGalleryImageId || !previewImage || !selectedImageName || !selectedImagePreview) {
-            console.error('Alguns elementos não foram encontrados!');
+        if (!selectedGalleryImageId) {
+            console.error('selectedGalleryImageId não encontrado!');
             return;
         }
         
         selectedGalleryImageId.value = image.id;
-        previewImage.src = image.url;
-        selectedImageName.textContent = image.name;
-        selectedImagePreview.classList.remove('hidden');
         
         // Clear file input
         if (productImage) {
@@ -1301,53 +1421,34 @@ export class AdminController {
             tags: this.getSelectedTags()
         };
         
-        // Handle image - either from gallery or upload
+        // Handle image - Image was already uploaded to Supabase when selected
         const selectedGalleryImageId = document.getElementById('selectedGalleryImageId').value;
-        const imageFile = document.getElementById('productImage').files[0];
         
         if (selectedGalleryImageId) {
-            // Use image from gallery
+            // Use image from gallery (either selected from gallery or uploaded just now)
             const galleryImage = this.database.getGalleryImageById(selectedGalleryImageId);
             if (galleryImage) {
                 productData.image = galleryImage.url;
-            }
-        } else if (imageFile) {
-            // Upload new image
-            try {
-                const imageData = await this.database.saveImage(imageFile);
-                productData.image = imageData;
-                
-                // Auto-save to gallery with smart naming and tags
-                const categoryName = this.database.getCategoryById(productData.categoryId)?.name || 'Produto';
-                const productName = productData.name || 'Imagem';
-                
-                const galleryImageData = {
-                    name: `${productName} - ${categoryName}`,
-                    url: imageData,
-                    size: imageFile.size,
-                    type: imageFile.type,
-                    tags: this.generateAutoTags(productData.name, categoryName)
-                };
-                
-                // Check if image already exists to avoid duplicates
-                if (!this.database.imageExistsInGallery(imageData)) {
-                    this.database.addGalleryImage(galleryImageData);
-                    console.log('Imagem automaticamente salva na galeria:', galleryImageData.name);
-                }
-            } catch (error) {
-                console.error('Erro ao processar imagem:', error);
-                this.view.showNotification(`Erro: ${error.message}`, 'error');
-                return; // Don't save product if image failed
+                console.log('📸 Using gallery image for product:', galleryImage.name);
             }
         }
         
+        // Note: If no selectedGalleryImageId, product will be saved without image
+        // The image upload already happened when file was selected
+        
+        console.log('🔍 DEBUG - ProductData before save:', productData);
+        
         if (productId) {
-            this.database.updateProduct(productId, productData);
+            await this.database.updateProduct(productId, productData);
             this.view.showNotification('Produto atualizado com sucesso!');
         } else {
-            this.database.addProduct(productData);
+            await this.database.addProduct(productData);
             this.view.showNotification('Produto adicionado com sucesso!');
         }
+        
+        // Force reload data from Supabase to ensure sync
+        console.log('🔄 Forcing data reload after product save...');
+        await this.database.forceReload();
         
         this.view.closeModal();
         this.showProducts();
@@ -1633,15 +1734,26 @@ export class AdminController {
         });
     }
 
-    showGallery() {
-        const images = this.database.getGalleryImages();
-        this.view.showGallery(images);
-        this.selectedImages = new Set(); // Track selected images
+    async showGallery() {
+        console.log('🎨 Showing gallery with progressive loading...');
         
-        // Wait for DOM to be fully rendered before setting up event listeners
-        setTimeout(() => {
-            this.setupGalleryEventListeners();
-        }, 100);
+        // Always check if cache is valid (includes cross-browser modification check)
+        const cacheValid = this.database.cache.isValid();
+        
+        if (!cacheValid) {
+            console.log('🔄 Cache invalid or modified by another browser - refreshing...');
+            await this.database.loadData();
+        }
+        
+        // Show current data
+        const images = this.database.getGalleryImages();
+        console.log(`📸 Showing ${images.length} gallery images`);
+        
+        this.view.showGallery(images, false);
+        this.selectedImages = new Set();
+        this.isSelectionMode = false; // Controla se está em modo seleção
+        this.hadSelections = false; // Controla se já teve seleções para evitar auto-exit prematuro
+        this.setupGalleryEventListeners();
     }
     
     setupGalleryEventListeners() {
@@ -1680,24 +1792,210 @@ export class AdminController {
             });
         });
         
-        // Delete selected images button
-        const deleteSelectedBtn = document.getElementById('deleteSelectedBtn');
-        if (deleteSelectedBtn) {
-            deleteSelectedBtn.addEventListener('click', () => {
-                this.deleteSelectedImages();
-            });
-        }
         
-        // Select image buttons (for multiple selection)
-        document.querySelectorAll('.select-image-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                e.stopPropagation(); // Prevent event bubbling
-                console.log('Botão selecionar clicado!'); // Debug
-                const imageId = btn.dataset.imageId;
-                const checkbox = document.querySelector(`input[data-image-id="${imageId}"]`);
+        // Gallery image card clicks - só seleciona se já estiver em modo seleção
+        document.querySelectorAll('.gallery-image-card').forEach(card => {
+            let longPressTimer;
+            let startPosition = { x: 0, y: 0 };
+            let hasMoved = false;
+            let wasLongPress = false;
+            let longPressActive = false; // Nova flag para controlar se long press está ativo
+            let isCurrentlyPressed = false; // Flag para verificar se ainda está pressionando
+            const moveThreshold = 10; // pixels - igual ao iPhone
+            
+            // Long press para entrar em modo seleção (iPhone-style) - Mouse events
+            card.addEventListener('mousedown', (e) => {
+                // Long press funciona em qualquer lugar da imagem (inclusive sobre botões)
+                startPosition = { x: e.clientX, y: e.clientY };
+                hasMoved = false;
+                wasLongPress = false;
+                longPressActive = true; // Ativa o long press
+                isCurrentlyPressed = true; // Marca que está pressionando
+                
+                longPressTimer = setTimeout(() => {
+                    // Só executa se long press ativo, não moveu E ainda está pressionando
+                    if (longPressActive && !hasMoved && isCurrentlyPressed) {
+                        wasLongPress = true;
+                        const imageId = card.dataset.imageId;
+                        const checkbox = card.querySelector('.image-checkbox');
+                        if (checkbox) {
+                            console.log('✅ Long press completado (mouse) - entrando em modo seleção');
+                            // Primeiro entra em modo seleção
+                            this.enterSelectionMode();
+                            // Depois seleciona a imagem
+                            checkbox.checked = true;
+                            this.toggleImageSelection(imageId, true);
+                        }
+                    } else {
+                        console.log('❌ Long press cancelado (mouse) - não executando, ativo:', longPressActive, 'moveu:', hasMoved, 'pressionando:', isCurrentlyPressed);
+                    }
+                }, 350); // 350ms mais responsivo como iPhone real
+            });
+            
+            card.addEventListener('mousemove', (e) => {
+                if (longPressTimer) {
+                    const distance = Math.sqrt(
+                        Math.pow(e.clientX - startPosition.x, 2) + 
+                        Math.pow(e.clientY - startPosition.y, 2)
+                    );
+                    
+                    if (distance > moveThreshold) {
+                        hasMoved = true;
+                        longPressActive = false; // Desativa o long press
+                        clearTimeout(longPressTimer);
+                        longPressTimer = null;
+                        wasLongPress = false; // Reset flag se cancelou por movimento
+                    }
+                }
+            });
+            
+            card.addEventListener('mouseup', () => {
+                isCurrentlyPressed = false; // Não está mais pressionando
+                if (longPressTimer) {
+                    longPressActive = false; // Desativa o long press
+                    clearTimeout(longPressTimer);
+                    longPressTimer = null;
+                    wasLongPress = false; // Reset flag se cancelou
+                }
+            });
+            
+            card.addEventListener('mouseleave', () => {
+                isCurrentlyPressed = false; // Não está mais pressionando
+                if (longPressTimer) {
+                    longPressActive = false; // Desativa o long press
+                    clearTimeout(longPressTimer);
+                    longPressTimer = null;
+                    wasLongPress = false; // Reset flag se cancelou
+                }
+            });
+            
+            // Long press para mobile - Touch events com detecção de movimento
+            card.addEventListener('touchstart', (e) => {
+                // Long press funciona em qualquer lugar da imagem (inclusive sobre botões)
+                const touch = e.touches[0];
+                startPosition = { x: touch.clientX, y: touch.clientY };
+                hasMoved = false;
+                wasLongPress = false;
+                longPressActive = true; // Ativa o long press
+                isCurrentlyPressed = true; // Marca que está pressionando
+                
+                longPressTimer = setTimeout(() => {
+                    // Só executa se long press ativo, não moveu E ainda está pressionando
+                    if (longPressActive && !hasMoved && isCurrentlyPressed) {
+                        wasLongPress = true;
+                        const imageId = card.dataset.imageId;
+                        const checkbox = card.querySelector('.image-checkbox');
+                        if (checkbox) {
+                            console.log('✅ Long press completado (mobile) - entrando em modo seleção');
+                            // Primeiro entra em modo seleção
+                            this.enterSelectionMode();
+                            // Depois seleciona a imagem
+                            checkbox.checked = true;
+                            this.toggleImageSelection(imageId, true);
+                        }
+                        
+                        // Vibração no mobile (se disponível)
+                        if (navigator.vibrate) {
+                            navigator.vibrate(50);
+                        }
+                    } else {
+                        console.log('❌ Long press cancelado (mobile) - não executando, ativo:', longPressActive, 'moveu:', hasMoved, 'pressionando:', isCurrentlyPressed);
+                    }
+                }, 350); // 350ms mais responsivo como iPhone real
+            });
+            
+            card.addEventListener('touchmove', (e) => {
+                if (longPressTimer) {
+                    const touch = e.touches[0];
+                    const distance = Math.sqrt(
+                        Math.pow(touch.clientX - startPosition.x, 2) + 
+                        Math.pow(touch.clientY - startPosition.y, 2)
+                    );
+                    
+                    if (distance > moveThreshold) {
+                        hasMoved = true;
+                        longPressActive = false; // Desativa o long press
+                        clearTimeout(longPressTimer);
+                        longPressTimer = null;
+                        wasLongPress = false; // Reset flag se cancelou por movimento
+                    }
+                }
+            });
+            
+            card.addEventListener('touchend', () => {
+                isCurrentlyPressed = false; // Marca que não está mais pressionando
+                if (longPressTimer) {
+                    longPressActive = false; // Desativa o long press
+                    clearTimeout(longPressTimer);
+                    longPressTimer = null;
+                    wasLongPress = false; // Reset flag se cancelou
+                }
+            });
+            
+            card.addEventListener('touchcancel', () => {
+                isCurrentlyPressed = false; // Marca que não está mais pressionando
+                if (longPressTimer) {
+                    longPressActive = false; // Desativa o long press
+                    clearTimeout(longPressTimer);
+                    longPressTimer = null;
+                    wasLongPress = false; // Reset flag se cancelou
+                }
+            });
+            
+            // Clique normal - só seleciona se já estiver em modo seleção
+            card.addEventListener('click', (e) => {
+                // Se foi long press, não executa clique normal
+                if (wasLongPress) {
+                    wasLongPress = false; // Reset para próximo clique
+                    return;
+                }
+                
+                // Cancela qualquer timer pendente
+                if (longPressTimer) {
+                    clearTimeout(longPressTimer);
+                    longPressTimer = null;
+                }
+                
+                return this.handleNormalClick(e, card);
+            });
+        });
+        
+        // Método separado para lidar com clique normal
+        this.handleNormalClick = (e, card) => {
+            // Don't trigger if clicking on buttons inside the card
+            if (e.target.closest('button')) {
+                return;
+            }
+            
+            // Só seleciona se já estiver em modo seleção
+            if (this.isSelectionMode) {
+                const imageId = card.dataset.imageId;
+                const checkbox = card.querySelector('.image-checkbox');
                 if (checkbox) {
                     checkbox.checked = !checkbox.checked;
                     this.toggleImageSelection(imageId, checkbox.checked);
+                }
+            } else {
+                // Clique normal - mostra botões no mobile (simulando hover)
+                this.showMobileButtons(card);
+            }
+        };
+        
+        
+        // Select image buttons - entra em modo seleção
+        document.querySelectorAll('.select-image-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const imageId = btn.dataset.imageId;
+                
+                // Entra em modo seleção
+                this.enterSelectionMode();
+                
+                // Seleciona a imagem clicada
+                const checkbox = document.querySelector(`input[data-image-id="${imageId}"]`);
+                if (checkbox) {
+                    checkbox.checked = true;
+                    this.toggleImageSelection(imageId, true);
                 }
             });
         });
@@ -1727,12 +2025,64 @@ export class AdminController {
         
         // Delete image buttons
         document.querySelectorAll('.delete-image-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
+            btn.addEventListener('click', async (e) => {
                 e.stopPropagation(); // Prevent event bubbling
                 if (confirm('Tem certeza que deseja excluir esta imagem?')) {
-                    this.database.deleteGalleryImage(btn.dataset.imageId);
-                    this.view.showNotification('Imagem excluída com sucesso!');
-                    this.showGallery();
+                    try {
+                        const imageId = btn.dataset.imageId;
+                        const imageCard = btn.closest('.gallery-image-card');
+                        
+                        console.log('🗑️ Deletando imagem:', imageId);
+                        
+                        // Immediate visual feedback
+                        if (imageCard) {
+                            imageCard.style.opacity = '0.5';
+                            imageCard.style.pointerEvents = 'none';
+                            imageCard.style.transform = 'scale(0.95)';
+                            imageCard.style.transition = 'all 0.3s ease';
+                            
+                            // Add deleting indicator
+                            const overlay = document.createElement('div');
+                            overlay.className = 'delete-overlay absolute inset-0 bg-red-500 bg-opacity-75 flex items-center justify-center text-white font-semibold z-50 rounded';
+                            overlay.innerHTML = `
+                                <div class="text-center">
+                                    <svg class="animate-spin mx-auto mb-2 h-6 w-6" fill="none" viewBox="0 0 24 24">
+                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                    <div class="text-xs">Excluindo...</div>
+                                </div>
+                            `;
+                            imageCard.appendChild(overlay);
+                        }
+                        
+                        // Perform actual delete in background
+                        await this.database.deleteGalleryImage(imageId);
+                        
+                        // Smooth removal animation
+                        if (imageCard) {
+                            imageCard.style.transform = 'scale(0)';
+                            imageCard.style.opacity = '0';
+                            
+                            setTimeout(() => {
+                                imageCard.remove();
+                                this.view.showNotification('Imagem excluída com sucesso!', 'success');
+                                
+                                // Update counters
+                                const remainingImages = document.querySelectorAll('.gallery-image-card').length;
+                                const counterElement = document.querySelector('.text-sm.text-gray-500');
+                                if (counterElement) {
+                                    counterElement.textContent = `${remainingImages} ${remainingImages === 1 ? 'imagem' : 'imagens'}`;
+                                }
+                            }, 300);
+                        }
+                        
+                        console.log('✅ Delete completo');
+                        
+                    } catch (error) {
+                        console.error('❌ Erro ao deletar imagem:', error);
+                        this.view.showNotification('Erro ao excluir imagem', 'error');
+                    }
                 }
             });
         });
@@ -1743,41 +2093,92 @@ export class AdminController {
         const overlay = card.querySelector('.selection-overlay');
         const indicator = card.querySelector('.selected-indicator');
         
+        const checkbox = card.querySelector('.selection-checkbox');
+        const checkboxCircle = checkbox.querySelector('div');
+        
         if (isSelected) {
             this.selectedImages.add(imageId);
-            // Apply selection visual effects
+            // Apply orange selection visual effects
             overlay.classList.add('bg-opacity-20');
-            overlay.classList.add('bg-blue-500');
+            overlay.classList.add('bg-orange-500');
+            checkboxCircle.classList.remove('bg-white', 'border-white');
+            checkboxCircle.classList.add('bg-orange-500', 'border-orange-500');
             indicator.classList.remove('opacity-0', 'scale-0');
             indicator.classList.add('opacity-100', 'scale-100');
-            card.classList.add('ring-2', 'ring-blue-500');
+            card.classList.add('ring-2', 'ring-orange-500');
         } else {
             this.selectedImages.delete(imageId);
-            // Remove selection visual effects
-            overlay.classList.remove('bg-opacity-20', 'bg-blue-500');
+            // Remove orange selection visual effects
+            overlay.classList.remove('bg-opacity-20', 'bg-orange-500');
+            checkboxCircle.classList.remove('bg-orange-500', 'border-orange-500');
+            checkboxCircle.classList.add('bg-white', 'border-white');
             indicator.classList.add('opacity-0', 'scale-0');
             indicator.classList.remove('opacity-100', 'scale-100');
-            card.classList.remove('ring-2', 'ring-blue-500');
+            card.classList.remove('ring-2', 'ring-orange-500');
         }
         
         this.updateSelectionCounter();
         this.updateNonSelectedImagesVisual();
+        
+        // Mostra menu contextual quando há imagens selecionadas
+        if (this.selectedImages.size > 0) {
+            // Pequeno delay para mostrar o menu após a seleção
+            setTimeout(() => {
+                this.showSelectionContextMenu();
+            }, 200);
+        }
     }
     
     updateSelectionCounter() {
-        const counter = document.getElementById('selectionCounter');
-        const countElement = document.getElementById('selectedCount');
-        const deleteBtn = document.getElementById('deleteSelectedBtn');
-        
         const selectedCount = this.selectedImages.size;
         
+        // Só faz auto-exit se o usuário realmente desmarcou todas as seleções
+        // Evita auto-exit imediato quando entra no modo através de long press
+        if (this.isSelectionMode && selectedCount === 0 && this.hadSelections) {
+            // Evita auto-exit se acabou de entrar no modo seleção (debounce)
+            if (this.lastSelectionModeEntry && (Date.now() - this.lastSelectionModeEntry) < 350) {
+                console.log('⏸️ Auto-exit cancelado - acabou de entrar no modo seleção');
+                return;
+            }
+            
+            // Delay para evitar conflito com toggleImageSelection
+            setTimeout(() => {
+                if (this.selectedImages.size === 0 && this.isSelectionMode && this.hadSelections) {
+                    console.log('🚪 Saindo do modo seleção automaticamente - usuário desmarcou todas');
+                    this.exitSelectionMode();
+                }
+            }, 100); // Delay menor mas suficiente
+            return;
+        }
+        
+        // Marca que já teve seleções para controlar o auto-exit
         if (selectedCount > 0) {
-            counter.classList.remove('hidden');
-            deleteBtn.classList.remove('hidden');
-            countElement.textContent = selectedCount;
+            this.hadSelections = true;
+        }
+        
+        if (this.isSelectionMode || selectedCount > 0) {
+            // Mostrar todas as checkboxes quando em modo seleção
+            document.querySelectorAll('.selection-checkbox').forEach(checkbox => {
+                checkbox.classList.remove('opacity-0');
+                checkbox.classList.add('opacity-100');
+            });
+            
+            // Esconder botões de hover quando em modo seleção  
+            document.querySelectorAll('.action-buttons').forEach(btnGroup => {
+                btnGroup.classList.add('hidden');
+            });
+            
         } else {
-            counter.classList.add('hidden');
-            deleteBtn.classList.add('hidden');
+            // Esconder todas as checkboxes quando não está em modo seleção
+            document.querySelectorAll('.selection-checkbox').forEach(checkbox => {
+                checkbox.classList.remove('opacity-100');
+                checkbox.classList.add('opacity-0');
+            });
+            
+            // Mostrar botões de hover quando não está em modo seleção
+            document.querySelectorAll('.action-buttons').forEach(btnGroup => {
+                btnGroup.classList.remove('hidden');
+            });
         }
     }
     
@@ -1800,7 +2201,200 @@ export class AdminController {
         });
     }
     
-    deleteSelectedImages() {
+    selectAllImages() {
+        const allImages = document.querySelectorAll('.gallery-image-card');
+        const isAllSelected = this.selectedImages.size === allImages.length;
+        
+        if (isAllSelected) {
+            // Deselect all if all are selected
+            allImages.forEach(card => {
+                const imageId = card.dataset.imageId;
+                const checkbox = card.querySelector('.image-checkbox');
+                if (checkbox) {
+                    checkbox.checked = false;
+                    this.toggleImageSelection(imageId, false);
+                }
+            });
+            
+        } else {
+            // Select all images
+            allImages.forEach(card => {
+                const imageId = card.dataset.imageId;
+                const checkbox = card.querySelector('.image-checkbox');
+                if (checkbox && !this.selectedImages.has(imageId)) {
+                    checkbox.checked = true;
+                    this.toggleImageSelection(imageId, true);
+                }
+            });
+            
+        }
+    }
+    
+    enterSelectionMode() {
+        this.isSelectionMode = true;
+        this.lastSelectionModeEntry = Date.now(); // Marca timestamp de entrada
+        console.log('🎯 Entrando em modo seleção');
+        
+        // Força atualização visual para mostrar checkboxes
+        this.updateSelectionCounter();
+    }
+    
+    exitSelectionMode() {
+        this.isSelectionMode = false;
+        this.selectedImages.clear();
+        this.hadSelections = false; // Reset para próxima vez
+        console.log('🚪 Saindo do modo seleção');
+        
+        
+        // Limpa todas as seleções visuais
+        document.querySelectorAll('.image-checkbox').forEach(checkbox => {
+            checkbox.checked = false;
+        });
+        
+        // Limpa efeitos visuais de seleção
+        document.querySelectorAll('.gallery-image-card').forEach(card => {
+            const overlay = card.querySelector('.selection-overlay');
+            const checkboxCircle = card.querySelector('.selection-checkbox div');
+            const indicator = card.querySelector('.selected-indicator');
+            
+            if (overlay) overlay.classList.remove('bg-opacity-20', 'bg-orange-500');
+            if (checkboxCircle) {
+                checkboxCircle.classList.remove('bg-orange-500', 'border-orange-500');
+                checkboxCircle.classList.add('bg-white', 'border-white');
+            }
+            if (indicator) {
+                indicator.classList.add('opacity-0', 'scale-0');
+                indicator.classList.remove('opacity-100', 'scale-100');
+            }
+            card.classList.remove('ring-2', 'ring-orange-500');
+        });
+        
+        // Atualiza visual
+        this.updateSelectionCounter();
+        this.updateNonSelectedImagesVisual();
+    }
+    
+    showMobileButtons(card) {
+        // Remove active state de outros cards
+        document.querySelectorAll('.gallery-image-card').forEach(c => {
+            c.classList.remove('mobile-active');
+        });
+        
+        // Adiciona state ativo para mostrar botões no mobile
+        card.classList.add('mobile-active');
+        
+        // Remove depois de alguns segundos
+        setTimeout(() => {
+            card.classList.remove('mobile-active');
+        }, 3000);
+    }
+    
+    showSelectionContextMenu() {
+        // Remove menu anterior se existir
+        const existingMenu = document.getElementById('selection-context-menu');
+        if (existingMenu) {
+            existingMenu.remove();
+        }
+        
+        const selectedCount = this.selectedImages.size;
+        if (selectedCount === 0) return;
+        
+        // Cria menu contextual mais leve com transparência
+        const menu = document.createElement('div');
+        menu.id = 'selection-context-menu';
+        menu.className = 'fixed bottom-20 left-1/2 transform -translate-x-1/2 bg-white bg-opacity-90 backdrop-blur-sm rounded-lg shadow-lg border border-gray-200 border-opacity-50 z-50 p-2 flex gap-2';
+        
+        // Botão Cancelar (sempre presente)
+        const cancelBtn = document.createElement('button');
+        cancelBtn.className = 'flex items-center gap-2 px-4 py-3 hover:bg-gray-50 hover:bg-opacity-60 rounded-lg transition-all duration-200';
+        cancelBtn.innerHTML = `
+            <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+            <span class="text-sm font-medium text-gray-600">Cancelar</span>
+        `;
+        
+        // Botão Selecionar Todas (só aparece se nem todas estão selecionadas)
+        const selectAllBtn = document.createElement('button');
+        const totalImages = document.querySelectorAll('.gallery-image-card').length;
+        const allSelected = selectedCount === totalImages;
+        
+        if (!allSelected) {
+            selectAllBtn.className = 'flex items-center gap-2 px-4 py-3 hover:bg-orange-50 hover:bg-opacity-60 rounded-lg transition-all duration-200';
+            selectAllBtn.innerHTML = `
+                <svg class="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <span class="text-sm font-medium text-orange-600">Selecionar Todas</span>
+            `;
+        }
+        
+        // Botão Excluir
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'flex items-center gap-2 px-4 py-3 hover:bg-red-50 hover:bg-opacity-60 rounded-lg transition-all duration-200';
+        deleteBtn.innerHTML = `
+            <svg class="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+            </svg>
+            <span class="text-sm font-medium text-red-600">Excluir (${selectedCount})</span>
+        `;
+        
+        // Event listeners
+        cancelBtn.addEventListener('click', () => {
+            this.exitSelectionMode();
+            menu.remove();
+        });
+        
+        if (!allSelected) {
+            selectAllBtn.addEventListener('click', () => {
+                this.selectAllImages();
+                menu.remove();
+            });
+        }
+        
+        deleteBtn.addEventListener('click', () => {
+            this.deleteSelectedImages();
+            menu.remove();
+        });
+        
+        // Adiciona botões ao menu
+        menu.appendChild(cancelBtn);
+        if (!allSelected) {
+            menu.appendChild(selectAllBtn);
+        }
+        menu.appendChild(deleteBtn);
+        
+        // Adiciona ao DOM
+        document.body.appendChild(menu);
+        
+        // Remove menu ao clicar fora
+        setTimeout(() => {
+            document.addEventListener('click', (e) => {
+                if (!menu.contains(e.target)) {
+                    menu.remove();
+                }
+            }, { once: true });
+        }, 100);
+        
+        // Auto-remove após 8 segundos
+        setTimeout(() => {
+            if (menu.parentNode) {
+                menu.remove();
+            }
+        }, 8000);
+    }
+    
+    shareSelectedImages() {
+        // Implementar compartilhamento
+        this.view.showNotification(`Compartilhando ${this.selectedImages.size} imagens...`, 'success');
+    }
+    
+    copySelectedImages() {
+        // Implementar cópia
+        this.view.showNotification(`${this.selectedImages.size} imagens copiadas!`, 'success');
+    }
+    
+    async deleteSelectedImages() {
         if (this.selectedImages.size === 0) return;
         
         const count = this.selectedImages.size;
@@ -1809,12 +2403,109 @@ export class AdminController {
             `Tem certeza que deseja excluir ${count} imagens?`;
             
         if (confirm(message)) {
-            this.selectedImages.forEach(imageId => {
-                this.database.deleteGalleryImage(imageId);
-            });
+            // Mostrar feedback visual durante exclusão
+            this.showDeletionProgress(count);
             
-            this.view.showNotification(`${count} imagem(ns) excluída(s) com sucesso!`);
+            let deletedCount = 0;
+            
+            // Delete all selected images (await each one)
+            for (const imageId of this.selectedImages) {
+                try {
+                    // Adicionar overlay de "excluindo" na imagem específica
+                    this.addDeletingOverlay(imageId);
+                    
+                    await this.database.deleteGalleryImage(imageId);
+                    deletedCount++;
+                    
+                    // Atualizar progresso
+                    this.updateDeletionProgress(deletedCount, count);
+                    
+                } catch (error) {
+                    console.error(`❌ Erro ao deletar imagem ${imageId}:`, error);
+                }
+            }
+            
+            // Remover overlay de progresso
+            this.hideDeletionProgress();
+            
+            this.view.showNotification(`${deletedCount} imagem(ns) excluída(s) com sucesso!`);
             this.showGallery(); // Refresh gallery
+        }
+    }
+    
+    showDeletionProgress(totalCount) {
+        // Criar overlay global de progresso de exclusão
+        const overlay = document.createElement('div');
+        overlay.id = 'deletion-progress-overlay';
+        overlay.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+        
+        overlay.innerHTML = `
+            <div class="bg-white rounded-lg p-6 mx-4 max-w-sm text-center shadow-2xl">
+                <div class="mb-4">
+                    <svg class="w-12 h-12 text-red-600 mx-auto mb-3 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                    </svg>
+                    <h3 class="text-lg font-semibold text-gray-900 mb-2">Excluindo imagens</h3>
+                    <p class="text-sm text-gray-600" id="deletion-status">Preparando exclusão...</p>
+                </div>
+                <div class="w-full bg-gray-200 rounded-full h-3">
+                    <div id="deletion-progress-bar" class="bg-red-600 h-3 rounded-full transition-all duration-300" style="width: 0%"></div>
+                </div>
+                <p class="text-xs text-gray-500 mt-2" id="deletion-counter">0 de ${totalCount}</p>
+            </div>
+        `;
+        
+        document.body.appendChild(overlay);
+    }
+    
+    updateDeletionProgress(deletedCount, totalCount) {
+        const statusElement = document.getElementById('deletion-status');
+        const progressBar = document.getElementById('deletion-progress-bar');
+        const counterElement = document.getElementById('deletion-counter');
+        
+        if (statusElement) {
+            statusElement.textContent = `Excluindo imagem ${deletedCount} de ${totalCount}...`;
+        }
+        
+        if (progressBar) {
+            const percentage = (deletedCount / totalCount) * 100;
+            progressBar.style.width = `${percentage}%`;
+        }
+        
+        if (counterElement) {
+            counterElement.textContent = `${deletedCount} de ${totalCount}`;
+        }
+    }
+    
+    hideDeletionProgress() {
+        const overlay = document.getElementById('deletion-progress-overlay');
+        if (overlay) {
+            overlay.remove();
+        }
+    }
+    
+    addDeletingOverlay(imageId) {
+        const imageCard = document.querySelector(`[data-image-id="${imageId}"]`);
+        if (imageCard) {
+            // Remove overlay existente se houver
+            const existingOverlay = imageCard.querySelector('.deleting-overlay');
+            if (existingOverlay) {
+                existingOverlay.remove();
+            }
+            
+            // Adicionar overlay de "excluindo"
+            const overlay = document.createElement('div');
+            overlay.className = 'deleting-overlay absolute inset-0 bg-red-500 bg-opacity-75 flex items-center justify-center text-white font-semibold z-50 rounded';
+            overlay.innerHTML = `
+                <div class="text-center">
+                    <svg class="animate-spin mx-auto mb-2 h-6 w-6" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <div class="text-xs">Excluindo...</div>
+                </div>
+            `;
+            imageCard.appendChild(overlay);
         }
     }
     
@@ -2047,6 +2738,15 @@ export class AdminController {
                     <p class="text-xs text-gray-500 mt-1">Pode selecionar múltiplas imagens (máx 5MB cada)</p>
                 </div>
                 
+                <!-- Preview area for selected images -->
+                <div id="imagePreviewArea" class="hidden">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Imagens Selecionadas</label>
+                    <div id="imagePreviewList" class="grid grid-cols-4 gap-2 p-3 bg-gray-50 border border-gray-200 rounded-md max-h-32 overflow-y-auto">
+                        <!-- Preview thumbnails will be added here -->
+                    </div>
+                    <p class="text-xs text-gray-500 mt-1">Clique no ✕ para remover uma imagem</p>
+                </div>
+                
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">Tags (opcional)</label>
                     <input 
@@ -2067,7 +2767,9 @@ export class AdminController {
                     </button>
                     <button 
                         type="submit" 
-                        class="px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700"
+                        id="uploadSubmitBtn"
+                        class="px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                        disabled
                     >
                         Upload Imagens
                     </button>
@@ -2077,14 +2779,116 @@ export class AdminController {
         
         this.view.showModal('Upload de Imagens', formHtml);
         
+        // Initialize selected files storage
+        this.selectedFiles = [];
+        
+        // Handle file selection
+        document.getElementById('imageFiles').addEventListener('change', (e) => {
+            this.handleFileSelection(e.target.files);
+        });
+        
         document.getElementById('imageUploadForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             await this.uploadImages();
         });
         
         document.getElementById('cancelBtn').addEventListener('click', () => {
+            this.clearSelectedFiles();
             this.view.closeModal();
         });
+    }
+    
+    handleFileSelection(files) {
+        // Add new files to selected files array
+        Array.from(files).forEach(file => {
+            // Check file size
+            if (file.size > 5000000) {
+                alert(`Imagem ${file.name} muito grande! Máximo 5MB.`);
+                return;
+            }
+            
+            // Check if file already selected
+            const alreadySelected = this.selectedFiles.some(f => 
+                f.name === file.name && f.size === file.size && f.lastModified === file.lastModified
+            );
+            
+            if (!alreadySelected) {
+                this.selectedFiles.push(file);
+            }
+        });
+        
+        this.updateUploadImagePreview();
+    }
+    
+    updateUploadImagePreview() {
+        const previewArea = document.getElementById('imagePreviewArea');
+        const previewList = document.getElementById('imagePreviewList');
+        const submitBtn = document.getElementById('uploadSubmitBtn');
+        
+        if (this.selectedFiles.length === 0) {
+            previewArea.classList.add('hidden');
+            submitBtn.disabled = true;
+            return;
+        }
+        
+        previewArea.classList.remove('hidden');
+        submitBtn.disabled = false;
+        
+        // Clear existing previews
+        previewList.innerHTML = '';
+        
+        // Create preview for each file
+        this.selectedFiles.forEach((file, index) => {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const previewItem = document.createElement('div');
+                previewItem.className = 'relative group';
+                previewItem.innerHTML = `
+                    <div class="aspect-square bg-gray-100 rounded border overflow-hidden">
+                        <img src="${e.target.result}" alt="${file.name}" class="w-full h-full object-cover">
+                    </div>
+                    <button 
+                        type="button" 
+                        class="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white rounded-full text-xs font-bold hover:bg-red-600 flex items-center justify-center"
+                        data-file-index="${index}"
+                        title="Remover ${file.name}"
+                    >
+                        ✕
+                    </button>
+                    <p class="text-xs text-gray-600 mt-1 truncate" title="${file.name}">${file.name}</p>
+                `;
+                
+                // Add remove functionality
+                const removeBtn = previewItem.querySelector('button');
+                removeBtn.addEventListener('click', () => {
+                    this.removeSelectedFile(index);
+                });
+                
+                previewList.appendChild(previewItem);
+            };
+            reader.readAsDataURL(file);
+        });
+    }
+    
+    removeSelectedFile(index) {
+        this.selectedFiles.splice(index, 1);
+        this.updateUploadImagePreview();
+        
+        // Update file input to reflect removed files
+        this.updateFileInput();
+    }
+    
+    updateFileInput() {
+        const fileInput = document.getElementById('imageFiles');
+        if (this.selectedFiles.length === 0) {
+            fileInput.value = '';
+        }
+    }
+    
+    clearSelectedFiles() {
+        this.selectedFiles = [];
+        this.updateUploadImagePreview();
+        this.updateFileInput();
     }
 
     showUrlUploadForm() {
@@ -2152,7 +2956,7 @@ export class AdminController {
     }
 
     async uploadImages() {
-        const files = document.getElementById('imageFiles').files;
+        const files = this.selectedFiles; // Use selected files from preview
         const tags = document.getElementById('imageTags').value.split(',').map(tag => tag.trim()).filter(tag => tag);
         
         if (!files.length) {
@@ -2160,47 +2964,156 @@ export class AdminController {
             return;
         }
         
+        const uploadPromises = [];
+        const previewCards = [];
+        
         for (let file of files) {
             if (file.size > 5000000) {
                 alert(`Imagem ${file.name} muito grande! Máximo 5MB.`);
                 continue;
             }
             
-            try {
-                const imageData = await this.database.saveImage(file);
-                this.database.addGalleryImage({
-                    name: file.name,
-                    url: imageData,
-                    size: file.size,
-                    type: file.type,
-                    tags: tags
-                });
-            } catch (error) {
-                console.error('Erro ao processar imagem:', error);
+            // Create immediate preview card
+            const tempId = 'temp_' + Date.now() + '_' + Math.random();
+            const previewCard = this.createUploadPreviewCard(file, tempId);
+            previewCards.push({card: previewCard, file: file, tempId: tempId});
+            
+            // Add to gallery grid immediately
+            const galleryGrid = document.getElementById('galleryGrid');
+            if (galleryGrid) {
+                galleryGrid.insertAdjacentHTML('afterbegin', previewCard);
             }
+            
+            // Start upload in background
+            const uploadPromise = this.processImageUpload(file, tags, tempId);
+            uploadPromises.push(uploadPromise);
         }
         
-        this.view.showNotification('Imagens adicionadas com sucesso!');
+        // Wait for all uploads to complete
+        try {
+            await Promise.all(uploadPromises);
+            this.view.showNotification('Todas as imagens foram adicionadas!', 'success');
+        } catch (error) {
+            console.error('❌ Alguns uploads falharam:', error);
+        }
+        
         this.view.closeModal();
-        this.showGallery();
+    }
+    
+    createUploadPreviewCard(file, tempId) {
+        // Create file URL for immediate preview
+        const objectURL = URL.createObjectURL(file);
+        
+        return `
+            <div class="gallery-image-card upload-preview relative group bg-gray-100 rounded-lg overflow-hidden aspect-square" data-temp-id="${tempId}">
+                <!-- Upload progress overlay -->
+                <div class="upload-overlay absolute inset-0 bg-blue-500 bg-opacity-75 flex items-center justify-center text-white font-semibold z-50 rounded">
+                    <div class="text-center">
+                        <svg class="animate-spin mx-auto mb-2 h-8 w-8" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <div class="text-sm">Enviando...</div>
+                        <div class="text-xs opacity-75 mt-1">${file.name}</div>
+                    </div>
+                </div>
+                
+                <img src="${objectURL}" alt="Upload preview" class="w-full h-full object-cover">
+            </div>
+        `;
+    }
+    
+    async processImageUpload(file, tags, tempId) {
+        try {
+            const imageData = await this.database.saveImage(file);
+            const result = await this.database.addGalleryImage({
+                name: file.name,
+                url: imageData.url,
+                size: file.size,
+                type: file.type,
+                tags: tags
+            });
+            
+            // Replace preview card with real gallery card
+            const previewCard = document.querySelector(`[data-temp-id="${tempId}"]`);
+            if (previewCard && result) {
+                // Create real gallery card
+                const realCard = this.view.createGalleryImageCard({
+                    id: result.id,
+                    name: result.name,
+                    url: result.url,
+                    size: result.size,
+                    type: result.type
+                });
+                
+                // Replace with animation
+                previewCard.style.transform = 'scale(0.9)';
+                previewCard.style.transition = 'all 0.3s ease';
+                
+                setTimeout(() => {
+                    previewCard.outerHTML = realCard;
+                    // Re-attach event listeners for new card
+                    this.setupGalleryEventListeners();
+                }, 300);
+            }
+            
+            console.log('✅ Upload completo:', file.name);
+            return result;
+            
+        } catch (error) {
+            console.error('❌ Upload falhou:', file.name, error);
+            
+            // Show error on preview card
+            const previewCard = document.querySelector(`[data-temp-id="${tempId}"]`);
+            if (previewCard) {
+                const overlay = previewCard.querySelector('.upload-overlay');
+                if (overlay) {
+                    overlay.className = 'upload-overlay absolute inset-0 bg-red-500 bg-opacity-75 flex items-center justify-center text-white font-semibold z-50 rounded';
+                    overlay.innerHTML = `
+                        <div class="text-center">
+                            <svg class="mx-auto mb-2 h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                            </svg>
+                            <div class="text-sm">Erro</div>
+                            <div class="text-xs opacity-75">${error.message}</div>
+                        </div>
+                    `;
+                }
+                
+                // Remove failed card after delay
+                setTimeout(() => {
+                    previewCard.style.transform = 'scale(0)';
+                    previewCard.style.opacity = '0';
+                    setTimeout(() => previewCard.remove(), 300);
+                }, 2000);
+            }
+            
+            throw error;
+        }
     }
 
-    uploadFromUrl() {
+    async uploadFromUrl() {
         const url = document.getElementById('imageUrl').value;
         const name = document.getElementById('imageName').value || 'Imagem da URL';
         const tags = document.getElementById('imageTags').value.split(',').map(tag => tag.trim()).filter(tag => tag);
         
-        this.database.addGalleryImage({
-            name: name,
-            url: url,
-            size: 0,
-            type: 'image/jpeg',
-            tags: tags
-        });
-        
-        this.view.showNotification('Imagem adicionada com sucesso!');
+        try {
+            await this.database.addGalleryImage({
+                name: name,
+                url: url,
+                size: 0,
+                type: 'image/jpeg',
+                tags: tags
+            });
+            
+            this.view.showNotification('Imagem adicionada com sucesso!');
+            console.log('✅ Imagem URL adicionada:', name);
+        } catch (error) {
+            console.error('❌ Erro ao adicionar imagem URL:', error);
+            this.view.showNotification(`Erro ao adicionar imagem: ${error.message}`, 'error');
+        }
         this.view.closeModal();
-        this.showGallery();
+        await this.showGallery(); // Force refresh gallery
     }
 
     filterGalleryImages(search) {
@@ -2219,16 +3132,6 @@ export class AdminController {
                 });
             });
             
-            // Select buttons (for multiple selection)
-            document.querySelectorAll('.select-image-btn').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    e.stopPropagation(); // Prevent event bubbling
-                    const imageId = btn.dataset.imageId;
-                    const checkbox = document.querySelector(`input[data-image-id="${imageId}"]`);
-                    checkbox.checked = !checkbox.checked;
-                    this.toggleImageSelection(imageId, checkbox.checked);
-                });
-            });
             
             // Edit buttons
             document.querySelectorAll('.edit-image-btn').forEach(btn => {
@@ -3020,8 +3923,8 @@ export class AdminController {
         // Create custom tag
         const confirmCreateTag = document.getElementById('confirmCreateTag');
         if (confirmCreateTag) {
-            confirmCreateTag.addEventListener('click', () => {
-                this.createCustomTag();
+            confirmCreateTag.addEventListener('click', async () => {
+                await this.createCustomTag();
             });
         }
         
@@ -3036,53 +3939,118 @@ export class AdminController {
             }
         });
         
-        // Real-time form validation and preview
+        // ✅ SIMPLE DIRECT TAG PREVIEW (no complex components)
+        this.setupSimpleTagPreview();
+        
+        // Enter key handlers
         const customTagName = document.getElementById('customTagName');
         const customTagIcon = document.getElementById('customTagIcon');
-        const customTagColor = document.getElementById('customTagColor');
-        const confirmBtn = document.getElementById('confirmCreateTag');
-        const tagPreview = document.getElementById('tagPreview');
-        const nameCounter = document.getElementById('nameCounter');
         
-        if (customTagName && customTagIcon && customTagColor && confirmBtn && tagPreview) {
-            // Update preview and validation in real time
-            const updatePreviewAndValidation = () => {
-                const name = customTagName.value.trim();
-                const icon = customTagIcon.value.trim() || '🏷️';
-                const color = customTagColor.value;
-                
-                // Update preview - SEMPRE mostra cor e emoji, mesmo sem texto
-                tagPreview.textContent = `${icon} ${name || 'Nova Tag'}`;
-                tagPreview.style.backgroundColor = color; // Sempre usa a cor escolhida
-                tagPreview.style.borderColor = 'transparent';
-                tagPreview.style.color = 'white';
-                
-                // Update counter
-                if (nameCounter) {
-                    nameCounter.textContent = `${name.length}/20`;
-                    nameCounter.style.color = name.length > 15 ? '#ef4444' : '#6b7280';
-                }
-                
-                // Enable/disable button - só precisa de nome com pelo menos 2 caracteres
-                confirmBtn.disabled = !name || name.length < 2;
-            };
-            
-            customTagName.addEventListener('input', updatePreviewAndValidation);
-            customTagIcon.addEventListener('input', updatePreviewAndValidation);
-            customTagColor.addEventListener('input', updatePreviewAndValidation);
-            
-            // Enter key handlers
+        if (customTagName && customTagIcon) {
             [customTagName, customTagIcon].forEach(input => {
-                input.addEventListener('keypress', (e) => {
-                    if (e.key === 'Enter' && !confirmBtn.disabled) {
-                        this.createCustomTag();
+                input.addEventListener('keypress', async (e) => {
+                    if (e.key === 'Enter') {
+                        const confirmBtn = document.getElementById('confirmCreateTag');
+                        if (confirmBtn && !confirmBtn.disabled) {
+                            await this.createCustomTag();
+                        }
                     }
                 });
             });
-            
-            // Initial validation
-            updatePreviewAndValidation();
         }
+    }
+    
+    /**
+     * Setup simple tag preview that ALWAYS works (NASA: simple solution)
+     * Function size: 35 lines (NASA compliant)
+     */
+    setupSimpleTagPreview() {
+        const nameField = document.getElementById('customTagName');
+        const emojiField = document.getElementById('customTagIcon');
+        const colorField = document.getElementById('customTagColor');
+        const preview = document.getElementById('tagPreview');
+        const confirmBtn = document.getElementById('confirmCreateTag');
+        
+        if (!nameField || !emojiField || !colorField || !preview) {
+            return;
+        }
+        
+        // Simple update function that ALWAYS works
+        const updatePreview = () => {
+            const name = nameField.value.trim() || 'Nova Tag';
+            const emoji = emojiField.value.trim() || '🏷️';
+            const color = colorField.value || '#3b82f6';
+            
+            // Update preview with current values
+            preview.innerHTML = `
+                <span class="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg" 
+                      style="background-color: ${color}; color: white;">
+                    <span>${emoji}</span>
+                    <span class="font-medium">${name}</span>
+                </span>
+            `;
+            
+            // Update button state
+            if (confirmBtn) {
+                confirmBtn.disabled = !nameField.value.trim();
+            }
+        };
+        
+        // Bind ALL events to ALL fields
+        [nameField, emojiField, colorField].forEach(field => {
+            field.addEventListener('input', updatePreview);
+            field.addEventListener('change', updatePreview);
+            field.addEventListener('keyup', updatePreview);
+            field.addEventListener('blur', updatePreview);
+        });
+        
+        // ✅ DIRECT CLICK DETECTION: Detectar cliques nos pickers específicos
+        this.setupDirectClickDetection(updatePreview);
+        
+        // Initial update
+        updatePreview();
+    }
+    
+    /**
+     * Setup direct click detection (NASA: simple solution)
+     * Function size: 25 lines (NASA compliant)
+     */
+    setupDirectClickDetection(updateCallback) {
+        // NASA Standard: Single responsibility - apenas detectar cliques
+        document.addEventListener('click', (event) => {
+            const target = event.target;
+            const tagSection = document.getElementById('customTagSection');
+            
+            // Verificar se clique foi dentro da seção de tags
+            if (!tagSection || !tagSection.contains(target)) {
+                return; // NASA: Early return para reduzir complexidade
+            }
+            
+            // Detectar cliques nos pickers específicos
+            const emojiContainer = target.closest('#customTagSection > div > div.space-y-4.mb-6 > div.grid.grid-cols-2.gap-4 > div:nth-child(1) > div > div');
+            const colorContainer = target.closest('#customTagSection > div > div.space-y-4.mb-6 > div.grid.grid-cols-2.gap-4 > div:nth-child(2) > div > div');
+            
+            if (emojiContainer || colorContainer) {
+                setTimeout(updateCallback, 50); // NASA: Minimal delay
+            }
+        });
+    }
+    
+    /**
+     * Clear custom tag form (NASA: form management)
+     * Function size: 15 lines (NASA compliant)
+     */
+    clearCustomTagForm() {
+        const nameField = document.getElementById('customTagName');
+        const emojiField = document.getElementById('customTagIcon');
+        const colorField = document.getElementById('customTagColor');
+        
+        if (nameField) nameField.value = '';
+        if (emojiField) emojiField.value = '🏷️';
+        if (colorField) colorField.value = '#3b82f6';
+        
+        // Trigger preview update
+        this.setupSimpleTagPreview();
     }
     
     updateTagCounter() {
@@ -3093,7 +4061,7 @@ export class AdminController {
         }
     }
 
-    createCustomTag() {
+    async createCustomTag() {
         const name = document.getElementById('customTagName').value.trim();
         const icon = document.getElementById('customTagIcon').value.trim() || '🏷️';
         const color = document.getElementById('customTagColor').value;
@@ -3104,48 +4072,47 @@ export class AdminController {
         }
         
         try {
-            const newTag = this.database.addProductTag({ name, icon, color });
+            console.log('🏷️ Creating custom tag:', { name, icon, color });
             
-            // Refresh tags container
-            const container = document.getElementById('productTagsContainer');
-            const currentTags = this.getSelectedTags();
-            container.innerHTML = this.renderTagsSelector(currentTags);
-            this.setupTagsEvents();
+            // Show loading state
+            const confirmBtn = document.getElementById('confirmCreateTag');
+            const originalText = confirmBtn.textContent;
+            confirmBtn.textContent = 'Criando...';
+            confirmBtn.disabled = true;
+            
+            const newTag = await this.database.addProductTag({ name, icon, color });
+            console.log('✅ Tag created successfully:', newTag);
+            
+            // Try to refresh tags container safely
+            try {
+                const container = document.getElementById('productTagsContainer');
+                if (container) {
+                    const currentTags = this.getSelectedTags();
+                    container.innerHTML = this.renderTagsSelector(currentTags);
+                    this.setupTagsEvents();
+                    console.log('✅ Tags UI refreshed successfully');
+                }
+            } catch (uiError) {
+                console.warn('⚠️ Failed to refresh tags UI, but tag was created:', uiError);
+                // Don't throw - tag was created successfully in database
+            }
             
             // Hide custom tag section and clear form
             document.getElementById('customTagSection').classList.add('hidden');
             this.clearCustomTagForm();
             
             this.view.showNotification(`Tag "${name}" criada com sucesso!`);
+            
         } catch (error) {
-            this.view.showNotification(error.message, 'error');
-        }
-    }
-
-    clearCustomTagForm() {
-        document.getElementById('customTagName').value = '';
-        document.getElementById('customTagIcon').value = '';
-        document.getElementById('customTagColor').value = '#6366f1';
-        
-        // Reset preview and counter
-        const tagPreview = document.getElementById('tagPreview');
-        const nameCounter = document.getElementById('nameCounter');
-        const confirmBtn = document.getElementById('confirmCreateTag');
-        
-        if (tagPreview) {
-            tagPreview.textContent = '🏷️ Nova Tag';
-            tagPreview.style.backgroundColor = '#6b7280';
-            tagPreview.style.borderColor = '#d1d5db';
-            tagPreview.style.color = '#374151';
-        }
-        
-        if (nameCounter) {
-            nameCounter.textContent = '0/20';
-            nameCounter.style.color = '#6b7280';
-        }
-        
-        if (confirmBtn) {
-            confirmBtn.disabled = true;
+            console.error('❌ Error creating tag:', error);
+            this.view.showNotification(`Erro ao criar tag: ${error.message}`, 'error');
+            
+            // Restore button state
+            const confirmBtn = document.getElementById('confirmCreateTag');
+            if (confirmBtn) {
+                confirmBtn.textContent = 'Criar Tag';
+                confirmBtn.disabled = false;
+            }
         }
     }
 

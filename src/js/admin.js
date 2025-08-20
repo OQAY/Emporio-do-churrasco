@@ -1,21 +1,63 @@
 // Sistema administrativo principal
-import database from './database.js';
+import { createAdminDatabase } from './database-nasa.js';
 import { AdminView } from './views/AdminView.js';
 import { AdminController } from './controllers/AdminController.js';
 import { AuthController } from './controllers/AuthController.js';
 
 class AdminApp {
     constructor() {
-        this.database = database;
+        this.database = createAdminDatabase(); // Use admin mode with full data
         this.authController = new AuthController(this.database);
+        this.updateLoadingStatus('Iniciando dados');
         this.init();
     }
 
-    init() {
-        if (!this.authController.checkAuth()) {
-            this.showLoginScreen();
-        } else {
-            this.showAdminPanel();
+    updateLoadingStatus(message) {
+        const statusEl = document.getElementById('loading-status');
+        if (statusEl) {
+            statusEl.textContent = message;
+        }
+    }
+
+    hideGlobalLoading() {
+        const loadingEl = document.getElementById('global-loading');
+        if (loadingEl) {
+            loadingEl.classList.add('fade-out');
+            setTimeout(() => {
+                loadingEl.style.display = 'none';
+            }, 500);
+        }
+    }
+
+    async init() {
+        try {
+            if (!this.authController.checkAuth()) {
+                setTimeout(() => {
+                    this.hideGlobalLoading();
+                    this.showLoginScreen();
+                }, 300);
+            } else {
+                // CRÍTICO: Carregar dados do Supabase ANTES do painel admin
+                this.updateLoadingStatus('Carregando dados');
+                console.log('🔄 Admin carregando dados do Supabase...');
+                
+                await this.database.loadData();
+                console.log('✅ Dados do Supabase carregados no admin!');
+                
+                // Small delay for smooth UX
+                setTimeout(() => {
+                    this.hideGlobalLoading();
+                    this.showAdminPanel();
+                }, 300);
+            }
+        } catch (error) {
+            console.error('❌ Erro ao inicializar admin:', error);
+            this.updateLoadingStatus('Erro ao carregar');
+            
+            // Retry after 2 seconds
+            setTimeout(() => {
+                this.init();
+            }, 2000);
         }
     }
 
@@ -91,20 +133,49 @@ class AdminApp {
         });
     }
 
-    handleLogin() {
+    async handleLogin() {
         const username = document.getElementById('username').value;
         const password = document.getElementById('password').value;
         const errorMessage = document.getElementById('errorMessage');
+        const submitBtn = document.querySelector('button[type="submit"]');
 
-        if (this.authController.login(username, password)) {
-            this.showAdminPanel();
-        } else {
-            errorMessage.textContent = 'Usuario ou senha invalidos';
+        // Show loading on button
+        const originalText = submitBtn.textContent;
+        submitBtn.textContent = 'Entrando...';
+        submitBtn.disabled = true;
+
+        try {
+            const loginResult = await this.authController.login(username, password);
+            if (loginResult.success) {
+                // Show global loading again for data loading
+                document.getElementById('global-loading').style.display = 'flex';
+                document.getElementById('global-loading').classList.remove('fade-out');
+                this.updateLoadingStatus('Carregando dados');
+                
+                // Load data before showing admin
+                await this.database.loadData();
+                
+                // Remove this line - no need for extra status
+                setTimeout(() => {
+                    this.hideGlobalLoading();
+                    this.showAdminPanel();
+                }, 500);
+            } else {
+                errorMessage.textContent = loginResult.error || 'Usuario ou senha invalidos';
+                errorMessage.classList.remove('hidden');
+                setTimeout(() => {
+                    errorMessage.classList.add('hidden');
+                }, 3000);
+            }
+        } catch (error) {
+            console.error('❌ Erro no login:', error);
+            errorMessage.textContent = 'Erro ao conectar. Tente novamente.';
             errorMessage.classList.remove('hidden');
-            setTimeout(() => {
-                errorMessage.classList.add('hidden');
-            }, 3000);
         }
+
+        // Restore button
+        submitBtn.textContent = originalText;
+        submitBtn.disabled = false;
     }
 
     showAdminPanel() {

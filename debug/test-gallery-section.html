@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="utf-8">
+    <title>🔍 Test Gallery Section</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-red-900 text-white p-6">
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl font-bold mb-6 text-center">🔍 DEBUG GALLERY SECTION</h1>
+        
+        <div class="bg-red-800 rounded-lg p-4 mb-6">
+            <h2 class="text-xl font-semibold mb-4">🚨 Problem</h2>
+            <p>Galeria de Imagens não carrega - nada aparece na tela</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="bg-gray-800 rounded-lg p-4">
+                <h2 class="text-xl font-semibold mb-4 text-green-400">📋 Console Output</h2>
+                <div id="output" class="space-y-2 text-sm font-mono max-h-96 overflow-y-auto"></div>
+            </div>
+            
+            <div class="bg-gray-800 rounded-lg p-4">
+                <h2 class="text-xl font-semibold mb-4 text-blue-400">🎮 Test Steps</h2>
+                
+                <div class="space-y-4">
+                    <button id="step1" class="w-full bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded">
+                        1️⃣ Import Controllers
+                    </button>
+                    
+                    <button id="step2" class="w-full bg-green-600 hover:bg-green-700 px-4 py-2 rounded">
+                        2️⃣ Test showGallery Method
+                    </button>
+                    
+                    <button id="step3" class="w-full bg-purple-600 hover:bg-purple-700 px-4 py-2 rounded">
+                        3️⃣ Check AdminView
+                    </button>
+                    
+                    <button id="step4" class="w-full bg-orange-600 hover:bg-orange-700 px-4 py-2 rounded">
+                        4️⃣ Simulate Gallery Click
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="mt-6 bg-gray-800 rounded-lg p-4">
+            <h3 class="text-lg font-semibold mb-2 text-yellow-400">🎯 Test Target</h3>
+            <div id="testArea" class="border border-gray-600 rounded p-4 min-h-32">
+                <p class="text-gray-400">Test area - gallery content will appear here</p>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        const output = document.getElementById('output');
+        const testArea = document.getElementById('testArea');
+        
+        let adminController = null;
+        let adminView = null;
+        
+        function log(msg, type = 'info') {
+            const colors = {
+                info: 'text-blue-400',
+                success: 'text-green-400',
+                error: 'text-red-400',
+                warning: 'text-yellow-400'
+            };
+            
+            const timestamp = new Date().toLocaleTimeString();
+            const div = document.createElement('div');
+            div.className = colors[type] || 'text-gray-300';
+            div.innerHTML = `[${timestamp}] ${msg}`;
+            output.appendChild(div);
+            output.scrollTop = output.scrollHeight;
+            
+            console.log(`[${timestamp}] ${msg}`);
+        }
+        
+        // Step 1: Import Controllers
+        document.getElementById('step1').addEventListener('click', async () => {
+            try {
+                log('📦 Importing controllers...', 'info');
+                
+                // Import database first
+                const { default: database } = await import('../src/js/database-nasa.js');
+                log('✅ Database imported', 'success');
+                
+                // Import AdminView
+                const AdminViewModule = await import('../src/js/views/AdminView.js');
+                adminView = new AdminViewModule.AdminView();
+                log('✅ AdminView imported and instantiated', 'success');
+                
+                // Import AdminController
+                const AdminControllerModule = await import('../src/js/controllers/AdminController.js');
+                adminController = new AdminControllerModule.AdminController(database, adminView);
+                log('✅ AdminController imported and instantiated', 'success');
+                
+                // Test authentication
+                if (!database.isAuthenticated()) {
+                    database.authenticate('admin', 'admin123');
+                }
+                log('✅ Authenticated', 'success');
+                
+                // Load data
+                await database.loadData();
+                log('✅ Data loaded', 'success');
+                
+            } catch (error) {
+                log(`❌ Step 1 failed: ${error.message}`, 'error');
+                log(`Stack: ${error.stack}`, 'error');
+            }
+        });
+        
+        // Step 2: Test showGallery Method
+        document.getElementById('step2').addEventListener('click', async () => {
+            try {
+                if (!adminController) {
+                    log('❌ Run Step 1 first', 'error');
+                    return;
+                }
+                
+                log('🔍 Testing showGallery method...', 'info');
+                
+                // Check if method exists
+                if (typeof adminController.showGallery === 'function') {
+                    log('✅ showGallery method exists', 'success');
+                } else {
+                    log('❌ showGallery method NOT found', 'error');
+                    return;
+                }
+                
+                // Get gallery images first
+                const images = adminController.database.getGalleryImages();
+                log(`📸 Gallery images available: ${images.length}`, 'info');
+                
+                // Mock contentArea for test
+                if (!document.getElementById('contentArea')) {
+                    testArea.innerHTML = '<div id="contentArea">Mock content area</div>';
+                    log('✅ Mock contentArea created', 'success');
+                }
+                
+                // Call showGallery
+                await adminController.showGallery();
+                log('✅ showGallery method called successfully', 'success');
+                
+                // Check if content was generated
+                const contentArea = document.getElementById('contentArea');
+                if (contentArea && contentArea.innerHTML.includes('Galeria de Imagens')) {
+                    log('✅ Gallery content generated', 'success');
+                } else {
+                    log('❌ Gallery content not generated', 'error');
+                }
+                
+            } catch (error) {
+                log(`❌ Step 2 failed: ${error.message}`, 'error');
+                log(`Stack: ${error.stack}`, 'error');
+            }
+        });
+        
+        // Step 3: Check AdminView
+        document.getElementById('step3').addEventListener('click', async () => {
+            try {
+                if (!adminView) {
+                    log('❌ Run Step 1 first', 'error');
+                    return;
+                }
+                
+                log('🎨 Testing AdminView.showGallery...', 'info');
+                
+                // Check if method exists
+                if (typeof adminView.showGallery === 'function') {
+                    log('✅ AdminView.showGallery method exists', 'success');
+                } else {
+                    log('❌ AdminView.showGallery method NOT found', 'error');
+                    return;
+                }
+                
+                // Test with mock data
+                const mockImages = [
+                    {
+                        id: 'test1',
+                        name: 'Test Image 1',
+                        url: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg=='
+                    }
+                ];
+                
+                // Mock contentArea if needed
+                if (!document.getElementById('contentArea')) {
+                    testArea.innerHTML = '<div id="contentArea">Mock content area</div>';
+                }
+                
+                adminView.showGallery(mockImages);
+                log('✅ AdminView.showGallery called with mock data', 'success');
+                
+                // Check result
+                const contentArea = document.getElementById('contentArea');
+                if (contentArea.innerHTML.includes('Galeria de Imagens')) {
+                    log('✅ Gallery HTML generated correctly', 'success');
+                    log(`Content preview: ${contentArea.innerHTML.substring(0, 100)}...`, 'info');
+                } else {
+                    log('❌ Gallery HTML not generated', 'error');
+                }
+                
+            } catch (error) {
+                log(`❌ Step 3 failed: ${error.message}`, 'error');
+                log(`Stack: ${error.stack}`, 'error');
+            }
+        });
+        
+        // Step 4: Simulate Gallery Click
+        document.getElementById('step4').addEventListener('click', async () => {
+            try {
+                if (!adminController) {
+                    log('❌ Run Step 1 first', 'error');
+                    return;
+                }
+                
+                log('🖱️ Simulating gallery menu click...', 'info');
+                
+                // Check if navigateTo method exists
+                if (typeof adminController.navigateTo === 'function') {
+                    log('✅ navigateTo method exists', 'success');
+                    
+                    // Call navigateTo with 'gallery'
+                    adminController.navigateTo('gallery');
+                    log('✅ navigateTo("gallery") called', 'success');
+                } else {
+                    log('❌ navigateTo method not found', 'error');
+                }
+                
+            } catch (error) {
+                log(`❌ Step 4 failed: ${error.message}`, 'error');
+                log(`Stack: ${error.stack}`, 'error');
+            }
+        });
+        
+        log('🚀 Gallery Debug Tool ready', 'success');
+        log('Click Step 1 to start testing', 'info');
+    </script>
+</body>
+</html>

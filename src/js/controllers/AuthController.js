@@ -5,11 +5,17 @@ export class AuthController {
     }
 
     checkAuth() {
-        return this.database.isAuthenticated();
+        console.log('🔍 AuthController.checkAuth() called');
+        const result = this.database.isAuthenticated();
+        console.log('🔍 AuthController.checkAuth() result:', result);
+        return result;
     }
 
-    login(username, password) {
-        return this.database.authenticate(username, password);
+    async login(username, password) {
+        console.log('🔐 AuthController.login() called for:', username);
+        const result = await this.database.authenticate(username, password);
+        console.log('🔐 AuthController.login() result:', result);
+        return result;
     }
 
     logout() {

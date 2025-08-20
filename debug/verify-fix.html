@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="utf-8">
+    <title>✅ Verify Fix - Gallery Upload</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-green-900 text-white p-6">
+    <div class="max-w-2xl mx-auto">
+        <h1 class="text-3xl font-bold mb-6 text-center">✅ VERIFY FIX</h1>
+        
+        <div class="bg-green-800 rounded-lg p-4 mb-6">
+            <h2 class="text-xl font-semibold mb-4">🔧 Fix Applied</h2>
+            <div class="space-y-2 text-sm">
+                <div>✅ Added getGalleryImages() method to CacheManager</div>
+                <div>✅ Updated database-nasa.js to use proper cache method</div>
+                <div>✅ Added debugging logs to track gallery vs product images</div>
+            </div>
+        </div>
+
+        <div class="bg-gray-800 rounded-lg p-4">
+            <h2 class="text-xl font-semibold mb-4 text-yellow-400">🧪 Test Results</h2>
+            <div id="output" class="space-y-2 text-sm font-mono"></div>
+            
+            <button id="runTest" class="mt-4 bg-blue-600 hover:bg-blue-700 px-6 py-2 rounded w-full">
+                🚀 Run Upload Test
+            </button>
+        </div>
+    </div>
+
+    <script type="module">
+        const output = document.getElementById('output');
+        
+        function log(msg, type = 'info') {
+            const colors = {
+                info: 'text-blue-300',
+                success: 'text-green-300',
+                error: 'text-red-300'
+            };
+            
+            const div = document.createElement('div');
+            div.className = colors[type] || 'text-gray-300';
+            div.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+            output.appendChild(div);
+        }
+        
+        document.getElementById('runTest').addEventListener('click', async () => {
+            output.innerHTML = '';
+            
+            try {
+                log('🔄 Starting verification test...', 'info');
+                
+                // Import
+                const { default: database } = await import('../src/js/database-nasa.js');
+                log('✅ Database imported', 'success');
+                
+                // Auth
+                if (!database.isAuthenticated()) {
+                    database.authenticate('admin', 'admin123');
+                }
+                log('✅ Authenticated', 'success');
+                
+                // Load data
+                await database.loadData();
+                log('✅ Data loaded', 'success');
+                
+                // Before count
+                const before = database.getGalleryImages();
+                log(`📊 Before upload: ${before.length} images`, 'info');
+                
+                // Upload test image
+                const testImage = {
+                    name: 'Fix Verification ' + Date.now(),
+                    url: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==',
+                    size: 95,
+                    type: 'image/png',
+                    tags: ['fix-test']
+                };
+                
+                log('📤 Uploading test image...', 'info');
+                const result = await database.addGalleryImage(testImage);
+                
+                if (result && result.id) {
+                    log(`✅ Upload successful: ID ${result.id}`, 'success');
+                } else {
+                    log('❌ Upload failed - no result returned', 'error');
+                }
+                
+                // After count
+                const after = database.getGalleryImages();
+                log(`📊 After upload: ${after.length} images`, 'info');
+                
+                // Verify fix
+                const increase = after.length - before.length;
+                if (increase > 0) {
+                    log(`🎉 FIX SUCCESSFUL! Gallery count increased by ${increase}`, 'success');
+                    log('Latest image: ' + after[0].name, 'success');
+                } else {
+                    log('❌ Issue persists - gallery count unchanged', 'error');
+                }
+                
+            } catch (error) {
+                log(`❌ Test failed: ${error.message}`, 'error');
+            }
+        });
+        
+        log('Ready to test. Click button above.', 'info');
+    </script>
+</body>
+</html>

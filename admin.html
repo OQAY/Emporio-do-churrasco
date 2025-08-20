@@ -2,14 +2,80 @@
 <html lang="pt-br">
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
     <title>Painel Administrativo - Imperio do Churrasco</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        window.tailwindConfig = {
+            theme: { extend: { colors: { 'brand-orange': '#fb923c' } } }
+        }
+    </script>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,typography,aspect-ratio" defer></script>
     <link rel="icon" href="favicon.ico">
     <meta name="theme-color" content="#fb923c">
     <link rel="stylesheet" href="src/styles/admin.css">
+    <style>
+        /* Global loading overlay - shows immediately */
+        #global-loading {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            transition: opacity 0.5s ease-out, visibility 0.5s ease-out;
+        }
+        
+        #global-loading.fade-out {
+            opacity: 0;
+            visibility: hidden;
+        }
+        
+        .loading-content {
+            text-align: center;
+            color: #374151;
+        }
+        
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid #e5e7eb;
+            border-top: 3px solid #fb923c;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        
+        .loading-dots {
+            display: inline-block;
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 0.4; }
+            50% { opacity: 1; }
+        }
+    </style>
 </head>
 <body class="bg-gray-50">
+    <!-- Global Loading Overlay -->
+    <div id="global-loading">
+        <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <div class="text-base font-medium">
+                <span id="loading-status">Iniciando dados</span><span class="loading-dots">...</span>
+            </div>
+        </div>
+    </div>
+    
     <div id="admin-app"></div>
     
     <script type="module" src="src/js/admin.js"></script>

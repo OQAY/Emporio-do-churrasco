@@ -4,9 +4,45 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Imperio do Churrasco - Cardapio Digital</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="icon" href="favicon.ico">
+    
+    <!-- Performance Critical Preloads -->
+    <link rel="preload" href="src/styles/main.css" as="style">
+    <link rel="preload" href="src/js/app.js" as="script" crossorigin="anonymous">
+    <link rel="preconnect" href="https://cdn.tailwindcss.com">
+    <link rel="dns-prefetch" href="https://cdn.tailwindcss.com">
+    
+    <!-- Meta tags for performance -->
     <meta name="theme-color" content="#fb923c">
+    <meta name="description" content="Cardápio digital do Imperio do Churrasco - Peça online com rapidez e facilidade">
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="manifest.json">
+    
+    <!-- iOS PWA Support -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Menu Online">
+    <link rel="apple-touch-icon" href="favicon.ico">
+    
+    <!-- Android PWA Support -->
+    <meta name="mobile-web-app-capable" content="yes">
+    
+    <!-- Optimized Tailwind CSS - smaller and faster -->
+    <script>
+        // Inline critical CSS loading for better performance
+        window.tailwindConfig = {
+            theme: {
+                extend: {
+                    colors: {
+                        'brand-orange': '#fb923c',
+                        'brand-orange-dark': '#f97316'
+                    }
+                }
+            }
+        }
+    </script>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,typography,aspect-ratio" defer></script>
+    <link rel="icon" href="favicon.ico">
     <link rel="stylesheet" href="src/styles/main.css">
 </head>
 <body class="bg-white text-gray-900">

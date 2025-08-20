@@ -115,6 +115,62 @@ export class AdminView {
         `;
     }
 
+    showLoadingSkeleton() {
+        const content = document.getElementById('contentArea');
+        content.innerHTML = `
+            <div class="animate-pulse">
+                <!-- Stats skeleton -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6 mb-8">
+                    ${[1,2,3,4].map(() => `
+                        <div class="bg-white rounded-lg shadow p-4 lg:p-6">
+                            <div class="flex items-center justify-between">
+                                <div class="flex-1">
+                                    <div class="h-3 bg-gray-200 rounded w-24 mb-3"></div>
+                                    <div class="h-8 bg-gray-300 rounded w-16"></div>
+                                </div>
+                                <div class="bg-gray-200 p-2 lg:p-3 rounded-full w-10 h-10 lg:w-12 lg:h-12"></div>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+                
+                <!-- Main content skeleton -->
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex items-center justify-between mb-6">
+                        <div class="h-6 bg-gray-200 rounded w-48"></div>
+                        <div class="h-10 bg-gray-200 rounded w-32"></div>
+                    </div>
+                    <div class="space-y-4">
+                        ${[1,2,3,4,5].map(() => `
+                            <div class="flex items-center space-x-4 p-4 border border-gray-100 rounded">
+                                <div class="w-16 h-16 bg-gray-200 rounded"></div>
+                                <div class="flex-1">
+                                    <div class="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+                                    <div class="h-3 bg-gray-200 rounded w-1/2"></div>
+                                </div>
+                                <div class="flex space-x-2">
+                                    <div class="h-8 bg-gray-200 rounded w-16"></div>
+                                    <div class="h-8 bg-gray-200 rounded w-16"></div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+                
+                <!-- Loading text -->
+                <div class="fixed bottom-4 right-4 bg-blue-600 text-white px-4 py-2 rounded-lg shadow-lg">
+                    <div class="flex items-center">
+                        <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Carregando dashboard...
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
     showDashboard(stats) {
         const content = document.getElementById('contentArea');
         content.innerHTML = `
@@ -174,6 +230,16 @@ export class AdminView {
                         </div>
                     </div>
                 </div>
+            </div>
+
+            <!-- Botão de Refresh -->
+            <div class="mb-4 flex justify-end">
+                <button id="refreshDataBtn" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                    </svg>
+                    Atualizar Dados
+                </button>
             </div>
 
             <div class="bg-white rounded-lg shadow">
@@ -357,7 +423,7 @@ export class AdminView {
         `;
     }
 
-    showGallery(images) {
+    showGallery(images, showLoading = false) {
         const content = document.getElementById('contentArea');
         content.innerHTML = `
             <div class="bg-white rounded-lg shadow">
@@ -389,24 +455,9 @@ export class AdminView {
                         >
                         
                         <div class="flex items-center gap-4">
-                            <!-- Contador de selecionadas -->
-                            <div id="selectionCounter" class="text-sm text-gray-500 hidden">
-                                <span id="selectedCount">0</span> selecionada(s)
-                            </div>
-                            
-                            <!-- Botão de apagar selecionadas -->
-                            <button 
-                                id="deleteSelectedBtn"
-                                class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 flex items-center gap-2 hidden"
-                            >
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                                </svg>
-                                Apagar
-                            </button>
-                            
                             <div class="text-sm text-gray-500">
                                 ${images.length} ${images.length === 1 ? 'imagem' : 'imagens'}
+                                ${showLoading ? '<span class="text-blue-500 ml-2">🔄 Atualizando...</span>' : ''}
                             </div>
                         </div>
                     </div>
@@ -426,20 +477,79 @@ export class AdminView {
                     `}
                 </div>
             </div>
+            
+            <!-- CSS adicional para mobile -->
+            <style>
+                /* Desabilitar zoom por double-tap na galeria */
+                #galleryGrid {
+                    touch-action: manipulation;
+                    -ms-touch-action: manipulation;
+                }
+                
+                /* Mobile active state - mostra botões quando clicado */
+                .gallery-image-card.mobile-active .action-buttons {
+                    background-color: rgba(0, 0, 0, 0.3);
+                }
+                
+                .gallery-image-card.mobile-active .mobile-active-buttons {
+                    opacity: 1 !important;
+                }
+                
+                /* Melhora o long press no mobile e desabilita zoom */
+                .gallery-image-card {
+                    -webkit-touch-callout: none;
+                    -webkit-user-select: none;
+                    user-select: none;
+                    touch-action: manipulation;
+                    -ms-touch-action: manipulation;
+                }
+                
+                /* Desabilitar zoom em toda a área da galeria */
+                .gallery-image-card img {
+                    touch-action: manipulation;
+                    -ms-touch-action: manipulation;
+                    pointer-events: none; /* Evita zoom na imagem */
+                }
+                
+                /* Re-abilitar pointer events apenas nos botões */
+                .gallery-image-card button {
+                    pointer-events: auto;
+                }
+            </style>
         `;
+    }
+
+    updateGalleryImages(images) {
+        const galleryGrid = document.getElementById('galleryGrid');
+        const imageCounter = document.querySelector('.text-sm.text-gray-500');
+        
+        if (galleryGrid) {
+            galleryGrid.innerHTML = images.map(image => this.createGalleryImageCard(image)).join('');
+        }
+        
+        if (imageCounter) {
+            imageCounter.innerHTML = `${images.length} ${images.length === 1 ? 'imagem' : 'imagens'} <span class="text-green-500">✅ Atualizado</span>`;
+        }
+        
+        console.log('✅ Gallery images updated in UI');
     }
 
     createGalleryImageCard(image) {
         return `
-            <div class="gallery-image-card relative group bg-gray-100 rounded-lg overflow-hidden aspect-square hover:shadow-lg transition-all duration-300" data-image-id="${image.id}">
+            <div class="gallery-image-card relative group bg-gray-100 rounded-lg overflow-hidden aspect-square" data-image-id="${image.id}">
                 <!-- Overlay de seleção -->
                 <div class="selection-overlay absolute inset-0 bg-black bg-opacity-0 transition-opacity duration-300 z-10"></div>
                 
-                <!-- Checkmark de selecionado -->
-                <div class="selected-indicator absolute top-2 right-2 bg-blue-600 text-white rounded-full p-1 opacity-0 transform scale-0 transition-all duration-300 z-20">
-                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
-                    </svg>
+                <!-- Checkbox circular no centro (30% da imagem, só aparece quando há seleção ativa) -->
+                <div class="selection-checkbox absolute inset-0 flex items-center justify-center opacity-0 transition-all duration-300 z-20">
+                    <div class="w-12 h-12 rounded-full border-2 border-white bg-white bg-opacity-70 shadow-xl flex items-center justify-center transition-all duration-300">
+                        <!-- Checkmark que aparece quando selecionado -->
+                        <div class="selected-indicator opacity-0 transform scale-0 transition-all duration-300">
+                            <svg class="w-7 h-7 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                            </svg>
+                        </div>
+                    </div>
                 </div>
                 
                 <!-- Hidden checkbox for state tracking -->
@@ -453,7 +563,7 @@ export class AdminView {
                 >
                 
                 <div class="action-buttons absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-opacity flex items-center justify-center z-30">
-                    <div class="opacity-0 group-hover:opacity-100 transition-opacity flex gap-2 relative z-40">
+                    <div class="opacity-0 group-hover:opacity-100 mobile-active-buttons transition-opacity flex gap-2 relative z-40">
                         <button 
                             class="p-2 bg-white text-blue-600 rounded-full hover:bg-blue-50 select-image-btn relative z-50"
                             data-image-id="${image.id}"
@@ -667,16 +777,56 @@ export class AdminView {
     }
 
     showNotification(message, type = 'success') {
-        const notification = document.createElement('div');
-        const bgColor = type === 'success' ? 'bg-green-500' : 'bg-red-500';
+        // Remove any existing notifications to prevent stacking
+        document.querySelectorAll('.admin-notification').forEach(n => n.remove());
         
-        notification.className = `fixed top-4 right-4 ${bgColor} text-white px-6 py-3 rounded-lg shadow-lg z-50`;
-        notification.textContent = message;
+        const icons = {
+            success: '<path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>',
+            error: '<path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>',
+            warning: '<path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>'
+        };
+        
+        const colors = {
+            success: 'bg-green-600',
+            error: 'bg-red-600', 
+            warning: 'bg-yellow-600'
+        };
+        
+        const notification = document.createElement('div');
+        notification.className = `admin-notification fixed top-4 right-4 z-50 px-6 py-4 rounded-lg shadow-xl text-white transition-all duration-500 transform translate-x-full ${colors[type] || colors.success}`;
+        
+        notification.innerHTML = `
+            <div class="flex items-center">
+                <svg class="w-6 h-6 mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                    ${icons[type] || icons.success}
+                </svg>
+                <span class="font-medium">${message}</span>
+                <button class="ml-4 hover:opacity-70 transition-opacity" onclick="this.parentElement.parentElement.remove()">
+                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path>
+                    </svg>
+                </button>
+            </div>
+        `;
         
         document.body.appendChild(notification);
         
+        // Animate in
         setTimeout(() => {
-            notification.remove();
-        }, 3000);
+            notification.classList.remove('translate-x-full');
+        }, 100);
+        
+        // Auto-hide after 4 seconds for success, 6 seconds for errors
+        const hideDelay = type === 'error' ? 6000 : 4000;
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.classList.add('translate-x-full');
+                setTimeout(() => {
+                    if (notification.parentNode) {
+                        notification.remove();
+                    }
+                }, 500);
+            }
+        }, hideDelay);
     }
 }
