@@ -968,6 +968,28 @@ export class AdminController {
         const getDiscountPercentage = (originalPrice, currentPrice) => {
             return Math.round(((originalPrice - currentPrice) / originalPrice) * 100);
         };
+
+        // Get available tags for preview
+        const renderPreviewTags = (tagIds = []) => {
+            if (!tagIds || tagIds.length === 0) return '';
+            
+            const availableTags = this.database.getProductTags() || [
+                { id: "destaque", name: "Destaque", color: "#f59e0b", icon: "⭐" },
+                { id: "mais-vendido", name: "Mais Vendido", color: "#ef4444", icon: "🔥" },
+                { id: "especial-chef", name: "Especial do Chef", color: "#8b5cf6", icon: "👨‍🍳" },
+                { id: "novo", name: "Novo", color: "#10b981", icon: "✨" },
+                { id: "promocao", name: "Promoção", color: "#f97316", icon: "💰" }
+            ];
+            
+            return tagIds.slice(0, 2).map(tagId => {
+                const tag = availableTags.find(t => t.id === tagId);
+                if (!tag) return '';
+                return `<span class="inline-flex items-center text-xs px-2 py-1 rounded-md font-medium text-white" 
+                          style="background-color: ${tag.color};">
+                          ${tag.icon} ${tag.name}
+                        </span>`;
+            }).join(' ');
+        };
         
         if (size === 'small') {
             // Card Mobile Horizontal (exatamente como no site)
@@ -977,12 +999,9 @@ export class AdminController {
                     <div class="flex items-center p-4 gap-4">
                         <!-- Conteúdo à esquerda -->
                         <div class="flex-1 min-w-0">
-                            ${product.featured ? `
-                                <span class="inline-block bg-orange-500 text-white text-xs font-medium px-2 py-1 rounded-md mb-2">
-                                    Destaque
-                                </span>
-                            ` : ''}
-                            <h3 class="font-semibold text-base leading-tight mb-2">${product.name}</h3>
+                            <!-- Tags do produto -->
+                            ${renderPreviewTags(product.tags)}
+                            <h3 class="font-semibold text-base leading-tight mb-2 ${product.tags && product.tags.length > 0 ? 'mt-2' : ''}">${product.name}</h3>
                             ${product.description ? 
                                 `<p class="text-xs text-gray-600 leading-relaxed mb-2" style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">${product.description}</p>` : 
                                 ''
@@ -1038,6 +1057,12 @@ export class AdminController {
                     
                     <!-- Conteúdo -->
                     <div class="p-6">
+                        <!-- Tags do produto -->
+                        ${renderPreviewTags(product.tags) ? 
+                            `<div class="mb-3">${renderPreviewTags(product.tags)}</div>` : 
+                            ''
+                        }
+                        
                         <!-- Nome do produto -->
                         <h2 class="text-2xl font-bold text-gray-900 mb-3">${product.name}</h2>
                         

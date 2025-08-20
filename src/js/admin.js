@@ -179,7 +179,7 @@ class AdminApp {
     }
 
     showAdminPanel() {
-        const view = new AdminView();
+        const view = new AdminView(this.database); // ✅ CRITICAL FIX: Pass database for tag display
         const controller = new AdminController(this.database, view);
         
         view.render();

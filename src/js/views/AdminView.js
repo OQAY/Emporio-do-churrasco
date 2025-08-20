@@ -1,7 +1,8 @@
 // View do painel administrativo
 export class AdminView {
-    constructor() {
+    constructor(database = null) {
         this.currentSection = 'dashboard';
+        this.database = database;
     }
 
     render() {
@@ -753,7 +754,7 @@ export class AdminView {
         }
         
         // Get available tags from database
-        const availableTags = window.database?.getProductTags() || [
+        const availableTags = this.database?.getProductTags() || [
             { id: "destaque", name: "Destaque", color: "#f59e0b", icon: "⭐" },
             { id: "mais-vendido", name: "Mais Vendido", color: "#ef4444", icon: "🔥" },
             { id: "especial-chef", name: "Especial do Chef", color: "#8b5cf6", icon: "👨‍🍳" },
