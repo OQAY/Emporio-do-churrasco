@@ -1080,7 +1080,7 @@ class DatabaseNASA {
         productIds.forEach((productId, index) => {
           const product = cachedData.products.find(p => p.id === productId);
           if (product) {
-            product.order = index;
+            product.order = index + 1; // 🔧 CRITICAL FIX: Match database order numbering
           }
         });
         this.cache.setCache(cachedData, true); // Mark as modified
@@ -1091,13 +1091,13 @@ class DatabaseNASA {
       
       for (let i = 0; i < productIds.length; i++) {
         const productId = productIds[i];
-        const newOrder = i;
+        const newOrder = i + 1; // 🔧 CRITICAL FIX: Start from 1, not 0
         
         // Find product in cache to get current data
         const product = cachedData.products.find(p => p.id === productId);
         const productName = product ? product.name : 'Unknown';
         
-        console.log(`📝 Updating product ${productName} (${productId}) to order ${newOrder}`);
+        console.log(`📝 Updating product ${productName} (${productId}) to order ${newOrder} (position ${i})`);
         if (product) {
           // Update product with new order
           const updatedProduct = { ...product, order: newOrder };
