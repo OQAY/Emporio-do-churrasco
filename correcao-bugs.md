@@ -16,8 +16,8 @@
 ### ✅ **1.2 Tag "Destaque" não aparece no painel Admin**
 
 - **Descrição:** Tags aplicadas não são exibidas na lista de produtos do Admin
-- **Status:** ✅ **CORRIGIDO**
-- **Solução:** Corrigido AdminView constructor e renderProductTags com fallback
+- **Status:** ✅ **CORRIGIDO** 
+- **Solução:** Corrigido mismatch entre ID hardcoded 'destaque' e UUIDs reais do banco - agora busca tag pelo nome
 
 ### ✅ **1.3 Tag "Destaque" ausente na seção Destaques**
 
@@ -47,7 +47,7 @@
 
 - **Descrição:** Preview não mostrava as tags selecionadas
 - **Status:** ✅ **CORRIGIDO**
-- **Solução:** Adicionado getSelectedTags() ao objeto previewProduct
+- **Solução:** Corrigido renderPreviewTags para usar UUID real da tag Destaque em vez de ID hardcoded
 
 ### ✅ **1.8 Posicionamento de tags na lista do Admin**
 
@@ -59,18 +59,18 @@
 
 ## 🔄 **2. PROBLEMAS DE ORDENAÇÃO E REORDENAÇÃO**
 
-### ❌ **2.1 Drag & Drop não funciona (Admin)**
+### ✅ **2.1 Drag & Drop não funciona (Admin)**
 
 - **Descrição:** Hover para reordenar produtos funciona visualmente mas não salva
 - **Localização:** Admin → Produtos → funcionalidade de arrastar
-- **Status:** ⏳ **PENDENTE**
-- **Comportamento:** Move visualmente → atualiza página → volta ordem anterior
+- **Status:** ✅ **CORRIGIDO**
+- **Solução:** Corrigido método reorderProducts para usar display_order em vez de order no Supabase
 
-### ❌ **2.2 Ordem não reflete no frontend**
+### ✅ **2.2 Ordem não reflete no frontend**
 
 - **Descrição:** Mudanças de ordem no Admin não aparecem no site principal
-- **Status:** ⏳ **PENDENTE**
-- **Impacto:** Inconsistência entre Admin e frontend
+- **Status:** ✅ **CORRIGIDO**
+- **Solução:** Implementado sistema de cache sync automático (verifica a cada 5s) + invalidação de cache global
 
 ---
 
@@ -101,13 +101,25 @@
 - **Localização:** Dashboard → seção estatísticas
 - **Causa:** Contador não reconhece produtos marcados como destaque
 
+### ❌ **4.3 Sistema de scroll confuso em pop-ups aninhados**
+
+- **Descrição:** Scroll fica bugado ao abrir pop-ups dentro de pop-ups (edição → visualizar)
+- **Status:** ⏳ **PENDENTE**
+- **Comportamento:** 
+  - Editar produto → scroll da página some (correto)
+  - Dentro do pop-up de edição → scroll funciona (correto)
+  - Clicar "Visualizar" → scroll do pop-up de edição some (incorreto)
+  - Sobra apenas scroll do visualizar → confuso no mobile
+- **Localização:** Admin → Editar Produto → Visualizar
+- **Impacto:** UX confusa, especialmente no mobile onde barras de scroll não aparecem
+
 ---
 
 ## 📈 **PROGRESSO GERAL**
 
-- **✅ Concluídos:** 9/10 problemas
-- **⏳ Pendentes:** 1 problema principal (reordenação + 4 melhorias UX/dashboard)
-- **🎯 Taxa de conclusão:** 90%
+- **✅ Concluídos:** 8/8 problemas de TAGS - 100% resolvidos
+- **⏳ Pendentes:** 6 melhorias (reordenação + UX/dashboard + scroll)
+- **🎯 Taxa de conclusão:** Tags: 100% | Total: 77%
 
 ---
 
@@ -118,6 +130,7 @@
 3. **Otimizar UX de edição com retorno imediato**
 4. **Corrigir visualização de produtos inativos**
 5. **Corrigir contador de destaques no dashboard**
+6. **Corrigir sistema de scroll em pop-ups aninhados**
 
 ---
 
@@ -135,4 +148,5 @@
 
 ---
 
-**Última atualização:** 20/08/2025 - 22:15
+**Última atualização:** 21/08/2025 - 01:30  
+**TAGS 100% RESOLVIDAS** - Problema crítico do mismatch UUID/destaque corrigido

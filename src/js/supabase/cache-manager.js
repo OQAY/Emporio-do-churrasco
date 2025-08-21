@@ -296,10 +296,10 @@ class CacheManager {
         return categoryOrderA - categoryOrderB;
       }
       
-      // Then by featured status (featured first)
-      if (a.featured !== b.featured) {
-        return b.featured ? 1 : -1;
-      }
+      // REMOVED: Featured first logic to respect admin order
+      // if (a.featured !== b.featured) {
+      //   return b.featured ? 1 : -1;
+      // }
       
       // Then by product order within category
       const orderA = a.order || a.displayOrder || 999;

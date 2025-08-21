@@ -975,17 +975,7 @@ export class AdminController {
             // Debug log
             console.log('🎭 renderPreviewTags called with:', { tagIds, isFeatured });
             
-            // Always show Destaque tag for featured products
-            const tagsToShow = [...(tagIds || [])];
-            if (isFeatured && !tagsToShow.includes('destaque')) {
-                tagsToShow.unshift('destaque'); // Add destaque at the beginning
-                console.log('✅ Added destaque tag for featured product preview');
-            }
-            
-            console.log('🔍 Final preview tags to show:', tagsToShow);
-            
-            if (tagsToShow.length === 0) return '';
-            
+            // Get available tags from database first
             const availableTags = this.database.getProductTags() || [
                 { id: "destaque", name: "Destaque", color: "#f59e0b", icon: "⭐" },
                 { id: "mais-vendido", name: "Mais Vendido", color: "#ef4444", icon: "🔥" },
@@ -994,9 +984,34 @@ export class AdminController {
                 { id: "promocao", name: "Promoção", color: "#f97316", icon: "💰" }
             ];
             
+            console.log('📋 Preview available tags:', availableTags.map(t => ({id: t.id, name: t.name})));
+            
+            // Always show Destaque tag for featured products
+            const tagsToShow = [...(tagIds || [])];
+            if (isFeatured) {
+                // Find the real "Destaque" tag UUID from database
+                const destaqueTag = availableTags.find(t => t.name === 'Destaque' || t.name === 'destaque');
+                const destaqueId = destaqueTag ? destaqueTag.id : 'destaque';
+                
+                console.log('🔍 Preview found destaque tag:', destaqueTag, 'using ID:', destaqueId);
+                
+                if (!tagsToShow.includes(destaqueId)) {
+                    tagsToShow.unshift(destaqueId); // Add destaque at the beginning
+                    console.log('✅ Added destaque tag for featured product preview with ID:', destaqueId);
+                }
+            }
+            
+            console.log('🔍 Final preview tags to show:', tagsToShow);
+            
+            if (tagsToShow.length === 0) return '';
+            
             return tagsToShow.slice(0, 2).map(tagId => {
                 const tag = availableTags.find(t => t.id === tagId);
-                if (!tag) return '';
+                console.log(`🎯 Preview looking for tag: ${tagId}, found:`, tag);
+                if (!tag) {
+                    console.log(`❌ Preview tag not found: ${tagId}, available tags:`, availableTags.map(t => t.id));
+                    return '';
+                }
                 return `<span class="inline-flex items-center text-xs px-2 py-1 rounded-md font-medium text-white" 
                           style="background-color: ${tag.color};">
                           ${tag.icon} ${tag.name}
@@ -3257,14 +3272,11 @@ export class AdminController {
             if (!row) return;
             
             e.preventDefault();
+            e.stopPropagation();
             
-            // Configurar drag após 200ms
-            setTimeout(() => {
-                if (e.buttons === 1) { // Verifica se ainda está pressionado
-                    startDrag(row, e.clientY, e.clientX);
-                }
-            }, 200);
-        });
+            // Start drag immediately for better responsiveness
+            startDrag(row, e.clientY, e.clientX);
+        }, { passive: false });
         
         // Touch support
         document.addEventListener('touchstart', (e) => {
@@ -3275,17 +3287,27 @@ export class AdminController {
             if (!row) return;
             
             e.preventDefault();
+            e.stopPropagation();
+            
+            // CRÍTICO: Bloquear scroll no mobile sem pular posição
+            const scrollY = window.scrollY;
+            document.body.style.overflow = 'hidden';
+            document.body.style.position = 'fixed';
+            document.body.style.top = `-${scrollY}px`;
+            document.body.style.width = '100%';
+            document.body.dataset.scrollY = scrollY;
             
             const touch = e.touches[0];
-            setTimeout(() => {
-                startDrag(row, touch.clientY, touch.clientX);
-            }, 200);
-        });
+            startDrag(row, touch.clientY, touch.clientX);
+        }, { passive: false });
         
         document.addEventListener('touchmove', (e) => {
             if (!isDragging || !draggedElement) return;
             
             e.preventDefault();
+            e.stopPropagation();
+            
+            // Scroll já bloqueado no touchstart, não precisa repetir
             
             const touch = e.touches[0];
             
@@ -3358,18 +3380,21 @@ export class AdminController {
             if (!isDragging || !draggedElement) return;
             
             e.preventDefault();
+            e.stopPropagation();
+            
+            // CRÍTICO: Bloquear scroll da página durante drag
+            document.body.style.overflow = 'hidden';
             
             // Calcular nova posição baseada no movimento do mouse
             const deltaY = e.clientY - startY;
             const deltaX = e.clientX - startX;
             
-            // Pegar posição inicial e somar o delta
-            const rect = draggedElement.getBoundingClientRect();
-            const initialTop = parseInt(draggedElement.style.top) || rect.top;
-            const initialLeft = parseInt(draggedElement.style.left) || rect.left;
+            // Aplicar movimento diretamente ao elemento
+            const currentTop = parseFloat(draggedElement.style.top) || 0;
+            const currentLeft = parseFloat(draggedElement.style.left) || 0;
             
-            draggedElement.style.top = (initialTop + deltaY) + 'px';
-            draggedElement.style.left = (initialLeft + deltaX) + 'px';
+            draggedElement.style.top = (currentTop + deltaY) + 'px';
+            draggedElement.style.left = (currentLeft + deltaX) + 'px';
             
             // Atualizar as coordenadas de início para o próximo movimento
             startY = e.clientY;
@@ -3385,10 +3410,10 @@ export class AdminController {
                     closest.parentNode.insertBefore(placeholder, closest.nextSibling);
                 }
             }
-        });
+        }, { passive: false });
         
         // Função para finalizar o drag
-        const finishDrag = () => {
+        const finishDrag = async () => {
             if (!isDragging || !draggedElement) return;
             
             isDragging = false;
@@ -3415,14 +3440,44 @@ export class AdminController {
             document.body.style.cursor = '';
             document.body.style.userSelect = '';
             
+            // CRÍTICO: Restaurar scroll na posição original (mobile)
+            const scrollY = document.body.dataset.scrollY;
+            document.body.style.overflow = '';
+            document.body.style.position = '';
+            document.body.style.top = '';
+            document.body.style.width = '';
+            document.body.style.userSelect = '';
+            document.body.style.cursor = '';
+            
+            // Restaurar posição do scroll
+            if (scrollY) {
+                window.scrollTo(0, parseInt(scrollY));
+                delete document.body.dataset.scrollY;
+            }
+            
             // Salvar nova ordem
             const categoryId = draggedElement.dataset.categoryId;
             const tbody = draggedElement.closest('tbody');
             const categoryRows = Array.from(tbody.querySelectorAll(`[data-category-id="${categoryId}"]`));
             const productIds = categoryRows.map(row => row.dataset.id);
             
-            this.database.reorderProducts(categoryId, productIds);
-            this.view.showNotification('Ordem atualizada!', 'success');
+            // Debug: mostrar nomes dos produtos para verificar ordem
+            const productNames = categoryRows.map(row => row.querySelector('td:nth-child(3)')?.textContent?.trim());
+            console.log('🔄 New order positions:');
+            productNames.forEach((name, index) => {
+                console.log(`  ${index}: ${name}`);
+            });
+            
+            console.log('🔄 Saving new order:', { categoryId, productIds });
+            
+            try {
+                await this.database.reorderProducts(categoryId, productIds);
+                this.view.showNotification('Ordem atualizada!', 'success');
+                console.log('✅ Order saved successfully');
+            } catch (error) {
+                console.error('❌ Failed to save order:', error);
+                this.view.showNotification('Erro ao salvar ordem!', 'error');
+            }
             
             draggedElement = null;
             placeholder = null;

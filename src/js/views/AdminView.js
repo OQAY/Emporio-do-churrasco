@@ -758,20 +758,7 @@ export class AdminView {
         // Debug log
         console.log('🏷️ renderProductTags called with:', { productTags, isFeatured });
         
-        // Always show Destaque tag for featured products
-        const tagsToShow = [...(productTags || [])];
-        if (isFeatured && !tagsToShow.includes('destaque')) {
-            tagsToShow.unshift('destaque'); // Add destaque at the beginning
-            console.log('✅ Added destaque tag for featured product');
-        }
-        
-        console.log('🔍 Final tags to show:', tagsToShow);
-        
-        if (tagsToShow.length === 0) {
-            return '';
-        }
-        
-        // Get available tags from database
+        // Get available tags from database first
         const availableTags = this.database?.getProductTags() || [
             { id: "destaque", name: "Destaque", color: "#f59e0b", icon: "⭐" },
             { id: "mais-vendido", name: "Mais Vendido", color: "#ef4444", icon: "🔥" },
@@ -779,6 +766,29 @@ export class AdminView {
             { id: "novo", name: "Novo", color: "#10b981", icon: "✨" },
             { id: "promocao", name: "Promoção", color: "#f97316", icon: "💰" }
         ];
+        
+        console.log('📋 Available tags from database:', availableTags.map(t => ({id: t.id, name: t.name})));
+        
+        // Always show Destaque tag for featured products
+        const tagsToShow = [...(productTags || [])];
+        if (isFeatured) {
+            // Find the real "Destaque" tag UUID from database
+            const destaqueTag = availableTags.find(t => t.name === 'Destaque' || t.name === 'destaque');
+            const destaqueId = destaqueTag ? destaqueTag.id : 'destaque';
+            
+            console.log('🔍 Found destaque tag:', destaqueTag, 'using ID:', destaqueId);
+            
+            if (!tagsToShow.includes(destaqueId)) {
+                tagsToShow.unshift(destaqueId); // Add destaque at the beginning
+                console.log('✅ Added destaque tag for featured product with ID:', destaqueId);
+            }
+        }
+        
+        console.log('🔍 Final tags to show:', tagsToShow);
+        
+        if (tagsToShow.length === 0) {
+            return '';
+        }
         
         return `
             <div class="flex flex-wrap gap-1 mt-1">

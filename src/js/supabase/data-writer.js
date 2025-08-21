@@ -69,11 +69,12 @@ class DataWriter {
         is_on_sale: productData.isOnSale || false,
         original_price: productData.originalPrice || null,
         tags: productData.tags || [],
-        display_order: productData.order || 999,
+        display_order: parseInt(productData.order) || 999,
         updated_at: new Date().toISOString()
       };
       
       console.log('📤 Sending to Supabase:', requestBody);
+      console.log('🔍 CRITICAL: display_order being sent:', requestBody.display_order);
       
       const response = await this.client.makeRequest(`products?id=eq.${productId}`, {
         method: 'PATCH',

@@ -241,6 +241,9 @@ class App {
             this.loadInitialData();
         });
 
+        // Setup automatic cache sync detection
+        this.setupCacheSync();
+
         // Setup mobile gestures
         this.setupMobileGestures();
     }
@@ -389,6 +392,35 @@ class App {
                 console.log('🏃‍♂️ Fast swipe detected for better mobile UX');
             }
         }, { passive: true });
+    }
+
+    /**
+     * Setup automatic cache sync detection (NASA: 25 lines)
+     * Detects when data changes in admin and automatically refreshes frontend
+     */
+    setupCacheSync() {
+        // Check for cache invalidation every 5 seconds
+        setInterval(async () => {
+            try {
+                // Check if cache was invalidated by another tab/browser
+                const cacheManager = this.database.cache;
+                if (!cacheManager.isCacheValid()) {
+                    console.log('🔄 Cache invalidated by admin changes, refreshing data...');
+                    
+                    // Reload data silently
+                    await this.database.loadPublicData();
+                    
+                    // Refresh the UI with new data
+                    await this.loadDataWithiFoodPattern();
+                    
+                    console.log('✅ Frontend synchronized with admin changes');
+                }
+            } catch (error) {
+                console.warn('⚠️ Cache sync check failed:', error.message);
+            }
+        }, 5000); // Check every 5 seconds
+        
+        console.log('🔄 Cache sync monitoring started');
     }
 
     loadInitialData() {

@@ -73,7 +73,8 @@
       "WebFetch(domain:www.ifood.com.br)",
       "Bash(git add:*)",
       "Bash(git commit:*)",
-      "Bash(del \"ENTERPRISE-STATUS.md\")"
+      "Bash(del \"ENTERPRISE-STATUS.md\")",
+      "Bash(start http://localhost:8080/admin.html)"
     ]
   },
   "enableAllProjectMcpServers": true,

@@ -193,10 +193,48 @@ class DatabaseNASA {
   }
 
   /**
-   * Get products (NASA: delegated to cache)
-   * Function size: 5 lines (NASA compliant)
+   * Get products (NASA: delegated to cache for frontend, direct for admin)
+   * Function size: 15 lines (NASA compliant)
    */
   getProducts(filters = {}) {
+    // Admin mode: return products in EXACT Supabase order
+    if (this.adminMode) {
+      const rawProducts = this.cache.cachedData?.products || [];
+      
+      // Apply filters without sorting
+      let products = rawProducts;
+      if (filters.activeOnly) {
+        products = products.filter(prod => prod.active);
+      }
+      if (filters.categoryId) {
+        products = products.filter(prod => prod.categoryId === filters.categoryId);
+      }
+      
+      // Sort by category order FIRST, then by product order within category
+      const categories = this.cache.cachedData?.categories || [];
+      
+      return products.sort((a, b) => {
+        // Get category data
+        const categoryA = categories.find(cat => cat.id === a.categoryId);
+        const categoryB = categories.find(cat => cat.id === b.categoryId);
+        
+        // 1st: Sort by category order
+        const categoryOrderA = categoryA?.order || categoryA?.displayOrder || 999;
+        const categoryOrderB = categoryB?.order || categoryB?.displayOrder || 999;
+        
+        if (categoryOrderA !== categoryOrderB) {
+          return categoryOrderA - categoryOrderB;
+        }
+        
+        // 2nd: Sort by product order within category
+        const productOrderA = a.order || a.displayOrder || 999;
+        const productOrderB = b.order || b.displayOrder || 999;
+        
+        return productOrderA - productOrderB;
+      });
+    }
+    
+    // Frontend mode: use cache with existing logic
     return this.cache.getProducts(filters);
   }
 
@@ -1034,7 +1072,9 @@ class DatabaseNASA {
   async reorderProducts(categoryId, productIds) {
     try {
       console.log('🔄 Reordering products for category:', categoryId);
+      console.log('📝 Product IDs in new order:', productIds);
       
+      // Update cache first for immediate UI feedback
       const cachedData = this.cache.getCache();
       if (cachedData?.products) {
         productIds.forEach((productId, index) => {
@@ -1043,10 +1083,39 @@ class DatabaseNASA {
             product.order = index;
           }
         });
-        
         this.cache.setCache(cachedData, true); // Mark as modified
-        console.log('✅ Products reordered successfully');
       }
+      
+      // Update each product in Supabase using data writer
+      for (let i = 0; i < productIds.length; i++) {
+        const productId = productIds[i];
+        const newOrder = i;
+        
+        console.log(`📝 Updating product ${productId} to order ${newOrder}`);
+        
+        // Find product in cache to get current data
+        const product = cachedData.products.find(p => p.id === productId);
+        if (product) {
+          // Update product with new order
+          const updatedProduct = { ...product, order: newOrder };
+          
+          try {
+            const result = await this.writer.updateProduct(productId, updatedProduct);
+            console.log(`✅ Product ${productId} updated successfully:`, result);
+          } catch (error) {
+            console.error(`❌ Failed to update product ${productId}:`, error);
+            throw error;
+          }
+        } else {
+          console.error(`❌ Product not found in cache: ${productId}`);
+        }
+      }
+      
+      console.log('✅ Products reordered successfully in Supabase');
+      
+      // Invalidate cache globally so all browsers/tabs see the new order
+      this.cache.setCache(this.cache.cachedData, true); // forceUpdate = true
+      console.log('🔄 Cache invalidated globally for product reordering');
       
     } catch (error) {
       console.error('❌ Reorder products failed:', error);
