@@ -1087,14 +1087,17 @@ class DatabaseNASA {
       }
       
       // Update each product in Supabase using data writer
+      console.log('🔍 CRITICAL DEBUG - Product IDs received:', productIds);
+      
       for (let i = 0; i < productIds.length; i++) {
         const productId = productIds[i];
         const newOrder = i;
         
-        console.log(`📝 Updating product ${productId} to order ${newOrder}`);
-        
         // Find product in cache to get current data
         const product = cachedData.products.find(p => p.id === productId);
+        const productName = product ? product.name : 'Unknown';
+        
+        console.log(`📝 Updating product ${productName} (${productId}) to order ${newOrder}`);
         if (product) {
           // Update product with new order
           const updatedProduct = { ...product, order: newOrder };
@@ -1113,9 +1116,13 @@ class DatabaseNASA {
       
       console.log('✅ Products reordered successfully in Supabase');
       
+      // CRÍTICO: Forçar reload completo dos dados após reordenação
+      console.log('🔄 Forcing complete data reload after reorder...');
+      await this.loadData(); // Força reload do Supabase
+      
       // Invalidate cache globally so all browsers/tabs see the new order
       this.cache.setCache(this.cache.cachedData, true); // forceUpdate = true
-      console.log('🔄 Cache invalidated globally for product reordering');
+      console.log('✅ Data reloaded and cache invalidated globally');
       
     } catch (error) {
       console.error('❌ Reorder products failed:', error);
