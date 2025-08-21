@@ -704,15 +704,32 @@ export class AdminView {
         console.log('showModal chamado - isNested:', isNested, 'modalContainer:', modal);
         
         if (isNested) {
-            // For nested modals, add a new modal on top
+            // For nested modals, preserve parent modal scroll
+            const parentModal = modal.querySelector('.modal-content');
+            if (parentModal) {
+                parentModal.classList.add('modal-preserve-scroll');
+            }
+            
             console.log('Criando modal aninhado...');
             const nestedModal = document.createElement('div');
             nestedModal.className = 'nested-modal';
             nestedModal.innerHTML = `
-                <div class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full" style="z-index: 60;">
-                    <div class="relative top-4 mx-auto p-4 border max-w-lg w-full mx-4 shadow-lg rounded-md bg-white max-h-[calc(100vh-2rem)] overflow-y-auto">
-                        <div class="mt-3">
-                            <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">${title}</h3>
+                <div class="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center sm:p-4 p-2" style="z-index: 60;">
+                    <div class="modal-content bg-white rounded-lg shadow-xl w-full max-w-lg sm:max-w-xl max-h-[95vh] sm:max-h-[90vh] overflow-y-auto">
+                        <div class="sm:p-6 p-4">
+                            <div class="flex items-center justify-center relative mb-4">
+                                <button 
+                                    type="button" 
+                                    id="closePreviewBtn"
+                                    class="absolute left-0 w-8 h-8 bg-gray-200 bg-opacity-80 hover:bg-gray-300 hover:bg-opacity-90 text-gray-600 rounded-full flex items-center justify-center transition-all"
+                                    title="Fechar preview"
+                                >
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                    </svg>
+                                </button>
+                                <h3 class="text-lg leading-6 font-medium text-gray-900 text-center">${title}</h3>
+                            </div>
                             <div class="mt-2">
                                 ${content}
                             </div>
@@ -723,13 +740,15 @@ export class AdminView {
             modal.appendChild(nestedModal);
             console.log('Modal aninhado adicionado:', nestedModal);
         } else {
-            // Regular modal replaces everything
+            // Regular modal - prevent body scroll
+            document.body.classList.add('modal-open');
+            
             modal.innerHTML = `
-                <div class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full" style="z-index: 50;">
-                    <div class="relative top-2 mx-auto p-3 border max-w-2xl w-full mx-2 shadow-lg rounded-md bg-white max-h-[calc(100vh-1rem)] overflow-y-auto">
-                        <div class="mt-1">
-                            <h3 class="text-lg leading-6 font-medium text-gray-900 mb-3">${title}</h3>
-                            <div class="mt-1">
+                <div class="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center p-4" style="z-index: 50;">
+                    <div class="modal-content bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+                        <div class="p-6">
+                            <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">${title}</h3>
+                            <div class="mt-2">
                                 ${content}
                             </div>
                         </div>
@@ -743,14 +762,20 @@ export class AdminView {
         const modal = document.getElementById('modalContainer');
         
         if (onlyNested) {
-            // Close only the nested modal (gallery selector)
+            // Close only the nested modal and restore parent scroll
             const nestedModal = modal.querySelector('.nested-modal');
             if (nestedModal) {
                 nestedModal.remove();
             }
+            
+            const parentModal = modal.querySelector('.modal-content');
+            if (parentModal) {
+                parentModal.classList.remove('modal-preserve-scroll');
+            }
         } else {
-            // Close all modals
+            // Close all modals and restore body scroll
             modal.innerHTML = '';
+            document.body.classList.remove('modal-open');
         }
     }
 

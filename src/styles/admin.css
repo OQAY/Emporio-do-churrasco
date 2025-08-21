@@ -17,6 +17,33 @@
     backdrop-filter: blur(4px);
 }
 
+/* Fix scroll issues with nested modals */
+.nested-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+}
+
+/* Preserve scroll on parent modal when nested modal opens */
+.modal-preserve-scroll {
+    overflow-y: auto !important;
+}
+
+/* Prevent body scroll when modal is open */
+body.modal-open {
+    overflow: hidden;
+    position: fixed;
+    width: 100%;
+}
+
+/* Mobile-first modal centering */
+@media (max-width: 640px) {
+    .nested-modal > div > div {
+        margin: 1rem;
+        max-height: calc(100vh - 2rem);
+    }
+}
+
 /* Form styles */
 .form-group {
     margin-bottom: 1rem;

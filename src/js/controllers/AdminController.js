@@ -539,7 +539,7 @@ export class AdminController {
                     <div class="mt-4">
                         <label class="block text-sm font-medium text-gray-700 mb-2">Tags do Produto</label>
                         <div id="productTagsContainer">
-                            ${this.renderTagsSelector(product?.tags || [])}
+                            ${this.renderCompactTagsSelector(product?.tags || [])}
                         </div>
                     </div>
                     
@@ -927,9 +927,8 @@ export class AdminController {
         
         // Create preview modal content
         const previewHtml = `
-            <div class="space-y-4">
-                <div class="text-center mb-4">
-                    <h3 class="text-lg font-semibold text-gray-900 mb-2">Preview do Produto</h3>
+            <div class="space-y-3">
+                <div class="text-center mb-3">
                     <p class="text-sm text-gray-600">Como o produto aparecerá no cardápio digital</p>
                     <div class="mt-2 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-xs inline-block">
                         Categoria: ${categoryName}
@@ -937,29 +936,19 @@ export class AdminController {
                 </div>
                 
                 <!-- Card na lista do cardápio -->
-                <div class="mb-6">
+                <div class="mb-4">
                     <h4 class="text-sm font-medium text-gray-900 mb-2">Lista do Cardápio</h4>
-                    <div class="border border-gray-200 rounded-lg p-1 bg-gray-50">
+                    <div class="bg-white rounded-lg">
                         ${this.createProductCardPreview(previewProduct, 'small')}
                     </div>
                 </div>
                 
                 <!-- Card expandido ao clicar -->
-                <div class="mb-6">
+                <div class="mb-4">
                     <h4 class="text-sm font-medium text-gray-900 mb-2">Ao Clicar no Item do Cardápio</h4>
-                    <div class="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                    <div class="bg-gray-50 rounded-lg overflow-hidden">
                         ${this.createProductCardPreview(previewProduct, 'large')}
                     </div>
-                </div>
-                
-                <div class="flex justify-center pt-4">
-                    <button 
-                        type="button" 
-                        id="closePreviewBtn"
-                        class="px-6 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700"
-                    >
-                        Fechar Preview
-                    </button>
                 </div>
             </div>
         `;
@@ -1072,21 +1061,21 @@ export class AdminController {
         } else {
             // Modal expandido (exatamente como no site)
             return `
-                <div class="bg-white rounded-t-3xl w-full max-w-md mx-auto shadow-2xl">
+                <div class="bg-white rounded-t-2xl sm:rounded-t-3xl w-full mx-auto shadow-2xl">
                     <!-- Botão fechar (círculo com seta para baixo) -->
                     <div class="relative">
-                        <button class="absolute top-4 left-4 w-10 h-10 bg-black bg-opacity-40 text-white rounded-full flex items-center justify-center z-20">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <button class="absolute top-3 left-3 sm:top-4 sm:left-4 w-9 h-9 sm:w-10 sm:h-10 bg-black bg-opacity-40 text-white rounded-full flex items-center justify-center z-20">
+                            <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path>
                             </svg>
                         </button>
                         
                         <!-- Imagem grande -->
-                        <div class="w-full h-64 bg-gray-100">
+                        <div class="w-full h-52 sm:h-64 bg-gray-100">
                             ${product.image ? 
                                 `<img src="${product.image}" alt="${product.name}" class="w-full h-full object-cover">` :
                                 `<div class="w-full h-full flex items-center justify-center">
-                                    <svg class="w-20 h-20 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <svg class="w-16 h-16 sm:w-20 sm:h-20 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
                                     </svg>
                                 </div>`
@@ -1095,7 +1084,7 @@ export class AdminController {
                     </div>
                     
                     <!-- Conteúdo -->
-                    <div class="p-6">
+                    <div class="p-4 sm:p-6">
                         <!-- Tags do produto -->
                         ${renderPreviewTags(product.tags, product.featured) ? 
                             `<div class="mb-3">${renderPreviewTags(product.tags, product.featured)}</div>` : 
@@ -3772,6 +3761,96 @@ export class AdminController {
         });
     }
 
+    renderCompactTagsSelector(selectedTags = []) {
+        const availableTags = this.database.getProductTags();
+        
+        // If no tags from database, use fallback tags
+        const tagsToShow = availableTags.length > 0 ? availableTags : [
+            { id: "destaque", name: "Destaque", color: "#f59e0b", icon: "⭐" },
+            { id: "mais-vendido", name: "Mais Vendido", color: "#ef4444", icon: "🔥" },
+            { id: "especial-chef", name: "Especial do Chef", color: "#8b5cf6", icon: "👨‍🍳" },
+            { id: "novo", name: "Novo", color: "#10b981", icon: "✨" },
+            { id: "promocao", name: "Promoção", color: "#f97316", icon: "💰" }
+        ];
+        
+        return `
+            <div class="space-y-3">
+                <!-- Compact Header with Expandable Tags -->
+                <div class="bg-gray-50 rounded-lg p-3 border border-gray-200">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-3">
+                            <span class="text-sm font-medium text-gray-700">Tags do Produto</span>
+                            <button 
+                                type="button" 
+                                id="toggleTagsBtn"
+                                class="text-orange-600 hover:text-orange-700 text-sm font-medium flex items-center gap-1 transition-colors"
+                            >
+                                <span>${tagsToShow.length} Tags Disponíveis</span>
+                                <svg class="w-4 h-4 transition-transform" id="toggleTagsIcon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                </svg>
+                            </button>
+                        </div>
+                        ${selectedTags.length > 0 ? `
+                            <span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+                                ${selectedTags.length} selecionada${selectedTags.length !== 1 ? 's' : ''}
+                            </span>
+                        ` : ''}
+                    </div>
+                </div>
+
+                <!-- Tags Grid - Initially Hidden -->
+                <div id="tagsGrid" class="hidden">
+                    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+                        ${tagsToShow.map(tag => {
+                            const isSelected = selectedTags.includes(tag.id);
+                            return `
+                                <label class="group relative cursor-pointer transform transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]">
+                                    <input 
+                                        type="checkbox" 
+                                        name="productTags" 
+                                        value="${tag.id}"
+                                        ${isSelected ? 'checked' : ''}
+                                        class="hidden tag-checkbox"
+                                    >
+                                    <div class="tag-card relative overflow-hidden rounded-xl border-2 transition-all duration-300 ${
+                                        isSelected 
+                                            ? 'border-transparent shadow-lg transform' 
+                                            : 'border-gray-200 hover:border-gray-300 hover:shadow-md'
+                                    }" 
+                                    style="${isSelected ? `background: linear-gradient(135deg, ${tag.color}ee, ${tag.color});` : 'background: linear-gradient(135deg, #ffffff, #f8fafc);'}"
+                                    data-color="${tag.color}">
+                                        
+                                        <!-- Selection Indicator - Top right -->
+                                        <div class="absolute top-1 right-1 w-5 h-5 rounded-full border-2 transition-all duration-200 z-10 ${
+                                            isSelected 
+                                                ? 'bg-green-600 border-green-600 shadow-lg' 
+                                                : 'border-gray-300 bg-white'
+                                        }"${isSelected ? '' : ' style="background-color: rgba(255,255,255,0.9);"'}>
+                                            ${isSelected ? `
+                                                <div class="w-full h-full flex items-center justify-center">
+                                                    <svg class="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                                                    </svg>
+                                                </div>
+                                            ` : ''}
+                                        </div>
+
+                                        <!-- Tag Content -->
+                                        <div class="p-3 text-center">
+                                            <div class="text-2xl mb-1 filter ${isSelected ? 'drop-shadow-sm' : ''}">${tag.icon}</div>
+                                            <div class="text-xs font-semibold ${isSelected ? 'text-white' : 'text-gray-700'} truncate">${tag.name}</div>
+                                        </div>
+                                    </div>
+                                </label>
+                            `;
+                        }).join('')}
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
     renderTagsSelector(selectedTags = []) {
         const availableTags = this.database.getProductTags();
         
@@ -4007,6 +4086,25 @@ export class AdminController {
     }
 
     setupTagsEvents() {
+        // Toggle tags visibility
+        const toggleBtn = document.getElementById('toggleTagsBtn');
+        const tagsGrid = document.getElementById('tagsGrid');
+        const toggleIcon = document.getElementById('toggleTagsIcon');
+        
+        if (toggleBtn && tagsGrid && toggleIcon) {
+            toggleBtn.addEventListener('click', () => {
+                const isHidden = tagsGrid.classList.contains('hidden');
+                
+                if (isHidden) {
+                    tagsGrid.classList.remove('hidden');
+                    toggleIcon.style.transform = 'rotate(180deg)';
+                } else {
+                    tagsGrid.classList.add('hidden');
+                    toggleIcon.style.transform = 'rotate(0deg)';
+                }
+            });
+        }
+        
         // Toggle tag selection with improved visual feedback
         document.querySelectorAll('.tag-checkbox').forEach(checkbox => {
             checkbox.addEventListener('change', (e) => {
@@ -4243,7 +4341,7 @@ export class AdminController {
                 const container = document.getElementById('productTagsContainer');
                 if (container) {
                     const currentTags = this.getSelectedTags();
-                    container.innerHTML = this.renderTagsSelector(currentTags);
+                    container.innerHTML = this.renderCompactTagsSelector(currentTags);
                     this.setupTagsEvents();
                     console.log('✅ Tags UI refreshed successfully');
                 }
@@ -4347,7 +4445,7 @@ export class AdminController {
             // Refresh tags container
             const container = document.getElementById('productTagsContainer');
             const currentTags = this.getSelectedTags().filter(t => t !== tagId); // Remove deleted tag from selection
-            container.innerHTML = this.renderTagsSelector(currentTags);
+            container.innerHTML = this.renderCompactTagsSelector(currentTags);
             this.setupTagsEvents();
             
             this.view.closeModal(true);
