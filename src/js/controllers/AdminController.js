@@ -76,7 +76,7 @@ export class AdminController {
         });
     }
 
-    switchSection(section) {
+    async switchSection(section) {
         this.currentSection = section;
         
         // Update navigation active state
@@ -104,7 +104,7 @@ export class AdminController {
                 this.showDashboard();
                 break;
             case 'products':
-                this.showProducts();
+                await this.showProducts();
                 break;
             case 'categories':
                 this.showCategories();
@@ -222,14 +222,25 @@ export class AdminController {
         });
     }
 
-    showProducts() {
+    async showProducts() {
+        // 🔧 FORCE RELOAD to get fresh data from Supabase
+        console.log('🔄 Forcing cache reload to get inactive products...');
+        await this.database.forceReload();
+        
         const products = this.database.getProducts();
         const categories = this.database.getCategories();
         
-        // DEBUG: Log para verificar dados
+        // 🔍 CRITICAL DEBUG: Check for inactive products
         console.log('📊 AdminController.showProducts() DEBUG:');
-        console.log('  - Products:', products.length, products);
-        console.log('  - Categories:', categories.length, categories);
+        console.log('  - Total Products:', products.length);
+        console.log('  - Active Products:', products.filter(p => p.active).length);
+        console.log('  - Inactive Products:', products.filter(p => !p.active).length);
+        console.log('  - Categories:', categories.length);
+        
+        // Show individual product status
+        products.forEach(product => {
+            console.log(`  📦 ${product.name}: active=${product.active}, category=${product.categoryId}`);
+        });
         
         this.view.showProducts(products, categories);
         
@@ -1491,20 +1502,48 @@ export class AdminController {
         
         console.log('🔍 DEBUG - ProductData before save:', productData);
         
-        if (productId) {
-            await this.database.updateProduct(productId, productData);
-            this.view.showNotification('Produto atualizado com sucesso!');
-        } else {
-            await this.database.addProduct(productData);
-            this.view.showNotification('Produto adicionado com sucesso!');
+        try {
+            // Show loading state
+            const submitBtn = document.querySelector('#productForm button[type="submit"]');
+            const originalText = submitBtn.textContent;
+            submitBtn.textContent = 'Salvando...';
+            submitBtn.disabled = true;
+            
+            if (productId) {
+                await this.database.updateProduct(productId, productData);
+                this.view.showNotification('Produto atualizado com sucesso!', 'success');
+            } else {
+                await this.database.addProduct(productData);
+                this.view.showNotification('Produto adicionado com sucesso!', 'success');
+            }
+            
+            // 🚀 UX OPTIMIZATION: Close immediately, reload in background
+            this.view.closeModal();
+            this.showProducts(); // Show updated cache data immediately
+            
+            // Background reload to ensure sync (non-blocking)
+            console.log('🔄 Background data reload after product save...');
+            this.database.forceReload().then(() => {
+                console.log('✅ Background sync completed');
+                // Refresh view silently if still on products page
+                if (document.querySelector('#productsTable')) {
+                    this.showProducts();
+                }
+            }).catch(error => {
+                console.error('⚠️ Background sync failed:', error);
+            });
+            
+        } catch (error) {
+            console.error('❌ Save product failed:', error);
+            this.view.showNotification('Erro ao salvar produto!', 'error');
+            
+            // Restore button state on error
+            const submitBtn = document.querySelector('#productForm button[type="submit"]');
+            if (submitBtn) {
+                submitBtn.textContent = productId ? 'Atualizar Produto' : 'Adicionar Produto';
+                submitBtn.disabled = false;
+            }
         }
-        
-        // Force reload data from Supabase to ensure sync
-        console.log('🔄 Forcing data reload after product save...');
-        await this.database.forceReload();
-        
-        this.view.closeModal();
-        this.showProducts();
     }
 
     generateAutoTags(productName, categoryName) {
@@ -3304,8 +3343,14 @@ export class AdminController {
         document.addEventListener('touchmove', (e) => {
             if (!isDragging || !draggedElement) return;
             
-            e.preventDefault();
-            e.stopPropagation();
+            // 🔧 FIX: Try-catch to handle passive event listener warning
+            try {
+                e.preventDefault();
+                e.stopPropagation();
+            } catch (error) {
+                // Silently handle passive event listener restriction
+                console.debug('Touch event passive restriction');
+            }
             
             // Scroll já bloqueado no touchstart, não precisa repetir
             
@@ -3565,7 +3610,12 @@ export class AdminController {
         document.addEventListener('touchmove', (e) => {
             if (!isDragging || !draggedElement) return;
             
-            e.preventDefault();
+            // 🔧 FIX: Try-catch to handle passive event listener warning  
+            try {
+                e.preventDefault();
+            } catch (error) {
+                console.debug('Touch event passive restriction');
+            }
             
             const touch = e.touches[0];
             

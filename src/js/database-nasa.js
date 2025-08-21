@@ -255,14 +255,24 @@ class DatabaseNASA {
     const categories = this.cache.getCategories();
     const restaurant = this.cache.getRestaurant();
     
-    return {
+    // 🔍 CRITICAL DEBUG: Statistics calculation
+    console.log('📊 Database.getStatistics() DEBUG:');
+    console.log('  - Raw products from cache:', products.length);
+    console.log('  - Active products:', products.filter(p => p.active).length);
+    console.log('  - Inactive products:', products.filter(p => !p.active).length);
+    
+    const stats = {
       totalProducts: products.length,
       totalCategories: categories.length,
       activeProducts: products.filter(p => p.active).length,
+      featuredProducts: products.filter(p => p.featured && p.active).length, // 🔧 ADDED: Featured products counter
       onSaleProducts: products.filter(p => p.isOnSale).length,
       totalImages: products.filter(p => p.image).length,
       restaurantName: restaurant?.name || 'Imperio do Churrasco'
     };
+    
+    console.log('📊 Final stats:', stats);
+    return stats;
   }
 
   /**

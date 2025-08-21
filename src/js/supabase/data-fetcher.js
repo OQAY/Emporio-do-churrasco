@@ -38,7 +38,7 @@ class DataFetcher {
     try {
       const restaurantId = this.client.getRestaurantId();
       const data = await this.client.makeRequest(
-        `categories?restaurant_id=eq.${restaurantId}&active=eq.true&order=display_order.asc&select=*`
+        `categories?restaurant_id=eq.${restaurantId}&order=display_order.asc&select=*`
       );
       
       return data || [];
@@ -56,7 +56,7 @@ class DataFetcher {
     try {
       const restaurantId = this.client.getRestaurantId();
       const data = await this.client.makeRequest(
-        `products?restaurant_id=eq.${restaurantId}&active=eq.true&order=display_order.asc&select=*`
+        `products?restaurant_id=eq.${restaurantId}&order=display_order.asc&select=*`
       );
       
       return data || [];

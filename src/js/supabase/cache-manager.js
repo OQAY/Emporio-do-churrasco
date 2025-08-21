@@ -263,6 +263,12 @@ class CacheManager {
 
     let products = this.cachedData.products;
     
+    // 🔍 CRITICAL DEBUG: Check raw products from cache
+    console.log('📦 CacheManager.getProducts() DEBUG:');
+    console.log('  - Raw cached products:', products.length);
+    console.log('  - Active in cache:', products.filter(p => p.active).length);
+    console.log('  - Inactive in cache:', products.filter(p => !p.active).length);
+    
     if (filters.activeOnly) {
       products = products.filter(prod => prod.active);
     }
@@ -296,14 +302,14 @@ class CacheManager {
         return categoryOrderA - categoryOrderB;
       }
       
-      // REMOVED: Featured first logic to respect admin order
-      // if (a.featured !== b.featured) {
-      //   return b.featured ? 1 : -1;
-      // }
+      // 🔧 INACTIVE PRODUCTS: Active products first, then inactive ones (within same category)
+      if (a.active !== b.active) {
+        return b.active ? 1 : -1; // Active products come first
+      }
       
-      // Then by product order within category
-      const orderA = a.order || a.displayOrder || 999;
-      const orderB = b.order || b.displayOrder || 999;
+      // Then by product order within category (inactive products get order 999)
+      const orderA = a.active ? (a.order || a.displayOrder || 999) : 999;
+      const orderB = b.active ? (b.order || b.displayOrder || 999) : 999;
       
       if (orderA !== orderB) {
         return orderA - orderB;
