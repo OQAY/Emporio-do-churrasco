@@ -76,30 +76,30 @@
 
 ## ⚡ **3. PROBLEMAS DE PERFORMANCE E UX**
 
-### ❌ **3.1 Demora para sair da edição de produto**
+### ✅ **3.1 Demora para sair da edição de produto**
 
 - **Descrição:** Após clicar "Atualizar produto", demora para retornar à lista
-- **Status:** ⏳ **PENDENTE**
-- **Comportamento atual:** Aguarda confirmação da operação para retornar
-- **Sugestão:** Retornar imediatamente mostrando notificação de sucesso
+- **Status:** ✅ **CORRIGIDO**
+- **Solução:** Modal fecha imediatamente, sync acontece em background
+- **Implementação:** AdminController.saveProduct() agora fecha modal antes do reload
 
 ---
 
 ## 📊 **4. PROBLEMAS DE STATUS E VISUALIZAÇÃO**
 
-### ❌ **4.1 Produtos inativos não são identificados**
+### ✅ **4.1 Produtos inativos não são identificados**
 
 - **Descrição:** Produtos desativados somem da lista sem identificação clara
-- **Status:** ⏳ **PENDENTE**
-- **Teste:** Desativar Coca-Cola Zero → produto desaparece completamente
-- **Localização:** Admin → lista de produtos
+- **Status:** ✅ **CORRIGIDO**
+- **Solução:** Removido filtro active=true do data-fetcher, produtos inativos agora aparecem no admin
+- **Implementação:** Produtos inativos ficam no final de cada categoria com status "Inativo"
 
-### ❌ **4.2 Contador de destaque mostra "Undefined"**
+### ✅ **4.2 Contador de destaque mostra "Undefined"**
 
 - **Descrição:** Dashboard mostra "Undefined" no contador de produtos em destaque
-- **Status:** ⏳ **PENDENTE**
-- **Localização:** Dashboard → seção estatísticas
-- **Causa:** Contador não reconhece produtos marcados como destaque
+- **Status:** ✅ **CORRIGIDO**
+- **Solução:** Adicionado featuredProducts no método getStatistics()
+- **Implementação:** Dashboard agora conta corretamente produtos com featured=true e active=true
 
 ### ❌ **4.3 Sistema de scroll confuso em pop-ups aninhados**
 
@@ -117,20 +117,24 @@
 
 ## 📈 **PROGRESSO GERAL**
 
-- **✅ Concluídos:** 8/8 problemas de TAGS - 100% resolvidos
-- **⏳ Pendentes:** 6 melhorias (reordenação + UX/dashboard + scroll)
-- **🎯 Taxa de conclusão:** Tags: 100% | Total: 77%
+- **✅ Concluídos:** 
+  - 8/8 problemas de TAGS - 100% resolvidos
+  - 2/2 problemas de ORDENAÇÃO - 100% resolvidos
+  - 1/1 problemas de PERFORMANCE - 100% resolvido
+  - 2/3 problemas de STATUS - 67% resolvidos
+- **⏳ Pendentes:** 1 problema (scroll em pop-ups aninhados)
+- **🎯 Taxa de conclusão:** 93% (13 de 14 problemas resolvidos)
 
 ---
 
 ## 📝 **PRÓXIMOS PASSOS**
 
-1. **Implementar drag & drop funcional para reordenação**
-2. **Sincronizar ordem entre Admin e Frontend**
-3. **Otimizar UX de edição com retorno imediato**
-4. **Corrigir visualização de produtos inativos**
-5. **Corrigir contador de destaques no dashboard**
-6. **Corrigir sistema de scroll em pop-ups aninhados**
+1. ✅ ~~Implementar drag & drop funcional para reordenação~~ **CONCLUÍDO**
+2. ✅ ~~Sincronizar ordem entre Admin e Frontend~~ **CONCLUÍDO**
+3. ✅ ~~Otimizar UX de edição com retorno imediato~~ **CONCLUÍDO**
+4. ✅ ~~Corrigir visualização de produtos inativos~~ **CONCLUÍDO**
+5. ✅ ~~Corrigir contador de destaques no dashboard~~ **CONCLUÍDO**
+6. ⏳ **Corrigir sistema de scroll em pop-ups aninhados** - ÚNICO PENDENTE
 
 ---
 
@@ -148,5 +152,5 @@
 
 ---
 
-**Última atualização:** 21/08/2025 - 01:30  
-**TAGS 100% RESOLVIDAS** - Problema crítico do mismatch UUID/destaque corrigido
+**Última atualização:** 21/08/2025 - 03:00  
+**93% CONCLUÍDO** - 13 de 14 problemas resolvidos (apenas scroll em pop-ups pendente)
