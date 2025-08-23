@@ -593,8 +593,8 @@ export class MenuView {
             'Consulte';
 
         const modalHtml = `
-            <div id="productModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-                <div class="bg-white rounded-t-3xl w-full max-w-md max-h-[90vh] overflow-hidden relative">
+            <div id="productModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-end sm:items-center justify-center">
+                <div class="bg-white rounded-t-3xl sm:rounded-3xl w-full sm:max-w-md max-h-[85vh] sm:max-h-[90vh] overflow-hidden relative animate-slide-up sm:animate-fade-in">
                     <!-- Botão fechar (círculo com seta para baixo) -->
                     <button id="closeProductModal" class="absolute top-4 left-4 w-10 h-10 bg-black bg-opacity-40 text-white rounded-full flex items-center justify-center z-20 hover:bg-opacity-60 transition-all">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -603,12 +603,12 @@ export class MenuView {
                     </button>
                     
                     <!-- Imagem grande -->
-                    <div class="w-full h-64 bg-gray-100 relative">
+                    <div class="w-full h-56 sm:h-64 bg-gray-100 relative">
                         ${this.createOptimizedImage(product.image, product.name, "w-full h-full object-cover", false)}
                     </div>
                     
-                    <!-- Conteúdo -->
-                    <div class="p-6">
+                    <!-- Conteúdo com scroll se necessário -->
+                    <div class="p-6 overflow-y-auto">
                         <!-- Nome do produto -->
                         <h2 class="text-2xl font-bold text-gray-900 mb-3">${product.name}</h2>
                         
