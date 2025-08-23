@@ -5,11 +5,11 @@
  * ALL FUNCTIONS < 60 lines (NASA JPL Rule #2)
  */
 
-import { DataFetcher } from './supabase/data-fetcher.js';
-import { DataTransformer } from './supabase/data-transformer.js';
-import { CacheManager } from './supabase/cache-manager.js';
-import { SupabaseClient } from './supabase/supabase-client.js';
-import { DataWriter } from './supabase/data-writer.js';
+import { DataFetcher } from "./supabase/data-fetcher.js";
+import { DataTransformer } from "./supabase/data-transformer.js";
+import { CacheManager } from "./supabase/cache-manager.js";
+import { SupabaseClient } from "./supabase/supabase-client.js";
+import { DataWriter } from "./supabase/data-writer.js";
 
 class DatabaseNASA {
   constructor(adminMode = false) {
@@ -20,18 +20,22 @@ class DatabaseNASA {
     this.writer = new DataWriter();
     this.adminMode = adminMode; // Flag to determine if we need all data or just public data
     this.isLoading = false; // Prevent duplicate loading
-    
-    console.log(`🚀 DatabaseNASA initialized - Mode: ${adminMode ? 'ADMIN (full data)' : 'PUBLIC (optimized)'}`);
-    
+
+    console.log(
+      `🚀 DatabaseNASA initialized - Mode: ${
+        adminMode ? "ADMIN (full data)" : "PUBLIC (optimized)"
+      }`
+    );
+
     // DON'T preload automatically - let app.js control when to load
     // this.preloadDataIfNeeded();
-    
+
     // Ensure default admin user exists (non-blocking, only in admin mode)
     if (adminMode) {
       this.createDefaultAdminUser();
     }
   }
-  
+
   /**
    * Pre-load data if cache is empty (NASA: optimization)
    * Function size: 15 lines (NASA compliant)
@@ -39,19 +43,25 @@ class DatabaseNASA {
   async preloadDataIfNeeded() {
     const cached = this.cache.getCache();
     if (!cached || !cached.categories) {
-      console.log(`🔄 Pre-loading ${this.adminMode ? 'ALL' : 'PUBLIC'} data in background...`);
+      console.log(
+        `🔄 Pre-loading ${
+          this.adminMode ? "ALL" : "PUBLIC"
+        } data in background...`
+      );
       try {
         if (this.adminMode) {
           await this.loadData(); // Admin mode: load all data
         } else {
           await this.loadPublicData(); // Public mode: load only essential data
         }
-        console.log(`✅ ${this.adminMode ? 'ALL' : 'PUBLIC'} data pre-loaded successfully`);
+        console.log(
+          `✅ ${this.adminMode ? "ALL" : "PUBLIC"} data pre-loaded successfully`
+        );
       } catch (error) {
-        console.warn('⚠️ Pre-load failed:', error.message);
+        console.warn("⚠️ Pre-load failed:", error.message);
       }
     } else {
-      console.log('✅ Using cached data from localStorage');
+      console.log("✅ Using cached data from localStorage");
     }
   }
 
@@ -60,10 +70,10 @@ class DatabaseNASA {
    * Function size: 10 lines (NASA compliant)
    */
   async forceReload() {
-    console.log('🔄 Force reloading data...');
+    console.log("🔄 Force reloading data...");
     this.cache.clear();
     const data = await this.loadData();
-    console.log('✅ Data force reloaded:', data);
+    console.log("✅ Data force reloaded:", data);
     return data;
   }
 
@@ -73,7 +83,7 @@ class DatabaseNASA {
    */
   async createDefaultAdminUser() {
     // Skip admin user creation - schema mismatch with Supabase
-    console.log('👤 Admin user creation skipped (managed externally)');
+    console.log("👤 Admin user creation skipped (managed externally)");
     return null;
   }
 
@@ -84,20 +94,20 @@ class DatabaseNASA {
   async loadPublicData() {
     // Prevent duplicate loading
     if (this.isLoading) {
-      console.log('⏳ Already loading data, waiting...');
+      console.log("⏳ Already loading data, waiting...");
       while (this.isLoading) {
-        await new Promise(resolve => setTimeout(resolve, 100));
+        await new Promise((resolve) => setTimeout(resolve, 100));
       }
       return this.cache.getCache();
     }
 
-    console.log('🔄 Loading PUBLIC data (NASA optimized)...');
-    
+    console.log("🔄 Loading PUBLIC data (NASA optimized)...");
+
     try {
       // Check cache first (NASA: performance optimization)
       const cached = this.cache.getCache();
       if (cached && cached.categories && cached.categories.length > 0) {
-        console.log('📦 Using cached data');
+        console.log("📦 Using cached data");
         return cached;
       }
 
@@ -105,18 +115,17 @@ class DatabaseNASA {
 
       // Fetch fresh PUBLIC data only
       const rawData = await this.fetcher.fetchPublicData();
-      
+
       // Transform to app format
       const transformedData = this.transformer.transformAllData(rawData);
-      
+
       // Cache for sync access
       this.cache.setCache(transformedData);
-      
-      console.log('✅ PUBLIC data loaded successfully');
+
+      console.log("✅ PUBLIC data loaded successfully");
       return transformedData;
-      
     } catch (error) {
-      console.error('❌ Load failed, using fallback:', error);
+      console.error("❌ Load failed, using fallback:", error);
       return this.getFallbackData();
     } finally {
       this.isLoading = false;
@@ -128,30 +137,29 @@ class DatabaseNASA {
    * Function size: 35 lines (NASA compliant < 60)
    */
   async loadData() {
-    console.log('🔄 Loading data (NASA standard)...');
-    
+    console.log("🔄 Loading data (NASA standard)...");
+
     try {
       // Check cache first (NASA: performance optimization)
       const cached = this.cache.getCache();
       if (cached) {
-        console.log('📦 Using cached data');
+        console.log("📦 Using cached data");
         return cached;
       }
 
       // Fetch fresh data
       const rawData = await this.fetcher.fetchAllData();
-      
+
       // Transform to app format
       const transformedData = this.transformer.transformAllData(rawData);
-      
+
       // Cache for sync access
       this.cache.setCache(transformedData);
-      
-      console.log('✅ Data loaded successfully');
+
+      console.log("✅ Data loaded successfully");
       return transformedData;
-      
     } catch (error) {
-      console.error('❌ Load failed, using fallback:', error);
+      console.error("❌ Load failed, using fallback:", error);
       return this.getFallbackData();
     }
   }
@@ -162,7 +170,7 @@ class DatabaseNASA {
    */
   async getData() {
     const cached = this.cache.getCache();
-    
+
     if (!cached) {
       // Force load if no cache - use appropriate method based on mode
       if (this.adminMode) {
@@ -171,7 +179,7 @@ class DatabaseNASA {
         return await this.loadPublicData(); // Public mode: load only essential data
       }
     }
-    
+
     return cached;
   }
 
@@ -200,40 +208,44 @@ class DatabaseNASA {
     // Admin mode: return products in EXACT Supabase order
     if (this.adminMode) {
       const rawProducts = this.cache.cachedData?.products || [];
-      
+
       // Apply filters without sorting
       let products = rawProducts;
       if (filters.activeOnly) {
-        products = products.filter(prod => prod.active);
+        products = products.filter((prod) => prod.active);
       }
       if (filters.categoryId) {
-        products = products.filter(prod => prod.categoryId === filters.categoryId);
+        products = products.filter(
+          (prod) => prod.categoryId === filters.categoryId
+        );
       }
-      
+
       // Sort by category order FIRST, then by product order within category
       const categories = this.cache.cachedData?.categories || [];
-      
+
       return products.sort((a, b) => {
         // Get category data
-        const categoryA = categories.find(cat => cat.id === a.categoryId);
-        const categoryB = categories.find(cat => cat.id === b.categoryId);
-        
+        const categoryA = categories.find((cat) => cat.id === a.categoryId);
+        const categoryB = categories.find((cat) => cat.id === b.categoryId);
+
         // 1st: Sort by category order
-        const categoryOrderA = categoryA?.order || categoryA?.displayOrder || 999;
-        const categoryOrderB = categoryB?.order || categoryB?.displayOrder || 999;
-        
+        const categoryOrderA =
+          categoryA?.order || categoryA?.displayOrder || 999;
+        const categoryOrderB =
+          categoryB?.order || categoryB?.displayOrder || 999;
+
         if (categoryOrderA !== categoryOrderB) {
           return categoryOrderA - categoryOrderB;
         }
-        
+
         // 2nd: Sort by product order within category
         const productOrderA = a.order || a.displayOrder || 999;
         const productOrderB = b.order || b.displayOrder || 999;
-        
+
         return productOrderA - productOrderB;
       });
     }
-    
+
     // Frontend mode: use cache with existing logic
     return this.cache.getProducts(filters);
   }
@@ -247,6 +259,36 @@ class DatabaseNASA {
   }
 
   /**
+   * Update restaurant (NASA: update operation)
+   * Function size: 30 lines (NASA compliant)
+   */
+  async updateRestaurant(restaurantData) {
+    try {
+      console.log('🏪 Updating restaurant:', restaurantData);
+      
+      // Update in Supabase first
+      await this.writer.updateRestaurant(restaurantData);
+      
+      // Update in cache
+      const cachedData = this.cache.getCache();
+      if (cachedData?.restaurant) {
+        cachedData.restaurant = {
+          ...cachedData.restaurant,
+          ...restaurantData
+        };
+        
+        this.cache.setCache(cachedData, true); // Mark as modified
+        console.log('✅ Restaurant updated successfully');
+        return cachedData.restaurant;
+      }
+      
+    } catch (error) {
+      console.error('❌ Update restaurant failed:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Get statistics (NASA: computed property)
    * Function size: 25 lines (NASA compliant)
    */
@@ -254,24 +296,30 @@ class DatabaseNASA {
     const products = this.cache.getProducts();
     const categories = this.cache.getCategories();
     const restaurant = this.cache.getRestaurant();
-    
+
     // 🔍 CRITICAL DEBUG: Statistics calculation
-    console.log('📊 Database.getStatistics() DEBUG:');
-    console.log('  - Raw products from cache:', products.length);
-    console.log('  - Active products:', products.filter(p => p.active).length);
-    console.log('  - Inactive products:', products.filter(p => !p.active).length);
-    
+    console.log("📊 Database.getStatistics() DEBUG:");
+    console.log("  - Raw products from cache:", products.length);
+    console.log(
+      "  - Active products:",
+      products.filter((p) => p.active).length
+    );
+    console.log(
+      "  - Inactive products:",
+      products.filter((p) => !p.active).length
+    );
+
     const stats = {
       totalProducts: products.length,
       totalCategories: categories.length,
-      activeProducts: products.filter(p => p.active).length,
-      featuredProducts: products.filter(p => p.featured && p.active).length, // 🔧 ADDED: Featured products counter
-      onSaleProducts: products.filter(p => p.isOnSale).length,
-      totalImages: products.filter(p => p.image).length,
-      restaurantName: restaurant?.name || 'Imperio do Churrasco'
+      activeProducts: products.filter((p) => p.active).length,
+      featuredProducts: products.filter((p) => p.featured && p.active).length, // 🔧 ADDED: Featured products counter
+      onSaleProducts: products.filter((p) => p.isOnSale).length,
+      totalImages: products.filter((p) => p.image).length,
+      restaurantName: restaurant?.name || "Império do Churrasco",
     };
-    
-    console.log('📊 Final stats:', stats);
+
+    console.log("📊 Final stats:", stats);
     return stats;
   }
 
@@ -279,34 +327,36 @@ class DatabaseNASA {
    * Get gallery images (NASA: get from cache with real gallery data)
    * Function size: 30 lines (NASA compliant)
    */
-  getGalleryImages(search = '') {
+  getGalleryImages(search = "") {
     // Get real gallery images from Supabase cache using CacheManager
     const galleryImages = this.cache.getGalleryImages();
-    
+
     // Also include product images for backward compatibility
     const products = this.cache.getProducts();
     const productImages = products
-      .filter(p => p.image)
-      .map(p => ({
+      .filter((p) => p.image)
+      .map((p) => ({
         id: p.id,
         name: p.name,
         url: p.image,
         size: 0,
-        type: 'image/jpeg',
-        source: 'product'
+        type: "image/jpeg",
+        source: "product",
       }));
-    
+
     // Combine real gallery images with product images
     const allImages = [...galleryImages, ...productImages];
-    
-    console.log(`📸 Gallery images: ${galleryImages.length}, Product images: ${productImages.length}, Total: ${allImages.length}`);
-    
+
+    console.log(
+      `📸 Gallery images: ${galleryImages.length}, Product images: ${productImages.length}, Total: ${allImages.length}`
+    );
+
     if (search) {
-      return allImages.filter(img => 
+      return allImages.filter((img) =>
         img.name.toLowerCase().includes(search.toLowerCase())
       );
     }
-    
+
     return allImages;
   }
 
@@ -316,32 +366,28 @@ class DatabaseNASA {
    */
   async saveData(data) {
     try {
-      console.log('💾 Saving data to Supabase...');
-      
+      console.log("💾 Saving data to Supabase...");
+
       const restaurantId = this.client.getRestaurantId();
-      
+
       // Update restaurant
       if (data.restaurant) {
-        await this.client.makeRequest(
-          `restaurants?id=eq.${restaurantId}`,
-          {
-            method: 'PATCH',
-            body: JSON.stringify({
-              name: data.restaurant.name,
-              logo: data.restaurant.logo,
-              banner: data.restaurant.banner,
-              theme: data.restaurant.theme,
-              updated_at: new Date().toISOString()
-            })
-          }
-        );
+        await this.client.makeRequest(`restaurants?id=eq.${restaurantId}`, {
+          method: "PATCH",
+          body: JSON.stringify({
+            name: data.restaurant.name,
+            logo: data.restaurant.logo,
+            banner: data.restaurant.banner,
+            theme: data.restaurant.theme,
+            updated_at: new Date().toISOString(),
+          }),
+        });
       }
-      
-      console.log('✅ Data saved successfully');
+
+      console.log("✅ Data saved successfully");
       return true;
-      
     } catch (error) {
-      console.error('❌ Save failed:', error);
+      console.error("❌ Save failed:", error);
       return false;
     }
   }
@@ -351,16 +397,16 @@ class DatabaseNASA {
    * Function size: 15 lines (NASA compliant)
    */
   isAuthenticated_OLD() {
-    const adminAuth = localStorage.getItem('adminAuth');
-    
+    const adminAuth = localStorage.getItem("adminAuth");
+
     if (!adminAuth) {
       return false;
     }
-    
+
     const auth = JSON.parse(adminAuth);
     const age = Date.now() - auth.timestamp;
     const maxAge = 24 * 60 * 60 * 1000; // 24 hours
-    
+
     return age < maxAge;
   }
 
@@ -370,19 +416,19 @@ class DatabaseNASA {
    */
   authenticate_OLD(username, password) {
     // Fixed credentials for now (TODO: Supabase Auth)
-    const validUsername = 'admin';
-    const validPassword = 'admin123';
-    
+    const validUsername = "admin";
+    const validPassword = "admin123";
+
     if (username === validUsername && password === validPassword) {
       const authData = {
         username,
-        timestamp: Date.now()
+        timestamp: Date.now(),
       };
-      
-      localStorage.setItem('adminAuth', JSON.stringify(authData));
+
+      localStorage.setItem("adminAuth", JSON.stringify(authData));
       return true;
     }
-    
+
     return false;
   }
 
@@ -391,7 +437,7 @@ class DatabaseNASA {
    * Function size: 5 lines (NASA compliant)
    */
   logout() {
-    localStorage.removeItem('adminAuth');
+    localStorage.removeItem("adminAuth");
     this.cache.clear();
   }
 
@@ -400,30 +446,30 @@ class DatabaseNASA {
    * Function size: 25 lines (NASA compliant)
    */
   getFallbackData() {
-    console.warn('⚠️ Using fallback data');
-    
+    console.warn("⚠️ Using fallback data");
+
     // First try to get existing localStorage data
-    const existingData = JSON.parse(localStorage.getItem('menuData') || '{}');
-    
+    const existingData = JSON.parse(localStorage.getItem("menuData") || "{}");
+
     if (existingData && Object.keys(existingData).length > 0) {
-      console.log('📦 Found existing localStorage data, using it');
+      console.log("📦 Found existing localStorage data, using it");
       return existingData;
     }
-    
+
     return {
       restaurant: {
         name: "Imperio do Churrasco",
         logo: "IC",
-        banner: "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=800&h=300&q=75",
+        banner: "images/banners/imd_dia.jpeg",
         theme: {
           primaryColor: "#fb923c",
-          secondaryColor: "#f97316"
-        }
+          secondaryColor: "#f97316",
+        },
       },
       categories: [],
       products: [],
       galleryImages: [],
-      productTags: []
+      productTags: [],
     };
   }
 
@@ -434,39 +480,40 @@ class DatabaseNASA {
   async deleteGalleryImage(imageId) {
     try {
       console.log(`🗑️ Deleting gallery image: ${imageId}`);
-      
+
       // Delete from gallery_images table using DataWriter
       await this.writer.deleteGalleryImage(imageId);
-      console.log('✅ Gallery image deleted from Supabase');
-      
+      console.log("✅ Gallery image deleted from Supabase");
+
       // Force reload data to update cache
-      console.log('🔄 Reloading data to update cache...');
+      console.log("🔄 Reloading data to update cache...");
       this.cache.forceRefresh(); // Invalidate cache for ALL browsers
       await this.loadData(); // Reload from Supabase
-      
+
       // Mark cache as modified so other browsers refresh
       this.cache.setCache(this.cache.cachedData, true); // forceUpdate = true
-      
-      console.log('✅ Gallery image deleted, cache invalidated globally');
+
+      console.log("✅ Gallery image deleted, cache invalidated globally");
       return true;
-      
     } catch (error) {
-      console.error('❌ Delete gallery image failed:', error);
-      
+      console.error("❌ Delete gallery image failed:", error);
+
       // Fallback: try to remove from cache only
-      console.log('⚠️ Attempting cache-only delete as fallback...');
+      console.log("⚠️ Attempting cache-only delete as fallback...");
       const cachedData = this.cache.getCache();
       if (cachedData?.galleryImages) {
-        const index = cachedData.galleryImages.findIndex(img => img.id === imageId);
+        const index = cachedData.galleryImages.findIndex(
+          (img) => img.id === imageId
+        );
         if (index !== -1) {
           cachedData.galleryImages.splice(index, 1);
-          console.log('🔄 Gallery image removed from cache only');
+          console.log("🔄 Gallery image removed from cache only");
           // Update localStorage and mark as modified
           this.cache.setCache(cachedData, true); // forceUpdate = true
           return true;
         }
       }
-      
+
       throw error; // Re-throw if all attempts failed
     }
   }
@@ -477,39 +524,38 @@ class DatabaseNASA {
    */
   async addGalleryImage(imageData) {
     try {
-      console.log('📸 Adding gallery image to Supabase...');
-      
+      console.log("📸 Adding gallery image to Supabase...");
+
       // Save to Supabase using DataWriter
       const savedImage = await this.writer.addGalleryImage(imageData);
-      
+
       if (savedImage) {
         // Force reload data to get latest gallery images from Supabase
-        console.log('🔄 Reloading data to include new gallery image...');
+        console.log("🔄 Reloading data to include new gallery image...");
         this.cache.forceRefresh(); // Invalidate cache for ALL browsers
         await this.loadData(); // Reload from Supabase
-        
+
         // Mark cache as modified so other browsers refresh
         this.cache.setCache(this.cache.cachedData, true); // forceUpdate = true
-        
-        console.log('✅ Gallery image added, cache invalidated globally');
+
+        console.log("✅ Gallery image added, cache invalidated globally");
         return savedImage;
       } else {
-        throw new Error('Failed to save image to Supabase');
+        throw new Error("Failed to save image to Supabase");
       }
-      
     } catch (error) {
-      console.error('❌ Add gallery image failed:', error);
-      
+      console.error("❌ Add gallery image failed:", error);
+
       // Fallback: add to cache only
-      console.log('⚠️ Attempting cache-only add as fallback...');
+      console.log("⚠️ Attempting cache-only add as fallback...");
       const fallbackImage = {
         id: Date.now().toString(),
-        name: imageData.name || 'Nova Imagem',
+        name: imageData.name || "Nova Imagem",
         url: imageData.url,
         size: imageData.size || 0,
-        type: imageData.type || 'image/jpeg'
+        type: imageData.type || "image/jpeg",
       };
-      
+
       return fallbackImage;
     }
   }
@@ -537,13 +583,13 @@ class DatabaseNASA {
    */
   getProductById(productId) {
     const products = this.cache.getProducts();
-    const product = products.find(p => p.id === productId);
-    
+    const product = products.find((p) => p.id === productId);
+
     if (!product) {
       console.warn(`⚠️ Product not found: ${productId}`);
       return null;
     }
-    
+
     return product;
   }
 
@@ -553,26 +599,61 @@ class DatabaseNASA {
    */
   async addCategory(categoryData) {
     try {
-      console.log('📂 Adding category:', categoryData.name);
-      
+      console.log("📂 Adding category:", categoryData.name);
+
       const newCategory = {
         id: Date.now().toString(),
         name: categoryData.name,
         order: categoryData.order || 999,
-        active: true
+        active: true,
       };
-      
+
       // Add to cache
       const cachedData = this.cache.getCache();
       if (cachedData?.categories) {
         cachedData.categories.push(newCategory);
       }
-      
-      console.log('✅ Category added successfully');
+
+      console.log("✅ Category added successfully");
       return newCategory;
-      
     } catch (error) {
-      console.error('❌ Add category failed:', error);
+      console.error("❌ Add category failed:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Update category (NASA: update operation)
+   * Function size: 30 lines (NASA compliant)
+   */
+  async updateCategory(categoryId, categoryData) {
+    try {
+      console.log("📝 Updating category:", categoryId, categoryData);
+
+      // Update in Supabase first
+      await this.writer.updateCategory(categoryId, categoryData);
+
+      // Update in cache
+      const cachedData = this.cache.getCache();
+      if (cachedData?.categories) {
+        const categoryIndex = cachedData.categories.findIndex(
+          (cat) => cat.id === categoryId
+        );
+        if (categoryIndex !== -1) {
+          // Update category data
+          cachedData.categories[categoryIndex] = {
+            ...cachedData.categories[categoryIndex],
+            ...categoryData,
+          };
+
+          console.log("✅ Category updated successfully");
+          return cachedData.categories[categoryIndex];
+        } else {
+          throw new Error(`Category with id ${categoryId} not found`);
+        }
+      }
+    } catch (error) {
+      console.error("❌ Update category failed:", error);
       throw error;
     }
   }
@@ -584,37 +665,36 @@ class DatabaseNASA {
   async deleteProduct(productId) {
     try {
       console.log(`🗑️ Deleting product: ${productId}`);
-      
+
       // Delete from Supabase database
       await this.writer.deleteProduct(productId);
-      
+
       // Remove from cache
       const cachedData = this.cache.getCache();
       if (cachedData?.products) {
-        const index = cachedData.products.findIndex(p => p.id === productId);
+        const index = cachedData.products.findIndex((p) => p.id === productId);
         if (index !== -1) {
           const deleted = cachedData.products.splice(index, 1)[0];
           console.log(`✅ Product deleted from Supabase: ${deleted.name}`);
         }
       }
-      
-      console.log('✅ Product deleted from Supabase and cache');
+
+      console.log("✅ Product deleted from Supabase and cache");
       return true;
-      
     } catch (error) {
-      console.error('❌ Delete product failed:', error);
-      
+      console.error("❌ Delete product failed:", error);
+
       // Fallback: remove from cache only
-      console.log('⚠️ Attempting cache-only delete as fallback...');
+      console.log("⚠️ Attempting cache-only delete as fallback...");
       const cachedData = this.cache.getCache();
       if (cachedData?.products) {
-        const index = cachedData.products.findIndex(p => p.id === productId);
+        const index = cachedData.products.findIndex((p) => p.id === productId);
         if (index !== -1) {
           cachedData.products.splice(index, 1);
-          console.log('🔄 Product removed from cache only');
+          console.log("🔄 Product removed from cache only");
         }
       }
-      
+
       return false;
     }
   }
@@ -625,13 +705,13 @@ class DatabaseNASA {
    */
   getGalleryImageById(imageId) {
     const images = this.getGalleryImages();
-    const image = images.find(img => img.id === imageId);
-    
+    const image = images.find((img) => img.id === imageId);
+
     if (!image) {
       console.warn(`⚠️ Image not found: ${imageId}`);
       return null;
     }
-    
+
     return image;
   }
 
@@ -650,8 +730,8 @@ class DatabaseNASA {
    */
   async saveImage(imageFile) {
     try {
-      console.log('💾 Saving image file...');
-      
+      console.log("💾 Saving image file...");
+
       // Convert to base64 for now (simple solution)
       return new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -661,18 +741,17 @@ class DatabaseNASA {
             name: imageFile.name,
             url: e.target.result,
             size: imageFile.size,
-            type: imageFile.type
+            type: imageFile.type,
           };
-          
-          console.log('✅ Image saved as base64');
+
+          console.log("✅ Image saved as base64");
           resolve(imageData);
         };
-        reader.onerror = () => reject(new Error('Failed to read file'));
+        reader.onerror = () => reject(new Error("Failed to read file"));
         reader.readAsDataURL(imageFile);
       });
-      
     } catch (error) {
-      console.error('❌ Save image failed:', error);
+      console.error("❌ Save image failed:", error);
       throw error;
     }
   }
@@ -683,30 +762,29 @@ class DatabaseNASA {
    */
   async exportData() {
     try {
-      console.log('📤 Exporting data...');
-      
+      console.log("📤 Exporting data...");
+
       const data = this.cache.getCache();
       const exportData = {
         timestamp: new Date().toISOString(),
-        restaurantName: data?.restaurant?.name || 'Unknown',
-        data: data
+        restaurantName: data?.restaurant?.name || "Unknown",
+        data: data,
       };
-      
+
       const blob = new Blob([JSON.stringify(exportData, null, 2)], {
-        type: 'application/json'
+        type: "application/json",
       });
-      
+
       const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
+      const a = document.createElement("a");
       a.href = url;
       a.download = `menu-data-${Date.now()}.json`;
       a.click();
-      
-      console.log('✅ Data exported successfully');
+
+      console.log("✅ Data exported successfully");
       return true;
-      
     } catch (error) {
-      console.error('❌ Export failed:', error);
+      console.error("❌ Export failed:", error);
       return false;
     }
   }
@@ -717,41 +795,43 @@ class DatabaseNASA {
    */
   async authenticateAdmin(username, password) {
     try {
-      console.log('🔐 Authenticating admin:', username);
-      
+      console.log("🔐 Authenticating admin:", username);
+
       // Try Supabase authentication first
       try {
-        console.log('🌐 Trying Supabase authentication...');
+        console.log("🌐 Trying Supabase authentication...");
         const result = await this.writer.authenticateAdmin(username, password);
-        
+
         if (result.success) {
           return this.storeAuthData(result.user);
         }
-        
-        console.log('❌ Supabase auth failed:', result.error);
+
+        console.log("❌ Supabase auth failed:", result.error);
       } catch (supabaseError) {
-        console.warn('⚠️ Supabase authentication error:', supabaseError.message);
+        console.warn(
+          "⚠️ Supabase authentication error:",
+          supabaseError.message
+        );
       }
-      
+
       // Fallback to local authentication for admin/admin123
-      console.log('🔄 Falling back to local authentication...');
-      if (username === 'admin' && password === 'admin123') {
+      console.log("🔄 Falling back to local authentication...");
+      if (username === "admin" && password === "admin123") {
         const localUser = {
-          id: 'local-admin',
-          username: 'admin',
-          role: 'admin'
+          id: "local-admin",
+          username: "admin",
+          role: "admin",
         };
-        
-        console.log('✅ Local authentication successful');
+
+        console.log("✅ Local authentication successful");
         return this.storeAuthData(localUser);
       }
-      
-      console.log('❌ All authentication methods failed');
-      return { success: false, error: 'Credenciais inválidas' };
-      
+
+      console.log("❌ All authentication methods failed");
+      return { success: false, error: "Credenciais inválidas" };
     } catch (error) {
-      console.error('❌ Authentication completely failed:', error);
-      return { success: false, error: 'Erro interno' };
+      console.error("❌ Authentication completely failed:", error);
+      return { success: false, error: "Erro interno" };
     }
   }
 
@@ -765,32 +845,31 @@ class DatabaseNASA {
       const authData = {
         ...user,
         loginTime: new Date().toISOString(),
-        expires: new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString() // 8 hours
+        expires: new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString(), // 8 hours
       };
-      
+
       // Store in localStorage (main storage)
-      localStorage.setItem('adminAuth', JSON.stringify(authData));
-      console.log('💾 Stored in localStorage:', authData);
-      
+      localStorage.setItem("adminAuth", JSON.stringify(authData));
+      console.log("💾 Stored in localStorage:", authData);
+
       // Store in sessionStorage (backup for same tab)
-      sessionStorage.setItem('adminAuth', JSON.stringify(authData));
-      console.log('💾 Stored in sessionStorage');
-      
+      sessionStorage.setItem("adminAuth", JSON.stringify(authData));
+      console.log("💾 Stored in sessionStorage");
+
       // Store remember token in localStorage with longer expiry
       const rememberToken = {
         userId: user.id,
         username: user.username,
-        expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() // 7 days
+        expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days
       };
-      localStorage.setItem('adminRememberToken', JSON.stringify(rememberToken));
-      console.log('💾 Stored remember token:', rememberToken);
-      
-      console.log('✅ Admin authenticated with persistent session');
+      localStorage.setItem("adminRememberToken", JSON.stringify(rememberToken));
+      console.log("💾 Stored remember token:", rememberToken);
+
+      console.log("✅ Admin authenticated with persistent session");
       return { success: true, user: user };
-      
     } catch (error) {
-      console.error('❌ Failed to store auth data:', error);
-      return { success: false, error: 'Erro ao salvar sessão' };
+      console.error("❌ Failed to store auth data:", error);
+      return { success: false, error: "Erro ao salvar sessão" };
     }
   }
 
@@ -800,92 +879,99 @@ class DatabaseNASA {
    */
   isAdminAuthenticated() {
     try {
-      console.log('🔍 === CHECKING AUTHENTICATION ===');
-      
+      console.log("🔍 === CHECKING AUTHENTICATION ===");
+
       // Check main auth token first
-      let adminAuth = localStorage.getItem('adminAuth');
-      console.log('🔍 localStorage adminAuth:', adminAuth ? 'EXISTS' : 'NULL');
-      
+      let adminAuth = localStorage.getItem("adminAuth");
+      console.log("🔍 localStorage adminAuth:", adminAuth ? "EXISTS" : "NULL");
+
       // If not in localStorage, check sessionStorage
       if (!adminAuth) {
-        adminAuth = sessionStorage.getItem('adminAuth');
-        console.log('🔍 sessionStorage adminAuth:', adminAuth ? 'EXISTS' : 'NULL');
-        
+        adminAuth = sessionStorage.getItem("adminAuth");
+        console.log(
+          "🔍 sessionStorage adminAuth:",
+          adminAuth ? "EXISTS" : "NULL"
+        );
+
         if (adminAuth) {
-          console.log('📦 Found auth in sessionStorage, restoring to localStorage');
-          localStorage.setItem('adminAuth', adminAuth);
+          console.log(
+            "📦 Found auth in sessionStorage, restoring to localStorage"
+          );
+          localStorage.setItem("adminAuth", adminAuth);
         }
       }
-      
+
       if (adminAuth) {
         try {
           const authData = JSON.parse(adminAuth);
           const now = new Date();
           const expires = new Date(authData.expires);
-          
-          console.log('🔍 Auth data check:', {
+
+          console.log("🔍 Auth data check:", {
             username: authData.username,
             now: now.toISOString(),
             expires: expires.toISOString(),
             valid: now < expires,
-            timeLeft: Math.round((expires - now) / 1000 / 60) + ' minutes'
+            timeLeft: Math.round((expires - now) / 1000 / 60) + " minutes",
           });
-          
+
           if (now < expires) {
-            console.log('✅ === AUTHENTICATION VALID ===');
+            console.log("✅ === AUTHENTICATION VALID ===");
             return true;
           } else {
-            console.log('⏰ Main auth expired, checking remember token...');
-            localStorage.removeItem('adminAuth');
-            sessionStorage.removeItem('adminAuth');
+            console.log("⏰ Main auth expired, checking remember token...");
+            localStorage.removeItem("adminAuth");
+            sessionStorage.removeItem("adminAuth");
           }
         } catch (parseError) {
-          console.error('❌ Failed to parse auth data:', parseError);
-          localStorage.removeItem('adminAuth');
-          sessionStorage.removeItem('adminAuth');
+          console.error("❌ Failed to parse auth data:", parseError);
+          localStorage.removeItem("adminAuth");
+          sessionStorage.removeItem("adminAuth");
         }
       }
-      
+
       // Check remember token as fallback
-      const rememberToken = localStorage.getItem('adminRememberToken');
-      console.log('🔍 Remember token:', rememberToken ? 'EXISTS' : 'NULL');
-      
+      const rememberToken = localStorage.getItem("adminRememberToken");
+      console.log("🔍 Remember token:", rememberToken ? "EXISTS" : "NULL");
+
       if (rememberToken) {
         try {
           const tokenData = JSON.parse(rememberToken);
           const now = new Date();
           const expires = new Date(tokenData.expires);
-          
-          console.log('🔍 Remember token check:', {
+
+          console.log("🔍 Remember token check:", {
             username: tokenData.username,
             expires: expires.toISOString(),
-            valid: now < expires
+            valid: now < expires,
           });
-          
+
           if (now < expires) {
-            console.log('✅ Remember token valid, auto-login user:', tokenData.username);
+            console.log(
+              "✅ Remember token valid, auto-login user:",
+              tokenData.username
+            );
             this.autoLoginWithRememberToken(tokenData);
-            console.log('✅ === AUTO-LOGIN SUCCESSFUL ===');
+            console.log("✅ === AUTO-LOGIN SUCCESSFUL ===");
             return true;
           } else {
-            console.log('⏰ Remember token expired, clearing');
-            localStorage.removeItem('adminRememberToken');
+            console.log("⏰ Remember token expired, clearing");
+            localStorage.removeItem("adminRememberToken");
           }
         } catch (parseError) {
-          console.error('❌ Failed to parse remember token:', parseError);
-          localStorage.removeItem('adminRememberToken');
+          console.error("❌ Failed to parse remember token:", parseError);
+          localStorage.removeItem("adminRememberToken");
         }
       }
-      
-      console.log('❌ === NO VALID AUTHENTICATION FOUND ===');
+
+      console.log("❌ === NO VALID AUTHENTICATION FOUND ===");
       return false;
-      
     } catch (error) {
-      console.error('❌ Auth check completely failed:', error);
+      console.error("❌ Auth check completely failed:", error);
       // Clear all auth data on error
-      localStorage.removeItem('adminAuth');
-      sessionStorage.removeItem('adminAuth');
-      localStorage.removeItem('adminRememberToken');
+      localStorage.removeItem("adminAuth");
+      sessionStorage.removeItem("adminAuth");
+      localStorage.removeItem("adminRememberToken");
       return false;
     }
   }
@@ -899,17 +985,16 @@ class DatabaseNASA {
       const authData = {
         id: tokenData.userId,
         username: tokenData.username,
-        role: 'admin',
+        role: "admin",
         loginTime: new Date().toISOString(),
-        expires: new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString() // 8 hours
+        expires: new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString(), // 8 hours
       };
-      
-      localStorage.setItem('adminAuth', JSON.stringify(authData));
-      sessionStorage.setItem('adminAuth', JSON.stringify(authData));
-      console.log('🔄 Auto-logged in with remember token');
-      
+
+      localStorage.setItem("adminAuth", JSON.stringify(authData));
+      sessionStorage.setItem("adminAuth", JSON.stringify(authData));
+      console.log("🔄 Auto-logged in with remember token");
     } catch (error) {
-      console.error('❌ Auto-login failed:', error);
+      console.error("❌ Auto-login failed:", error);
     }
   }
 
@@ -934,10 +1019,10 @@ class DatabaseNASA {
    * Function size: 10 lines (NASA compliant)
    */
   logoutAdmin() {
-    localStorage.removeItem('adminAuth');
-    sessionStorage.removeItem('adminAuth');
-    localStorage.removeItem('adminRememberToken');
-    console.log('✅ Admin logged out - all tokens cleared');
+    localStorage.removeItem("adminAuth");
+    sessionStorage.removeItem("adminAuth");
+    localStorage.removeItem("adminRememberToken");
+    console.log("✅ Admin logged out - all tokens cleared");
   }
 
   /**
@@ -954,11 +1039,11 @@ class DatabaseNASA {
    */
   getProductTags() {
     const cached = this.cache.getCache();
-    
+
     if (cached && cached.productTags) {
       return cached.productTags;
     }
-    
+
     return [];
   }
 
@@ -968,7 +1053,7 @@ class DatabaseNASA {
    */
   getAllTags() {
     // Return empty array for now - can be extended later
-    console.warn('⚠️ getAllTags: Tag system not implemented yet');
+    console.warn("⚠️ getAllTags: Tag system not implemented yet");
     return [];
   }
 
@@ -978,26 +1063,25 @@ class DatabaseNASA {
    */
   async addProduct(productData) {
     try {
-      console.log('📦 Adding product:', productData.name);
-      
+      console.log("📦 Adding product:", productData.name);
+
       const newProduct = {
         id: Date.now().toString(),
         ...productData,
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
       };
-      
+
       // Add to cache
       const cachedData = this.cache.getCache();
       if (cachedData?.products) {
         cachedData.products.push(newProduct);
         this.cache.setCache(cachedData, true); // Mark as modified
       }
-      
-      console.log('✅ Product added successfully');
+
+      console.log("✅ Product added successfully");
       return newProduct;
-      
     } catch (error) {
-      console.error('❌ Add product failed:', error);
+      console.error("❌ Add product failed:", error);
       throw error;
     }
   }
@@ -1008,11 +1092,11 @@ class DatabaseNASA {
    */
   async addProduct(productData) {
     try {
-      console.log('🍽️ Adding new product:', productData.name);
-      
+      console.log("🍽️ Adding new product:", productData.name);
+
       // Add to Supabase first
       const savedProduct = await this.writer.addProduct(productData);
-      
+
       if (savedProduct) {
         // Add to cache with the Supabase-generated ID
         const cachedData = this.cache.getCache();
@@ -1021,20 +1105,19 @@ class DatabaseNASA {
             id: savedProduct.id,
             ...productData,
             createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString()
+            updatedAt: new Date().toISOString(),
           };
-          
+
           cachedData.products.push(newProduct);
           this.cache.setCache(cachedData, true); // Mark as modified for other browsers
-          console.log('✅ Product added successfully');
+          console.log("✅ Product added successfully");
           return newProduct;
         }
       }
-      
-      throw new Error('Failed to add product to cache');
-      
+
+      throw new Error("Failed to add product to cache");
     } catch (error) {
-      console.error('❌ Add product failed:', error);
+      console.error("❌ Add product failed:", error);
       throw error;
     }
   }
@@ -1045,32 +1128,31 @@ class DatabaseNASA {
    */
   async updateProduct(productId, productData) {
     try {
-      console.log('📝 Updating product:', productId);
-      
+      console.log("📝 Updating product:", productId);
+
       // Update in Supabase first
       await this.writer.updateProduct(productId, productData);
-      
+
       // Update in cache
       const cachedData = this.cache.getCache();
       if (cachedData?.products) {
-        const index = cachedData.products.findIndex(p => p.id === productId);
+        const index = cachedData.products.findIndex((p) => p.id === productId);
         if (index !== -1) {
           cachedData.products[index] = {
             ...cachedData.products[index],
             ...productData,
-            updatedAt: new Date().toISOString()
+            updatedAt: new Date().toISOString(),
           };
-          
+
           this.cache.setCache(cachedData, true); // Mark as modified for other browsers
-          console.log('✅ Product updated successfully');
+          console.log("✅ Product updated successfully");
           return cachedData.products[index];
         }
       }
-      
+
       throw new Error(`Product not found in cache: ${productId}`);
-      
     } catch (error) {
-      console.error('❌ Update product failed:', error);
+      console.error("❌ Update product failed:", error);
       throw error;
     }
   }
@@ -1081,40 +1163,48 @@ class DatabaseNASA {
    */
   async reorderProducts(categoryId, productIds) {
     try {
-      console.log('🔄 Reordering products for category:', categoryId);
-      console.log('📝 Product IDs in new order:', productIds);
-      
+      console.log("🔄 Reordering products for category:", categoryId);
+      console.log("📝 Product IDs in new order:", productIds);
+
       // Update cache first for immediate UI feedback
       const cachedData = this.cache.getCache();
       if (cachedData?.products) {
         productIds.forEach((productId, index) => {
-          const product = cachedData.products.find(p => p.id === productId);
+          const product = cachedData.products.find((p) => p.id === productId);
           if (product) {
             product.order = index + 1; // 🔧 CRITICAL FIX: Match database order numbering
           }
         });
         this.cache.setCache(cachedData, true); // Mark as modified
       }
-      
+
       // Update each product in Supabase using data writer
-      console.log('🔍 CRITICAL DEBUG - Product IDs received:', productIds);
-      
+      console.log("🔍 CRITICAL DEBUG - Product IDs received:", productIds);
+
       for (let i = 0; i < productIds.length; i++) {
         const productId = productIds[i];
         const newOrder = i + 1; // 🔧 CRITICAL FIX: Start from 1, not 0
-        
+
         // Find product in cache to get current data
-        const product = cachedData.products.find(p => p.id === productId);
-        const productName = product ? product.name : 'Unknown';
-        
-        console.log(`📝 Updating product ${productName} (${productId}) to order ${newOrder} (position ${i})`);
+        const product = cachedData.products.find((p) => p.id === productId);
+        const productName = product ? product.name : "Unknown";
+
+        console.log(
+          `📝 Updating product ${productName} (${productId}) to order ${newOrder} (position ${i})`
+        );
         if (product) {
           // Update product with new order
           const updatedProduct = { ...product, order: newOrder };
-          
+
           try {
-            const result = await this.writer.updateProduct(productId, updatedProduct);
-            console.log(`✅ Product ${productId} updated successfully:`, result);
+            const result = await this.writer.updateProduct(
+              productId,
+              updatedProduct
+            );
+            console.log(
+              `✅ Product ${productId} updated successfully:`,
+              result
+            );
           } catch (error) {
             console.error(`❌ Failed to update product ${productId}:`, error);
             throw error;
@@ -1123,19 +1213,18 @@ class DatabaseNASA {
           console.error(`❌ Product not found in cache: ${productId}`);
         }
       }
-      
-      console.log('✅ Products reordered successfully in Supabase');
-      
+
+      console.log("✅ Products reordered successfully in Supabase");
+
       // CRÍTICO: Forçar reload completo dos dados após reordenação
-      console.log('🔄 Forcing complete data reload after reorder...');
+      console.log("🔄 Forcing complete data reload after reorder...");
       await this.loadData(); // Força reload do Supabase
-      
+
       // Invalidate cache globally so all browsers/tabs see the new order
       this.cache.setCache(this.cache.cachedData, true); // forceUpdate = true
-      console.log('✅ Data reloaded and cache invalidated globally');
-      
+      console.log("✅ Data reloaded and cache invalidated globally");
     } catch (error) {
-      console.error('❌ Reorder products failed:', error);
+      console.error("❌ Reorder products failed:", error);
       throw error;
     }
   }
@@ -1146,35 +1235,34 @@ class DatabaseNASA {
    */
   async addProductTag(tagData) {
     try {
-      console.log('🏷️ Adding product tag via Supabase:', tagData.name);
-      
+      console.log("🏷️ Adding product tag via Supabase:", tagData.name);
+
       // Add to Supabase first
       const savedTag = await this.writer.addProductTag(tagData);
-      
+
       if (savedTag) {
-        console.log('✅ Tag saved to Supabase:', savedTag);
-        
+        console.log("✅ Tag saved to Supabase:", savedTag);
+
         // Update cache safely
         const cachedData = this.cache.getCache() || {};
-        
+
         // Initialize productTags array if it doesn't exist
         if (!cachedData.productTags) {
           cachedData.productTags = [];
-          console.log('🔧 Initialized productTags cache array');
+          console.log("🔧 Initialized productTags cache array");
         }
-        
+
         // Add new tag to cache
         cachedData.productTags.push(savedTag);
         this.cache.setCache(cachedData, true);
-        
-        console.log('✅ Product tag added and cached successfully');
+
+        console.log("✅ Product tag added and cached successfully");
         return savedTag;
       }
-      
-      throw new Error('Supabase returned null/undefined tag');
-      
+
+      throw new Error("Supabase returned null/undefined tag");
     } catch (error) {
-      console.error('❌ Add product tag failed:', error);
+      console.error("❌ Add product tag failed:", error);
       throw error;
     }
   }
@@ -1184,7 +1272,7 @@ class DatabaseNASA {
    * Function size: 15 lines (NASA compliant)
    */
   deleteProductTag(tagId) {
-    console.warn('⚠️ deleteProductTag: Tag system not implemented yet');
+    console.warn("⚠️ deleteProductTag: Tag system not implemented yet");
     return true;
   }
 }

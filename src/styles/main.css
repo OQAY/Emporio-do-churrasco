@@ -394,3 +394,9 @@ html {
     grid-template-columns: repeat(2, 1fr);
     gap: 12px;
 }
+
+/* Banner restaurant - sempre mostra a parte de cima */
+.restaurant-banner {
+    object-fit: cover;
+    object-position: top center; /* Sempre mostra a parte de cima */
+}

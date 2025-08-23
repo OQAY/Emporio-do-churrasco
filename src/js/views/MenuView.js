@@ -493,10 +493,10 @@ export class MenuView {
             </div>
         `;
 
-        // Adicionar event listener para abrir modal do produto
-        card.addEventListener('click', () => {
-            this.showProductModal(product);
-        });
+        // Modal desativado temporariamente
+        // card.addEventListener('click', () => {
+        //     this.showProductModal(product);
+        // });
 
         return card;
     }
@@ -579,10 +579,10 @@ export class MenuView {
             </div>
         `;
 
-        // Adicionar event listener para abrir modal do produto
-        card.addEventListener('click', () => {
-            this.showProductModal(product);
-        });
+        // Modal desativado temporariamente
+        // card.addEventListener('click', () => {
+        //     this.showProductModal(product);
+        // });
 
         return card;
     }

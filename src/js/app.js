@@ -164,7 +164,7 @@ class App {
                     <img 
                         id="restaurantBanner" 
                         alt="Banner" 
-                        class="w-full h-48 sm:h-64 md:h-80 object-cover opacity-0 transition-opacity duration-500"
+                        class="w-full h-48 sm:h-64 md:h-80 restaurant-banner opacity-0 transition-opacity duration-500"
                         loading="eager"
                         onload="this.style.opacity='1'; document.getElementById('bannerSkeleton').style.display='none';"
                         onerror="document.getElementById('bannerSkeleton').classList.remove('animate-pulse');"
@@ -298,7 +298,7 @@ class App {
         const restaurant = this.database.getRestaurant();
         document.getElementById('restaurantLogo').textContent = restaurant.logo;
         document.getElementById('restaurantName').textContent = restaurant.name;
-        document.getElementById('restaurantBanner').src = restaurant.banner;
+        document.getElementById('restaurantBanner').src = "images/banners/imperio-banner.png";
         document.getElementById('footerText').textContent = `${restaurant.name} - Cardapio Digital`;
 
         // Aplicar tema

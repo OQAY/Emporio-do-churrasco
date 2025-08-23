@@ -451,7 +451,7 @@ class SupabaseDatabase {
             restaurant: {
                 name: "Restaurante Demo",
                 logo: "RD",
-                banner: "https://images.unsplash.com/photo-1555396273-367ea4eb4db5"
+                banner: "images/banners/imd_dia.jpeg"
             },
             categories: [],
             products: [],

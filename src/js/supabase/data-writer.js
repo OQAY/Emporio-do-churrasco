@@ -167,6 +167,41 @@ class DataWriter {
   }
 
   /**
+   * Update category in Supabase (NASA: update operation)
+   * Function size: 30 lines (NASA compliant)
+   */
+  async updateCategory(categoryId, categoryData) {
+    try {
+      console.log('📝 Updating category in Supabase:', categoryId, categoryData);
+      
+      const requestBody = {
+        name: categoryData.name,
+        display_order: categoryData.order || 999,
+        active: categoryData.active !== false,
+        updated_at: new Date().toISOString()
+      };
+      
+      if (categoryData.description) {
+        requestBody.description = categoryData.description;
+      }
+      
+      console.log('📤 Sending category update to Supabase:', requestBody);
+      
+      await this.client.makeRequest(`categories?id=eq.${categoryId}`, {
+        method: 'PATCH',
+        body: JSON.stringify(requestBody)
+      });
+      
+      console.log('✅ Category updated in Supabase');
+      return true;
+      
+    } catch (error) {
+      console.error('❌ Failed to update category in Supabase:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Update restaurant data (NASA: update operation)
    * Function size: 30 lines (NASA compliant)
    */
