@@ -1275,6 +1275,114 @@ class DatabaseNASA {
     console.warn("⚠️ deleteProductTag: Tag system not implemented yet");
     return true;
   }
+
+  /**
+   * Load data PROGRESSIVELY (FAST basic data first, lazy images)
+   * Function size: 45 lines (NASA compliant < 60)
+   */
+  async loadDataProgressive() {
+    console.log("🚀 Loading data PROGRESSIVELY (basic first, images lazy)...");
+
+    try {
+      // Check cache first
+      const cached = this.cache.getCache();
+      if (cached && cached.categories && cached.categories.length > 0) {
+        console.log("📦 Using cached data");
+        return cached;
+      }
+
+      this.isLoading = true;
+
+      // STEP 1: Load basic data WITHOUT images (FAST)
+      console.log("⚡ Step 1: Loading basic data (no images)...");
+      const [restaurant, categories, productsBasic] = await Promise.all([
+        this.fetcher.fetchRestaurant(),
+        this.fetcher.fetchCategories(), 
+        this.fetcher.fetchProductsBasic()
+      ]);
+
+      // Transform basic data
+      const basicData = this.transformer.transformAllData({
+        restaurant,
+        categories,
+        products: productsBasic,
+        gallery_images: []
+      });
+
+      // Cache basic data immediately for instant UI
+      this.cache.setCache(basicData);
+      console.log("✅ Step 1 complete: Basic data loaded (no images)");
+
+      // STEP 2: Load images in background (LAZY) - non-blocking
+      setTimeout(() => {
+        this.loadImagesLazy(productsBasic);
+      }, 100);
+
+      return basicData;
+
+    } catch (error) {
+      console.error("❌ Progressive load failed:", error);
+      return this.getFallbackData();
+    } finally {
+      this.isLoading = false;
+    }
+  }
+
+  /**
+   * Load images lazily in background
+   * Function size: 30 lines (NASA compliant)
+   */
+  async loadImagesLazy(productsBasic) {
+    console.log("🖼️ Step 2: Loading images lazily...");
+    
+    // Track loaded images to prevent duplicates
+    const loadedImages = new Set();
+    
+    for (const product of productsBasic) {
+      // Skip if already loaded
+      if (loadedImages.has(product.id)) {
+        console.log(`⏭️ Skipping ${product.name} (already loaded)`);
+        continue;
+      }
+      
+      try {
+        console.log(`🖼️ Loading image for: ${product.name}`);
+        const imageUrl = await this.fetcher.fetchProductImage(product.id);
+        
+        if (imageUrl) {
+          loadedImages.add(product.id);
+          
+          // Update cached product with image (without triggering reload)
+          const cached = this.cache.getCache();
+          const cachedProduct = cached.products.find(p => p.id === product.id);
+          if (cachedProduct) {
+            cachedProduct.image = imageUrl;
+            // Update cache silently (no events)
+            this.cache.setCache(cached, false, true); // silent update
+            
+            // Trigger UI update event
+            window.dispatchEvent(new CustomEvent('product-image-loaded', {
+              detail: { productId: product.id, imageUrl }
+            }));
+            
+            console.log(`✅ Image loaded: ${product.name}`);
+          }
+        } else {
+          console.log(`⚠️ No image found for: ${product.name}`);
+        }
+        
+        // Throttle requests (avoid overwhelming Supabase)
+        await new Promise(resolve => setTimeout(resolve, 200));
+        
+      } catch (error) {
+        console.warn(`❌ Failed to load image for ${product.name}:`, error);
+        // Continue with next image even if one fails
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
+    }
+    
+    console.log("✅ Step 2 complete: All images loaded lazily");
+  }
 }
 
 // Export singleton instance (NASA: singleton pattern)

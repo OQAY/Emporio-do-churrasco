@@ -10,6 +10,7 @@ import { SupabaseClient } from './supabase-client.js';
 class DataFetcher {
   constructor() {
     this.client = new SupabaseClient();
+    this.imageCache = new Map(); // Cache para evitar recarregar imagens
   }
 
   /**
@@ -55,14 +56,89 @@ class DataFetcher {
   async fetchProducts() {
     try {
       const restaurantId = this.client.getRestaurantId();
+      
+      // 🚀 OTIMIZAÇÃO: Carregar dados básicos primeiro (SEM imagens)
+      console.log('🚀 Step 1: Loading basic product data (no images)...');
+      const basicData = await this.client.makeRequest(
+        `products?restaurant_id=eq.${restaurantId}&order=display_order.asc&select=id,name,description,price,category_id,active,display_order,created_at,updated_at,featured`
+      );
+      
+      // 🖼️ OTIMIZAÇÃO: Carregar imagens (com cache)
+      console.log('🖼️ Step 2: Loading product images separately...');
+      let imageData;
+      
+      const cacheKey = `images_${restaurantId}`;
+      if (this.imageCache.has(cacheKey)) {
+        console.log('📦 Using cached images');
+        imageData = this.imageCache.get(cacheKey);
+      } else {
+        imageData = await this.client.makeRequest(
+          `products?restaurant_id=eq.${restaurantId}&select=id,image_url`
+        );
+        this.imageCache.set(cacheKey, imageData);
+        console.log('💾 Images cached for future use');
+      }
+      
+      // Merge basic data with images
+      const products = basicData.map(product => {
+        const imageInfo = imageData.find(img => img.id === product.id);
+        return {
+          ...product,
+          image_url: imageInfo?.image_url || null
+        };
+      });
+      
+      console.log(`✅ Loaded ${products.length} products (optimized)`);
+      return products || [];
+      
+    } catch (error) {
+      console.error('Failed to fetch products:', error);
+      // Fallback to original method if optimization fails
+      try {
+        const data = await this.client.makeRequest(
+          `products?restaurant_id=eq.${restaurantId}&order=display_order.asc&select=*`
+        );
+        return data || [];
+      } catch (fallbackError) {
+        console.error('Fallback also failed:', fallbackError);
+        return [];
+      }
+    }
+  }
+
+  /**
+   * Fetch products WITHOUT images (FAST loading)
+   * Function size: 15 lines (NASA compliant)
+   */
+  async fetchProductsBasic() {
+    try {
+      const restaurantId = this.client.getRestaurantId();
       const data = await this.client.makeRequest(
-        `products?restaurant_id=eq.${restaurantId}&order=display_order.asc&select=*`
+        `products?restaurant_id=eq.${restaurantId}&order=display_order.asc&select=id,name,description,price,category_id,active,display_order,created_at,updated_at`
       );
       
       return data || [];
     } catch (error) {
-      console.error('Failed to fetch products:', error);
+      console.error('Failed to fetch basic products:', error);
       return [];
+    }
+  }
+
+  /**
+   * Fetch single product image by ID (LAZY loading)
+   * Function size: 15 lines (NASA compliant)
+   */
+  async fetchProductImage(productId) {
+    try {
+      const restaurantId = this.client.getRestaurantId();
+      const data = await this.client.makeRequest(
+        `products?restaurant_id=eq.${restaurantId}&id=eq.${productId}&select=id,image_url`
+      );
+      
+      return data[0]?.image_url || null;
+    } catch (error) {
+      console.error(`Failed to fetch image for product ${productId}:`, error);
+      return null;
     }
   }
 
@@ -119,11 +195,12 @@ class DataFetcher {
     
     try {
       // Only fetch what's needed for public menu
+      // 🚀 PROGRESSIVE: Use basic products (no images) for faster render
       const [restaurant, categories, products, productTags] = await Promise.all([
         this.fetchRestaurant(),
         this.fetchCategories(), 
-        this.fetchProducts(),
-        this.fetchProductTags() // ✅ CRITICAL FIX: Include productTags for tag display
+        this.fetchProductsBasic(), // ← Changed to basic (no images)
+        this.fetchProductTags()
       ]);
       
       const result = {
@@ -134,18 +211,55 @@ class DataFetcher {
         productTags       // ✅ CRITICAL FIX: Include productTags
       };
       
-      console.log('✅ PUBLIC data loaded:', {
+      console.log('✅ PUBLIC data loaded (BASIC - no images yet):', {
         restaurant: restaurant ? 'OK' : 'Missing',
         categories: categories?.length || 0,
         products: products?.length || 0,
         productTags: productTags?.length || 0
       });
       
+      // 🖼️ Load images in background (non-blocking)
+      setTimeout(() => this.loadImagesInBackground(products), 100);
+      
       return result;
       
     } catch (error) {
       console.error('❌ Failed to fetch public data:', error);
       throw error;
+    }
+  }
+
+  /**
+   * Load images in background without blocking UI
+   */
+  async loadImagesInBackground(basicProducts) {
+    console.log('🖼️ Loading images in background (non-blocking)...');
+    
+    try {
+      const cacheKey = `images_${this.client.getRestaurantId()}`;
+      let imageData;
+      
+      if (this.imageCache.has(cacheKey)) {
+        console.log('📦 Using cached images');
+        imageData = this.imageCache.get(cacheKey);
+      } else {
+        console.log('🌐 Fetching images from API...');
+        imageData = await this.client.makeRequest(
+          `products?restaurant_id=eq.${this.client.getRestaurantId()}&select=id,image_url`
+        );
+        this.imageCache.set(cacheKey, imageData);
+        console.log('💾 Images cached for future use');
+      }
+      
+      // 🔄 Dispatch event to update UI with images
+      window.dispatchEvent(new CustomEvent('images-loaded', {
+        detail: { imageData, basicProducts }
+      }));
+      
+      console.log('✅ Background image loading complete - UI should update');
+      
+    } catch (error) {
+      console.warn('⚠️ Background image loading failed:', error);
     }
   }
 

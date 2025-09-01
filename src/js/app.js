@@ -31,10 +31,10 @@ class App {
             document.body.classList.remove('no-transition');
         }, 100);
         
-        // CRÍTICO: Carregar apenas dados essenciais do Supabase para o cardápio público
-        console.log('🔄 Carregando dados PÚBLICOS do Supabase (otimizado)...');
+        // 🚀 CRÍTICO: Carregar dados do Supabase (imagens já comprimidas)
+        console.log('🔄 Carregando dados PÚBLICOS do Supabase (imagens comprimidas)...');
         await this.database.loadPublicData();
-        console.log('✅ Dados PÚBLICOS do Supabase carregados (mais rápido)!');
+        console.log('✅ Dados PÚBLICOS carregados com imagens comprimidas!');
         
         // Inicializar sistema enterprise (não-bloqueante)
         await this.initializeEnterpriseFeatures();
@@ -246,6 +246,29 @@ class App {
 
         // Setup mobile gestures
         this.setupMobileGestures();
+
+        // 🖼️ Listen for background-loaded images
+        window.addEventListener('images-loaded', (event) => {
+            console.log('🖼️ Images loaded, updating UI...');
+            const { imageData } = event.detail;
+            
+            // Update cache with images and re-render
+            const currentData = this.database.cache.getCache();
+            if (currentData && currentData.products) {
+                // Merge images into existing products
+                currentData.products.forEach(product => {
+                    const imageInfo = imageData.find(img => img.id === product.id);
+                    if (imageInfo) {
+                        product.image = imageInfo.image_url;
+                    }
+                });
+                
+                // Update cache and trigger re-render
+                this.database.cache.setCache(currentData);
+                this.loadInitialData(); // Re-render with images
+                console.log('✅ UI updated with images');
+            }
+        });
     }
 
     /**

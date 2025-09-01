@@ -506,6 +506,9 @@ export class MenuView {
         // Layout responsivo: horizontal no mobile, vertical no desktop
         card.className = 'rounded-2xl border border-gray-200 overflow-hidden bg-white shadow-sm hover:shadow-lg active:scale-[0.98] transition-all duration-200 cursor-pointer touch-manipulation sm:block';
         
+        // 🖼️ Add product ID for progressive image loading
+        card.setAttribute('data-product-id', product.id);
+        
         const priceFormatted = product.price ? 
             `R$ ${product.price.toFixed(2).replace('.', ',')}` : 
             'Consulte';

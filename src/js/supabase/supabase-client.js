@@ -11,12 +11,16 @@ class SupabaseClient {
     this.supabaseKey = window.ENV?.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx5cG1qbnBicHZxa3B0Z21kbm5jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU1NDg4NjcsImV4cCI6MjA3MTEyNDg2N30.naWda_QL5W9JLu87gO6LbFZmG3utyWJwFPvgh4V2i3g';
     this.restaurantId = 'b639641d-518a-4bb3-a2b5-f7927d6b6186';
     
+    // 🚀 OTIMIZAÇÃO: Headers simplificados para evitar preflights
     this.headers = {
       'apikey': this.supabaseKey,
-      'Authorization': `Bearer ${this.supabaseKey}`,
-      'Content-Type': 'application/json',
-      'Prefer': 'return=representation'
+      'Authorization': `Bearer ${this.supabaseKey}`
+      // Removidos Content-Type e Prefer para evitar preflight CORS
     };
+    
+    // 🚀 Cache de requisições para evitar duplicatas
+    this.requestCache = new Map();
+    this.cacheTimeout = 5 * 60 * 1000; // 5 minutos
   }
 
   /**
@@ -24,9 +28,19 @@ class SupabaseClient {
    * Function size: 25 lines (NASA compliant)
    */
   async makeRequest(endpoint, options = {}) {
+    // 🚀 CACHE: Check cache first
+    const cacheKey = `${endpoint}_${JSON.stringify(options)}`;
+    const cached = this.requestCache.get(cacheKey);
+    
+    if (cached && Date.now() - cached.timestamp < this.cacheTimeout) {
+      console.log(`📦 Cache hit: ${endpoint}`);
+      return cached.data;
+    }
+    
     const url = `${this.supabaseUrl}/rest/v1/${endpoint}`;
     
     try {
+      console.log(`🌐 API call: ${endpoint}`);
       const response = await fetch(url, {
         ...options,
         headers: {
@@ -40,7 +54,15 @@ class SupabaseClient {
         throw new Error(`Supabase Error (${response.status}): ${error}`);
       }
 
-      return response.json();
+      const data = await response.json();
+      
+      // 🚀 CACHE: Store result
+      this.requestCache.set(cacheKey, {
+        data,
+        timestamp: Date.now()
+      });
+      
+      return data;
     } catch (error) {
       console.error(`Request failed: ${endpoint}`, error);
       throw error;
