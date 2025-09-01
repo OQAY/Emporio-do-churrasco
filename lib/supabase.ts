@@ -7,8 +7,14 @@ import { createClient } from '@supabase/supabase-js'
 import { Category, Product, DatabaseData } from './types'
 
 // Configuração Supabase - MESMAS URLs e chaves
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://lypmjnpbpvqkptgmdnnc.supabase.co'
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx5cG1qbnBicHZxa3B0Z21kbm5jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU1NDg4NjcsImV4cCI6MjA3MTEyNDg2N30.naWda_QL5W9JLu87gO6LbFZmG3utyWJwFPvgh4V2i3g'
+
+console.log('🔧 Supabase config:', { 
+  url: supabaseUrl, 
+  key: supabaseKey.substring(0, 20) + '...', 
+  restaurantId: process.env.NEXT_PUBLIC_RESTAURANT_ID 
+})
 
 export const supabase = createClient(supabaseUrl, supabaseKey)
 
@@ -48,7 +54,9 @@ class DatabaseNASA {
       const { data: categories, error: catError } = await supabase
         .from('categories')
         .select('*')
-        .order('displayOrder', { ascending: true })
+        .eq('restaurant_id', process.env.NEXT_PUBLIC_RESTAURANT_ID || 'b639641d-518a-4bb3-a2b5-f7927d6b6186')
+        .eq('active', true)
+        .order('display_order', { ascending: true })
 
       if (catError) throw catError
 
@@ -56,14 +64,25 @@ class DatabaseNASA {
       const { data: products, error: prodError } = await supabase
         .from('products')
         .select('*')
-        .eq('inStock', true)
-        .order('displayOrder', { ascending: true })
+        .eq('restaurant_id', process.env.NEXT_PUBLIC_RESTAURANT_ID || 'b639641d-518a-4bb3-a2b5-f7927d6b6186')
+        .order('display_order', { ascending: true })
 
       if (prodError) throw prodError
 
+      // Transform data to match original structure
+      const transformedProducts = (products || []).map((product: any) => ({
+        ...product,
+        category: product.category_id,  // Map for filtering
+        image: product.image_url,       // Compatibility
+        promotionPrice: product.original_price && product.is_on_sale ? product.price : undefined,
+        price: product.original_price && product.is_on_sale ? product.original_price : product.price,
+        featured: false, // Default
+        active: true     // Default
+      }))
+
       const data: DatabaseData = {
         categories: categories || [],
-        products: products || []
+        products: transformedProducts
       }
 
       // Cache the data - SAME caching logic

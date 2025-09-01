@@ -17,12 +17,16 @@ export function MenuView({
   onProductClick 
 }: MenuViewProps) {
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
-  const [isLoading, setIsLoading] = useState(true)
-
-  // Simular carregamento inicial (será removido quando integrar com Supabase)
-  useEffect(() => {
-    setTimeout(() => setIsLoading(false), 100)
-  }, [])
+  
+  // Loading baseado na presença de dados reais
+  const isLoading = categories.length === 0 && products.length === 0
+  
+  console.log('🎯 MenuView:', { 
+    isLoading, 
+    categoriesCount: categories.length, 
+    productsCount: products.length,
+    categories: categories.map(c => c.name).join(', ')
+  })
 
   // Função para selecionar categoria - MANTENDO LÓGICA ORIGINAL
   const selectCategory = useCallback((categoryId: string) => {

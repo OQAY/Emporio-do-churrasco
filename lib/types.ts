@@ -3,8 +3,9 @@
 export interface Category {
   id: string
   name: string
-  icon: string
-  displayOrder: number
+  slug: string
+  active: boolean
+  icon?: string
 }
 
 export interface Product {
@@ -12,13 +13,16 @@ export interface Product {
   name: string
   description: string
   price: number
-  category: string
-  image: string
-  inStock: boolean
-  highlight?: boolean
+  category_id: string  // Matching DB structure
+  image_url: string | null  // Supabase field name
+  original_price?: number | null  // Supabase field name
+  is_on_sale?: boolean  // Supabase field name
+  
+  // Keep compatibility with original code
+  image?: string | null
   promotionPrice?: number
-  createdAt: string
-  displayOrder: number
+  featured?: boolean
+  active?: boolean
   tags?: string[]
 }
 
