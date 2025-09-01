@@ -3,9 +3,9 @@
 
 class SupabaseDatabase {
   constructor() {
-    // Credenciais do Supabase (configuradas previamente)
-    this.supabaseUrl = 'https://lypmjnpbpvqkptgmdnnc.supabase.co';
-    this.supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx5cG1qbnBicHZxa3B0Z21kbm5jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU1NDg4NjcsImV4cCI6MjA3MTEyNDg2N30.naWda_QL5W9JLu87gO6LbFZmG3utyWJwFPvgh4V2i3g';
+    // Credenciais do Supabase (via variáveis de ambiente)
+    this.supabaseUrl = window.ENV?.SUPABASE_URL || 'https://lypmjnpbpvqkptgmdnnc.supabase.co';
+    this.supabaseKey = window.ENV?.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx5cG1qbnBicHZxa3B0Z21kbm5jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU1NDg4NjcsImV4cCI6MjA3MTEyNDg2N30.naWda_QL5W9JLu87gO6LbFZmG3utyWJwFPvgh4V2i3g';
     
     // ID do restaurante "Imperio do Churrasco" (já existe no Supabase)
     this.restaurantId = 'b639641d-518a-4bb3-a2b5-f7927d6b6186';
