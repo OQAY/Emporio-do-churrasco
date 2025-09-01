@@ -20,5 +20,8 @@
   "license": "MIT",
   "engines": {
     "node": ">=16.0.0"
+  },
+  "dependencies": {
+    "@supabase/mcp-server-supabase": "^0.5.1"
   }
 }
