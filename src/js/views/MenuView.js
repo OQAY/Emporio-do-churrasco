@@ -84,32 +84,41 @@ export class MenuView {
             </div>`;
         }
 
-        const uniqueId = `img-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
-        const placeholderSrc = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" fill="%23d1d5db" viewBox="0 0 24 24"%3E%3Cpath d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/%3E%3C/svg%3E';
+        const uniqueId = `img-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
         
         return `
             <div class="image-container relative ${className.includes('w-full') ? 'w-full h-full' : ''}">
-                ${showSkeleton ? `
-                    <div id="skeleton-${uniqueId}" class="absolute inset-0 bg-gray-200 animate-pulse flex items-center justify-center">
-                        <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-                        </svg>
-                    </div>
-                ` : ''}
+                <!-- Skeleton placeholder sempre visível até imagem carregar -->
+                <div id="skeleton-${uniqueId}" class="absolute inset-0 bg-gray-200 animate-pulse flex items-center justify-center">
+                    <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                    </svg>
+                </div>
+                
+                <!-- Imagem carrega progressivamente -->
                 <img 
                     id="${uniqueId}" 
-                    ${useLazyLoading ? 
-                        `src="${placeholderSrc}" data-lazy-src="${src}" data-placeholder="${placeholderSrc}"` : 
-                        `src="${src}"`
-                    }
+                    src="${src}"
                     alt="${alt}" 
-                    class="${className} transition-opacity duration-300 ${useLazyLoading && showSkeleton ? 'opacity-0' : ''}" 
+                    class="${className} transition-all duration-500 opacity-0 scale-105" 
                     loading="lazy"
-                    ${useLazyLoading ? 
-                        '' : // Don't use onload for lazy images - let lazy loader handle it
-                        `onload="this.style.opacity='1'; document.getElementById('skeleton-${uniqueId}')?.remove();"`
-                    }
-                    onerror="this.style.display='none'; document.getElementById('skeleton-${uniqueId}')?.classList.remove('animate-pulse');"
+                    onload="
+                        this.style.opacity = '1';
+                        this.style.transform = 'scale(1)';
+                        const skeleton = document.getElementById('skeleton-${uniqueId}');
+                        if (skeleton) {
+                            skeleton.style.opacity = '0';
+                            setTimeout(() => skeleton.remove(), 300);
+                        }
+                    "
+                    onerror="
+                        this.style.display = 'none';
+                        const skeleton = document.getElementById('skeleton-${uniqueId}');
+                        if (skeleton) {
+                            skeleton.innerHTML = '<div class=&quot;text-xs text-gray-400&quot;>Erro ao carregar</div>';
+                            skeleton.classList.remove('animate-pulse');
+                        }
+                    "
                 >
             </div>
         `;

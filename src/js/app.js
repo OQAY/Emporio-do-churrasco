@@ -276,7 +276,7 @@ class App {
      * Progressive loading: Restaurant info → Categories → Featured → Products on demand
      */
     async loadDataWithiFoodPattern() {
-        // Loading menu data
+        // SIMPLIFIED: Single load + progressive images
         
         // 1. Load restaurant info immediately (critical)
         this.loadRestaurantInfo();
@@ -286,32 +286,41 @@ class App {
         this.view.showFeaturedSkeleton();
         this.view.showProductsSkeleton(6);
         
-        // 3. Load categories first (iFood pattern)
-        const categories = await this.dataLazyLoader.loadCategoriesFirst();
-        this.view.renderCategories(categories, (categoryId) => {
-            this.handleCategoryChange(categoryId, categories);
-        });
+        // 3. Load ALL data in single call (faster than multiple calls)
+        const startTime = Date.now();
         
-        // 4. Load featured products (hero section)
-        const featured = await this.dataLazyLoader.loadFeaturedFirst();
-        this.view.renderFeaturedProducts(featured);
-        
-        // 5. Load first category products (above the fold)
-        if (categories.length > 0) {
-            const firstCategoryProducts = await this.dataLazyLoader.loadProductsByCategory(categories[0].id);
-            this.view.renderProducts(firstCategoryProducts, categories);
+        try {
+            // Single database call - load everything at once
+            const [categories, products] = await Promise.all([
+                this.database.getCategories(true),
+                this.database.getProducts({ activeOnly: true })
+            ]);
             
-            // 6. Preload next category (anticipatory)
-            this.dataLazyLoader.preloadNextCategory(categories[0].id, categories);
+            const loadTime = Date.now() - startTime;
+            console.log(`⚡ Data loaded in ${loadTime}ms`);
+            
+            // Store data for local filtering
+            this.categories = categories;
+            this.allProducts = products;
+            
+            // 4. Render categories
+            this.view.renderCategories(categories, (categoryId) => {
+                this.handleCategoryChange(categoryId, categories);
+            });
+            
+            // 5. Render products immediately with progressive image loading
+            this.view.renderProducts(products, categories);
+            
+            // 6. Setup interactions
+            this.setupCategoryInteractions(categories, products);
+            this.setupSearchLazyLoading(); // Use existing method
+            
+        } catch (error) {
+            console.error('❌ Failed to load menu data:', error);
+            // Show error state
         }
         
-        // 7. Setup category switching with lazy loading
-        this.setupCategoryLazyLoading(categories);
-        
-        // 8. Setup search with debouncing
-        this.setupSearchLazyLoading();
-        
-        // Menu loading complete
+        // Menu loading complete - images load progressively
     }
 
     /**
@@ -331,26 +340,18 @@ class App {
     }
 
     /**
-     * Handle category change (NASA: 20 lines)
+     * Setup category interactions (NASA: 20 lines)
      */
-    async handleCategoryChange(categoryId, categories) {
-        console.log(`🏷️ Loading products for category: ${categoryId}`);
-        
-        // Show skeleton while loading
-        this.view.showProductsSkeleton(6);
-        
-        if (categoryId === 'all' || !categoryId) {
-            // Load all products when "Todos" is selected
-            const allProducts = await this.dataLazyLoader.loadProductsByCategory(null);
-            this.view.renderProducts(allProducts, categories);
-        } else {
-            // Load products for selected category
-            const products = await this.dataLazyLoader.loadProductsByCategory(categoryId);
-            this.view.renderProducts(products, categories);
-            
-            // Preload next category
-            this.dataLazyLoader.preloadNextCategory(categoryId, categories);
-        }
+    setupCategoryInteractions(categories, allProducts) {
+        // Category filtering is now local (no API calls needed)
+        this.handleCategoryChange = (categoryId, categoriesData) => {
+            if (categoryId === 'all' || !categoryId) {
+                this.view.renderProducts(allProducts, categories);
+            } else {
+                const filtered = allProducts.filter(p => p.categoryId === categoryId);
+                this.view.renderProducts(filtered, categories);
+            }
+        };
     }
 
     /**
@@ -371,13 +372,18 @@ class App {
             const query = e.target.value;
             
             if (query.length < 2) {
-                // Show all products if search is cleared
-                this.controller.loadProducts();
+                // Show all products if search is cleared  
+                this.view.renderProducts(this.allProducts, this.categories);
                 return;
             }
             
-            const results = await this.dataLazyLoader.searchProducts(query);
-            this.view.renderProducts(results);
+            // Local search (no API needed)
+            const results = this.allProducts.filter(product => 
+                product.name.toLowerCase().includes(query.toLowerCase()) ||
+                product.description.toLowerCase().includes(query.toLowerCase())
+            );
+            
+            this.view.renderProducts(results, this.categories);
         });
     }
 

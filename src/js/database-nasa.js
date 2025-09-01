@@ -1295,30 +1295,27 @@ class DatabaseNASA {
 
       // STEP 1: Load basic data WITHOUT images (FAST)
       console.log("⚡ Step 1: Loading basic data (no images)...");
-      const [restaurant, categories, productsBasic] = await Promise.all([
+      const [restaurant, categories, products] = await Promise.all([
         this.fetcher.fetchRestaurant(),
         this.fetcher.fetchCategories(), 
-        this.fetcher.fetchProductsBasic()
+        this.fetcher.fetchProducts() // ← CHANGED: Load complete products (with images)
       ]);
 
-      // Transform basic data
-      const basicData = this.transformer.transformAllData({
+      // Transform complete data  
+      const completeData = this.transformer.transformAllData({
         restaurant,
         categories,
-        products: productsBasic,
+        products: products, // Complete products with images
         gallery_images: []
       });
 
-      // Cache basic data immediately for instant UI
-      this.cache.setCache(basicData);
-      console.log("✅ Step 1 complete: Basic data loaded (no images)");
+      // Cache complete data immediately
+      this.cache.setCache(completeData);
+      console.log("✅ Complete data loaded (with images for progressive loading)");
 
-      // STEP 2: Load images in background (LAZY) - non-blocking
-      setTimeout(() => {
-        this.loadImagesLazy(productsBasic);
-      }, 100);
+      // No separate image loading needed - progressive loading handles it
 
-      return basicData;
+      return completeData;
 
     } catch (error) {
       console.error("❌ Progressive load failed:", error);
@@ -1332,6 +1329,8 @@ class DatabaseNASA {
    * Load images lazily in background
    * Function size: 30 lines (NASA compliant)
    */
+  // DISABLED: No longer needed - using single load with progressive images
+  /*
   async loadImagesLazy(productsBasic) {
     console.log("🖼️ Step 2: Loading images lazily...");
     
@@ -1383,6 +1382,7 @@ class DatabaseNASA {
     
     console.log("✅ Step 2 complete: All images loaded lazily");
   }
+  */
 }
 
 // Export singleton instance (NASA: singleton pattern)
