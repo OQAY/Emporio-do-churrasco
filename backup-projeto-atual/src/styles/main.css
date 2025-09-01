@@ -1,0 +1,431 @@
+/* Estilos principais do cardapio digital - Mobile First */
+
+:root {
+    --primary-color: #fb923c;
+    --secondary-color: #f97316;
+}
+
+/* Mobile First - Performance Critical Optimizations */
+html {
+    font-size: 16px;
+    -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+    scroll-behavior: smooth;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+    line-height: 1.5;
+    text-rendering: optimizeSpeed;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    /* Performance: Force hardware acceleration */
+    transform: translateZ(0);
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+}
+
+/* Performance: Critical CSS for above-the-fold content */
+.performance-critical {
+    will-change: transform;
+    transform: translateZ(0);
+}
+
+/* Optimize transitions for better performance */
+* {
+    transition-property: transform, opacity;
+    transition-duration: 0.2s;
+    transition-timing-function: ease-out;
+}
+
+/* Disable transitions during page load */
+.no-transition * {
+    transition: none !important;
+}
+
+/* Touch-friendly interactions - Mobile Optimized */
+.touch-manipulation {
+    touch-action: manipulation;
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -webkit-touch-callout: none;
+}
+
+/* Enhanced touch targets (44px minimum) */
+button, .touch-target {
+    min-height: 44px;
+    min-width: 44px;
+    touch-action: manipulation;
+}
+
+/* iOS Safe Area Support */
+@supports (padding: max(0px)) {
+    .safe-area-inset-top {
+        padding-top: max(20px, env(safe-area-inset-top));
+    }
+    
+    .safe-area-inset-bottom {
+        padding-bottom: max(20px, env(safe-area-inset-bottom));
+    }
+}
+
+/* Touch feedback improvements */
+@media (hover: none) and (pointer: coarse) {
+    /* Mobile-only touch effects */
+    button:active, .touch-target:active {
+        transform: scale(0.95);
+        transition: transform 0.1s ease;
+    }
+    
+    /* Better tap highlights */
+    * {
+        -webkit-tap-highlight-color: rgba(251, 146, 60, 0.2);
+        tap-highlight-color: rgba(251, 146, 60, 0.2);
+    }
+}
+
+/* Swipe gesture support */
+.swipeable {
+    touch-action: pan-x;
+    overscroll-behavior: contain;
+}
+
+/* Prevent zoom on input focus (iOS) */
+input, select, textarea {
+    font-size: 16px; /* Prevents zoom on iOS */
+}
+
+/* Hide scrollbars but keep functionality */
+.scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+    display: none;
+}
+
+.thin-scroll::-webkit-scrollbar {
+    height: 4px;
+    width: 4px;
+}
+
+.thin-scroll::-webkit-scrollbar-thumb {
+    background: #e5e7eb;
+    border-radius: 999px;
+}
+
+.thin-scroll::-webkit-scrollbar-thumb:hover {
+    background: #d1d5db;
+}
+
+/* Text clamp for mobile */
+.line-clamp-2 {
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+}
+
+.line-clamp-3 {
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+}
+
+/* Safe area insets for mobile devices */
+@supports(padding: max(0px)) {
+    .safe-area-top {
+        padding-top: max(1rem, env(safe-area-inset-top));
+    }
+    
+    .safe-area-bottom {
+        padding-bottom: max(1rem, env(safe-area-inset-bottom));
+    }
+}
+
+/* Improved mobile animations */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.fade-in {
+    animation: fadeIn 0.4s ease-out;
+}
+
+/* Cards hover effect - optimized for mobile */
+@media (hover: hover) {
+    article:hover {
+        transform: translateY(-2px);
+        transition: all 0.2s ease;
+    }
+}
+
+/* Mobile-specific touch effects */
+@media (hover: none) {
+    article:active {
+        transform: scale(0.98);
+        transition: transform 0.1s ease;
+    }
+}
+
+/* Loading spinner */
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.animate-spin {
+    animation: spin 1s linear infinite;
+}
+
+/* Smooth scroll behavior */
+html {
+    scroll-behavior: smooth;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    html {
+        scroll-behavior: auto;
+    }
+    
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+/* Mobile typography improvements */
+@media screen and (max-width: 640px) {
+    h1, h2, h3 {
+        line-height: 1.3;
+    }
+    
+    p {
+        line-height: 1.6;
+    }
+    
+    /* Larger touch targets */
+    button, a {
+        min-height: 44px;
+        min-width: 44px;
+    }
+}
+
+/* PWA and mobile browser optimizations */
+.sticky {
+    position: -webkit-sticky;
+    position: sticky;
+}
+
+/* High DPI displays */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+    img {
+        image-rendering: -webkit-optimize-contrast;
+        image-rendering: crisp-edges;
+    }
+}
+
+/* Custom breakpoint for mobile horizontal layout (até 742px) */
+@media (max-width: 742px) {
+    .mobile-horizontal {
+        display: flex !important;
+    }
+    
+    .desktop-vertical {
+        display: none !important;
+    }
+    
+    .products-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (min-width: 743px) {
+    .mobile-horizontal {
+        display: none !important;
+    }
+    
+    .desktop-vertical {
+        display: block !important;
+    }
+    
+    .products-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (min-width: 1024px) {
+    .products-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+/* Featured products grid - sempre 2 colunas como no iFood */
+.featured-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+}
+
+/* Aspect ratio for square cards */
+.aspect-square {
+    aspect-ratio: 1 / 1;
+}
+
+/* Category menu bar styling */
+.category-menu-item {
+    min-width: fit-content;
+    margin-right: 1.5rem; /* Espaçamento adequado entre categorias */
+}
+
+.category-menu-item:last-child {
+    margin-right: 0;
+}
+
+/* Garantir scroll suave no menu bar */
+#categoryMenuBar {
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Lazy Loading Styles */
+.lazy-loading {
+    background-color: #f3f4f6;
+    opacity: 0.7;
+    transition: opacity 0.3s ease-in-out;
+}
+
+.lazy-loaded {
+    opacity: 1;
+}
+
+.lazy-error {
+    opacity: 0.5;
+    filter: grayscale(100%);
+}
+
+/* Skeleton loading improvements - Performance Critical */
+.animate-pulse {
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.5;
+    }
+}
+
+/* Skeleton Components - Prevent Layout Shifts */
+.skeleton {
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: skeleton-wave 1.5s infinite;
+    border-radius: 8px;
+}
+
+@keyframes skeleton-wave {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+/* Animacoes para modal de produto */
+@keyframes slide-up {
+    from {
+        transform: translateY(100%);
+    }
+    to {
+        transform: translateY(0);
+    }
+}
+
+@keyframes fade-in {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.animate-slide-up {
+    animation: slide-up 0.3s ease-out;
+}
+
+.animate-fade-in {
+    animation: fade-in 0.3s ease-out;
+}
+
+.skeleton-product {
+    height: 120px;
+    width: 100%;
+    margin-bottom: 12px;
+    border-radius: 12px;
+}
+
+.skeleton-category {
+    height: 40px;
+    width: 120px;
+    margin-right: 12px;
+    border-radius: 20px;
+    display: inline-block;
+}
+
+.skeleton-text {
+    height: 16px;
+    margin-bottom: 8px;
+    border-radius: 4px;
+}
+
+.skeleton-text.title {
+    height: 20px;
+    width: 70%;
+    margin-bottom: 6px;
+}
+
+.skeleton-text.subtitle {
+    height: 14px;
+    width: 50%;
+    margin-bottom: 4px;
+}
+
+.skeleton-text.price {
+    height: 18px;
+    width: 30%;
+    margin-top: 8px;
+}
+
+.skeleton-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 12px;
+}
+
+.skeleton-featured-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+}
+
+/* Banner restaurant - sempre mostra a parte de cima */
+.restaurant-banner {
+    object-fit: cover;
+    object-position: top center; /* Sempre mostra a parte de cima */
+}

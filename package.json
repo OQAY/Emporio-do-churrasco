@@ -1,24 +1,24 @@
 {
-  "name": "menu-online-imperio-churrasco",
-  "version": "1.0.0",
-  "description": "Sistema de cardápio digital interativo com painel administrativo",
-  "main": "index.html",
+  "name": "emporio-churrasco",
+  "version": "2.0.0",
+  "private": true,
   "scripts": {
-    "dev": "npx live-server --port=8080",
-    "build": "echo 'Static site - no build needed'",
-    "start": "npx live-server --port=8080"
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "type-check": "tsc --noEmit"
   },
-  "keywords": [
-    "cardapio",
-    "restaurante",
-    "menu",
-    "digital",
-    "admin",
-    "javascript"
-  ],
-  "author": "Menu Online System",
-  "license": "MIT",
-  "engines": {
-    "node": ">=16.0.0"
+  "dependencies": {
+    "@types/node": "^24.3.0",
+    "@types/react": "^19.1.12",
+    "@types/react-dom": "^19.1.9",
+    "autoprefixer": "^10.4.21",
+    "next": "^15.5.2",
+    "postcss": "^8.5.6",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1",
+    "tailwindcss": "^4.1.12",
+    "typescript": "^5.9.2"
   }
 }
