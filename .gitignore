@@ -141,3 +141,6 @@ Thumbs.db
 
 # Backup files
 backup-*.json
+
+# Claude AI configuration
+.claude/
