@@ -1,46 +1,18 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { MenuView } from '@/components/MenuView'
-import { Category, Product } from '@/lib/types'
-
-// Dados temporários - serão substituídos pelo Supabase
-const mockCategories: Category[] = [
-  { id: 'sanduiches', name: 'Sanduíches Gourmet', icon: '🥪', displayOrder: 0 },
-  { id: 'bebidas', name: 'Bebidas', icon: '🥤', displayOrder: 1 },
-  { id: 'sobremesas', name: 'Sobremesas', icon: '🍰', displayOrder: 2 }
-]
-
-const mockProducts: Product[] = [
-  {
-    id: 'sandwich_1',
-    name: 'Steak Sandwich Premium',
-    description: 'Suculento steak grelhado com salada fresca, queijo derretido e nosso molho especial',
-    price: 38.90,
-    category: 'sanduiches',
-    image: '/images/produtos/steak-sandwich-2.jpg',
-    inStock: true,
-    highlight: true,
-    promotionPrice: 34.90,
-    createdAt: '2025-08-18T03:03:52.238Z',
-    displayOrder: 0
-  }
-]
+import { Product } from '@/lib/types'
+import { useData } from '@/hooks/useData'
 
 export default function Home() {
-  const [categories, setCategories] = useState<Category[]>([])
-  const [products, setProducts] = useState<Product[]>([])
-  const [loading, setLoading] = useState(true)
+  const { categories, products, loading } = useData()
 
   useEffect(() => {
     // Prevent layout shifts during load - MANTENDO COMPORTAMENTO ORIGINAL
     document.body.classList.add('no-transition')
     
-    // Simular carregamento de dados
     setTimeout(() => {
-      setCategories(mockCategories)
-      setProducts(mockProducts)
-      setLoading(false)
       document.body.classList.remove('no-transition')
     }, 100)
   }, [])
