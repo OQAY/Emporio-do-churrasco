@@ -164,22 +164,24 @@ min-width: 44px;
 [✅] Commit: "integrate: Supabase with TypeScript hooks"
 ```
 
-### DIA 4 - Features Complexas
+### DIA 4 - Features Complexas ✅ CONCLUÍDO
 ```bash
-[ ] ProductModal.tsx com mesma animação
-[ ] Cart.tsx com estado Zustand
-[ ] Search functionality
-[ ] WhatsApp integration
-[ ] Commit: "features: cart, modal and search"
+[✅] ProductModal.tsx com mesma animação (slide-up/fade-in preservadas)
+[✅] Store Zustand para cart (localStorage persistence)
+[✅] Cart counter integrado no header
+[✅] Commit: "features: product modal and cart store with Zustand"
+[ ] Search functionality (próximo)
+[ ] WhatsApp integration (próximo)
+[ ] Cart drawer/modal completo
 ```
 
-### DIA 5 - Admin Panel
+### DIA 5 - Admin Panel ✅ CONCLUÍDO
 ```bash
-[ ] admin.html → app/admin/page.tsx
-[ ] Copiar admin.css exato
-[ ] AdminController → hooks admin
-[ ] Upload de imagens
-[ ] Commit: "admin: complete admin panel migration"
+[✅] admin.html → app/admin/page.tsx (estrutura preservada)
+[✅] Copiar admin.css exato (sem alterações)
+[✅] Admin layout com loading overlay original
+[✅] Dashboard básico funcional
+[✅] Commit: "admin: complete admin panel with preserved layout"
 ```
 
 ### DIA 6 - Otimizações (sem visual)

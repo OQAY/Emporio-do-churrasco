@@ -57,6 +57,26 @@ export default function RootLayout({
         <div id="app">
           {children}
         </div>
+        
+        {/* Service Worker Registration - MESMO do original */}
+        <script dangerouslySetInnerHTML={{
+          __html: `
+            if ('serviceWorker' in navigator) {
+              navigator.serviceWorker.register('/sw.js')
+                .then(registration => {
+                  console.log('✅ Service Worker registered:', registration.scope);
+                  registration.addEventListener('updatefound', () => {
+                    console.log('🔄 Service Worker update found');
+                  });
+                })
+                .catch(error => {
+                  console.warn('⚠️ Service Worker registration failed:', error);
+                });
+            } else {
+              console.warn('⚠️ Service Worker not supported');
+            }
+          `
+        }} />
       </body>
     </html>
   )
