@@ -329,20 +329,16 @@ export class MenuView {
         // Observar seção de destaques
         const featuredSection = document.getElementById('featuredSection');
         if (featuredSection) {
-            console.log('📋 Observando seção: featuredSection');
+            // console.log('📋 Observando seção: featuredSection'); // Disabled
             observer.observe(featuredSection);
-        } else {
-            console.error('❌ Seção featuredSection não encontrada!');
         }
 
         // Observar todas as seções de categoria
         categories.forEach(category => {
             const categorySection = document.getElementById(`category-${category.id}`);
             if (categorySection) {
-                console.log(`📋 Observando seção: category-${category.id} (${category.name})`);
+                // console.log(`📋 Observando seção: category-${category.id} (${category.name})`); // Disabled
                 observer.observe(categorySection);
-            } else {
-                console.error(`❌ Seção category-${category.id} não encontrada!`);
             }
         });
 

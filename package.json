@@ -22,6 +22,7 @@
     "node": ">=16.0.0"
   },
   "dependencies": {
-    "@supabase/mcp-server-supabase": "^0.5.1"
+    "@supabase/mcp-server-supabase": "^0.5.1",
+    "dotenv": "^17.2.1"
   }
 }

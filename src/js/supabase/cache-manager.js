@@ -263,11 +263,7 @@ class CacheManager {
 
     let products = this.cachedData.products;
     
-    // 🔍 CRITICAL DEBUG: Check raw products from cache
-    console.log('📦 CacheManager.getProducts() DEBUG:');
-    console.log('  - Raw cached products:', products.length);
-    console.log('  - Active in cache:', products.filter(p => p.active).length);
-    console.log('  - Inactive in cache:', products.filter(p => !p.active).length);
+    // DEBUG logs disabled for production
     
     if (filters.activeOnly) {
       products = products.filter(prod => prod.active);

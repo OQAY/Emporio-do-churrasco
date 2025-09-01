@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Compressão de Imagens</title>
+</head>
+<body>
+    <h1>Compressão de Imagens - Supabase</h1>
+    <button id="startBtn" style="padding: 10px 20px; font-size: 16px; background: #0066cc; color: white; border: none; border-radius: 5px;">
+        Iniciar Compressão
+    </button>
+    <div id="log" style="margin-top: 20px; font-family: monospace; white-space: pre-wrap; border: 1px solid #ccc; padding: 10px; height: 400px; overflow-y: auto;"></div>
+
+    <script>
+        const logDiv = document.getElementById('log');
+        
+        function log(message) {
+            logDiv.textContent += message + '\n';
+            logDiv.scrollTop = logDiv.scrollHeight;
+            console.log(message);
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 B';
+            const k = 1024;
+            const sizes = ['B', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+        }
+
+        function compressImage(base64Data) {
+            return new Promise((resolve, reject) => {
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    
+                    let { width, height } = img;
+                    const maxSize = 800;
+                    
+                    if (width > maxSize || height > maxSize) {
+                        const ratio = Math.min(maxSize / width, maxSize / height);
+                        width = Math.round(width * ratio);
+                        height = Math.round(height * ratio);
+                    }
+                    
+                    canvas.width = width;
+                    canvas.height = height;
+                    ctx.drawImage(img, 0, 0, width, height);
+                    
+                    const compressed = canvas.toDataURL('image/jpeg', 0.75);
+                    resolve(compressed);
+                };
+                
+                img.onerror = reject;
+                img.src = base64Data;
+            });
+        }
+
+        async function compressImagesDirectly() {
+            log('🚀 Iniciando compressão direta...');
+            
+            const SUPABASE_URL = 'https://lypmjnpbpvqkptgmdnnc.supabase.co';
+            const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx5cG1qbnBicHZxa3B0Z21kbm5jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU1NDg4NjcsImV4cCI6MjA3MTEyNDg2N30.naWda_QL5W9JLu87gO6LbFZmG3utyWJwFPvgh4V2i3g';
+            const RESTAURANT_ID = 'b639641d-518a-4bb3-a2b5-f7927d6b6186';
+            
+            const headers = {
+                'apikey': SUPABASE_KEY,
+                'Authorization': `Bearer ${SUPABASE_KEY}`,
+                'Content-Type': 'application/json'
+            };
+            
+            try {
+                log('🔍 Buscando produtos...');
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/products?restaurant_id=eq.${RESTAURANT_ID}&select=id,name,image_url&image_url=like.data:image*`, {
+                    headers
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`Erro HTTP: ${response.status}`);
+                }
+                
+                const products = await response.json();
+                log(`📊 ${products.length} produtos com imagens base64 encontrados`);
+                
+                if (products.length === 0) {
+                    log('❌ Nenhuma imagem base64 encontrada');
+                    return;
+                }
+                
+                let totalSavings = 0;
+                let compressed = 0;
+                
+                for (let i = 0; i < products.length; i++) {
+                    const product = products[i];
+                    const originalSize = Math.round((product.image_url.length * 3) / 4);
+                    
+                    log(`🔄 [${i+1}/${products.length}] ${product.name}: ${formatFileSize(originalSize)}`);
+                    
+                    try {
+                        const compressedBase64 = await compressImage(product.image_url);
+                        const newSize = Math.round((compressedBase64.length * 3) / 4);
+                        const savings = originalSize - newSize;
+                        
+                        if (savings > originalSize * 0.1) {
+                            const updateResponse = await fetch(`${SUPABASE_URL}/rest/v1/products?id=eq.${product.id}`, {
+                                method: 'PATCH',
+                                headers,
+                                body: JSON.stringify({
+                                    image_url: compressedBase64
+                                })
+                            });
+                            
+                            if (updateResponse.ok) {
+                                totalSavings += savings;
+                                compressed++;
+                                const savingsPercent = Math.round((savings / originalSize) * 100);
+                                log(`✅ ${formatFileSize(originalSize)} → ${formatFileSize(newSize)} (-${savingsPercent}%)`);
+                            } else {
+                                log(`❌ Erro ao atualizar ${product.name}`);
+                            }
+                        } else {
+                            log(`⏭️ Pulando ${product.name} (economia < 10%)`);
+                        }
+                        
+                    } catch (error) {
+                        log(`❌ Erro ao comprimir ${product.name}: ${error.message}`);
+                    }
+                }
+                
+                log(`\n🎉 Compressão concluída!`);
+                log(`📊 ${compressed}/${products.length} imagens comprimidas`);
+                log(`💾 Economia total: ${formatFileSize(totalSavings)}`);
+                
+            } catch (error) {
+                log(`❌ Erro: ${error.message}`);
+            }
+        }
+
+        document.getElementById('startBtn').addEventListener('click', compressImagesDirectly);
+    </script>
+</body>
+</html>

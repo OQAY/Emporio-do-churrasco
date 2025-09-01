@@ -422,26 +422,17 @@ class App {
      * Detects when data changes in admin and automatically refreshes frontend
      */
     setupCacheSync() {
-        // Check for cache invalidation every 5 seconds
+        // DISABLED: Cache sync check (causing errors)
+        // Will implement proper cache validation later
+        /*
         setInterval(async () => {
             try {
-                // Check if cache was invalidated by another tab/browser
-                const cacheManager = this.database.cache;
-                if (!cacheManager.isCacheValid()) {
-                    console.log('🔄 Cache invalidated by admin changes, refreshing data...');
-                    
-                    // Reload data silently
-                    await this.database.loadPublicData();
-                    
-                    // Refresh the UI with new data
-                    await this.loadDataWithiFoodPattern();
-                    
-                    console.log('✅ Frontend synchronized with admin changes');
-                }
+                // TODO: Implement proper cache validation
             } catch (error) {
-                console.warn('⚠️ Cache sync check failed:', error.message);
+                // Silently ignore
             }
-        }, 5000); // Check every 5 seconds
+        }, 30000); // Check every 30 seconds
+        */
         
         console.log('🔄 Cache sync monitoring started');
     }

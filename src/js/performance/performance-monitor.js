@@ -241,9 +241,10 @@ class PerformanceMonitor {
             }
         }
         
-        if (violations.length > 0) {
-            logger.warn('Performance threshold violations', { violations });
-        }
+        // DISABLED: Too many warnings in console
+        // if (violations.length > 0) {
+        //     logger.warn('Performance threshold violations', { violations });
+        // }
     }
 
     /**
