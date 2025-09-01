@@ -4,7 +4,6 @@ import { MenuView } from './views/MenuView.js';
 import { ProductController } from './controllers/ProductController.js';
 import enterpriseSystemLite from './enterprise-system-lite.js';
 import lazyLoader from './services/lazy-loader.js';
-import { createDataLazyLoader } from './services/data-lazy-loader.js';
 
 class App {
     constructor() {
@@ -12,7 +11,8 @@ class App {
         this.view = new MenuView(this.database); // ✅ CRITICAL FIX: Pass database for tag resolution
         this.controller = new ProductController(this.database, this.view);
         this.enterpriseSystem = enterpriseSystemLite;
-        this.dataLazyLoader = createDataLazyLoader(this.database);
+        
+        
         this.init();
     }
 
@@ -31,10 +31,10 @@ class App {
             document.body.classList.remove('no-transition');
         }, 100);
         
-        // 🚀 CRÍTICO: Carregar dados do Supabase (imagens já comprimidas)
-        console.log('🔄 Carregando dados PÚBLICOS do Supabase (imagens comprimidas)...');
+        // 🚀 SIMPLE: Carregar dados com imagens direto
+        console.log('🔄 Loading menu data with images...');
         await this.database.loadPublicData();
-        console.log('✅ Dados PÚBLICOS carregados com imagens comprimidas!');
+        console.log('✅ Menu data loaded with images!');
         
         // Inicializar sistema enterprise (não-bloqueante)
         await this.initializeEnterpriseFeatures();
@@ -45,8 +45,8 @@ class App {
         // Configurar event listeners
         this.setupEventListeners();
         
-        // NOVO: Carregar dados com padrão iFood (carregamento progressivo)
-        await this.loadDataWithiFoodPattern();
+        // SIMPLE: Load menu directly
+        this.loadInitialData();
     }
 
     /**
@@ -247,81 +247,8 @@ class App {
         // Setup mobile gestures
         this.setupMobileGestures();
 
-        // 🖼️ Listen for background-loaded images
-        window.addEventListener('images-loaded', (event) => {
-            console.log('🖼️ Images loaded, updating UI...');
-            const { imageData } = event.detail;
-            
-            // Update cache with images and re-render
-            const currentData = this.database.cache.getCache();
-            if (currentData && currentData.products) {
-                // Merge images into existing products
-                currentData.products.forEach(product => {
-                    const imageInfo = imageData.find(img => img.id === product.id);
-                    if (imageInfo) {
-                        product.image = imageInfo.image_url;
-                    }
-                });
-                
-                // Update cache and trigger re-render
-                this.database.cache.setCache(currentData);
-                this.loadInitialData(); // Re-render with images
-                console.log('✅ UI updated with images');
-            }
-        });
     }
 
-    /**
-     * Load data with iFood pattern (NASA: 30 lines)
-     * Progressive loading: Restaurant info → Categories → Featured → Products on demand
-     */
-    async loadDataWithiFoodPattern() {
-        // SIMPLIFIED: Single load + progressive images
-        
-        // 1. Load restaurant info immediately (critical)
-        this.loadRestaurantInfo();
-        
-        // 2. Show skeletons immediately (prevent layout shifts)
-        this.view.showCategoriesSkeleton();
-        this.view.showFeaturedSkeleton();
-        this.view.showProductsSkeleton(6);
-        
-        // 3. Load ALL data in single call (faster than multiple calls)
-        const startTime = Date.now();
-        
-        try {
-            // Single database call - load everything at once
-            const [categories, products] = await Promise.all([
-                this.database.getCategories(true),
-                this.database.getProducts({ activeOnly: true })
-            ]);
-            
-            const loadTime = Date.now() - startTime;
-            console.log(`⚡ Data loaded in ${loadTime}ms`);
-            
-            // Store data for local filtering
-            this.categories = categories;
-            this.allProducts = products;
-            
-            // 4. Render categories
-            this.view.renderCategories(categories, (categoryId) => {
-                this.handleCategoryChange(categoryId, categories);
-            });
-            
-            // 5. Render products immediately with progressive image loading
-            this.view.renderProducts(products, categories);
-            
-            // 6. Setup interactions
-            this.setupCategoryInteractions(categories, products);
-            this.setupSearchLazyLoading(); // Use existing method
-            
-        } catch (error) {
-            console.error('❌ Failed to load menu data:', error);
-            // Show error state
-        }
-        
-        // Menu loading complete - images load progressively
-    }
 
     /**
      * Load restaurant info immediately (NASA: 15 lines)
@@ -339,53 +266,9 @@ class App {
         }
     }
 
-    /**
-     * Setup category interactions (NASA: 20 lines)
-     */
-    setupCategoryInteractions(categories, allProducts) {
-        // Category filtering is now local (no API calls needed)
-        this.handleCategoryChange = (categoryId, categoriesData) => {
-            if (categoryId === 'all' || !categoryId) {
-                this.view.renderProducts(allProducts, categories);
-            } else {
-                const filtered = allProducts.filter(p => p.categoryId === categoryId);
-                this.view.renderProducts(filtered, categories);
-            }
-        };
-    }
 
-    /**
-     * Setup category lazy loading (NASA: 15 lines)
-     */
-    setupCategoryLazyLoading(categories) {
-        document.addEventListener('categoryChanged', async (e) => {
-            const categoryId = e.detail.categoryId;
-            await this.handleCategoryChange(categoryId, categories);
-        });
-    }
 
-    /**
-     * Setup search lazy loading (NASA: 15 lines)
-     */
-    setupSearchLazyLoading() {
-        document.getElementById('searchInput').addEventListener('input', async (e) => {
-            const query = e.target.value;
-            
-            if (query.length < 2) {
-                // Show all products if search is cleared  
-                this.view.renderProducts(this.allProducts, this.categories);
-                return;
-            }
-            
-            // Local search (no API needed)
-            const results = this.allProducts.filter(product => 
-                product.name.toLowerCase().includes(query.toLowerCase()) ||
-                product.description.toLowerCase().includes(query.toLowerCase())
-            );
-            
-            this.view.renderProducts(results, this.categories);
-        });
-    }
+
 
     /**
      * Setup mobile gestures (NASA: 30 lines)
@@ -444,13 +327,13 @@ class App {
     }
 
     loadInitialData() {
-        // Legacy method - replaced by loadDataWithiFoodPattern
-        console.log('⚠️ Using legacy loadInitialData - consider using iFood pattern');
+        // SIMPLIFIED: Direct data loading
+        console.log('📊 Loading menu data...');
         
-        // Carregar informacoes do restaurante
+        // Load restaurant info
         this.loadRestaurantInfo();
 
-        // Carregar categorias e produtos
+        // Load categories and products directly
         this.controller.loadCategories();
         this.controller.loadProducts();
     }

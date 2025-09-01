@@ -50,59 +50,21 @@ class DataFetcher {
   }
 
   /**
-   * Fetch products (NASA: single responsibility)
+   * Fetch products WITH images (SIMPLE approach)
    * Function size: 15 lines (NASA compliant)
    */
   async fetchProducts() {
     try {
       const restaurantId = this.client.getRestaurantId();
-      
-      // 🚀 OTIMIZAÇÃO: Carregar dados básicos primeiro (SEM imagens)
-      console.log('🚀 Step 1: Loading basic product data (no images)...');
-      const basicData = await this.client.makeRequest(
-        `products?restaurant_id=eq.${restaurantId}&order=display_order.asc&select=id,name,description,price,category_id,active,display_order,created_at,updated_at,featured`
+      const data = await this.client.makeRequest(
+        `products?restaurant_id=eq.${restaurantId}&order=display_order.asc&select=*`
       );
       
-      // 🖼️ OTIMIZAÇÃO: Carregar imagens (com cache)
-      console.log('🖼️ Step 2: Loading product images separately...');
-      let imageData;
-      
-      const cacheKey = `images_${restaurantId}`;
-      if (this.imageCache.has(cacheKey)) {
-        console.log('📦 Using cached images');
-        imageData = this.imageCache.get(cacheKey);
-      } else {
-        imageData = await this.client.makeRequest(
-          `products?restaurant_id=eq.${restaurantId}&select=id,image_url`
-        );
-        this.imageCache.set(cacheKey, imageData);
-        console.log('💾 Images cached for future use');
-      }
-      
-      // Merge basic data with images
-      const products = basicData.map(product => {
-        const imageInfo = imageData.find(img => img.id === product.id);
-        return {
-          ...product,
-          image_url: imageInfo?.image_url || null
-        };
-      });
-      
-      console.log(`✅ Loaded ${products.length} products (optimized)`);
-      return products || [];
-      
+      console.log(`✅ Loaded ${data.length} products with images`);
+      return data || [];
     } catch (error) {
       console.error('Failed to fetch products:', error);
-      // Fallback to original method if optimization fails
-      try {
-        const data = await this.client.makeRequest(
-          `products?restaurant_id=eq.${restaurantId}&order=display_order.asc&select=*`
-        );
-        return data || [];
-      } catch (fallbackError) {
-        console.error('Fallback also failed:', fallbackError);
-        return [];
-      }
+      return [];
     }
   }
 
@@ -187,41 +149,36 @@ class DataFetcher {
   }
 
   /**
-   * Fetch only essential data for public menu (NASA: public optimization)
-   * Function size: 25 lines (NASA compliant)
+   * Fetch public data with images (SIMPLIFIED approach)
+   * Function size: 20 lines (NASA compliant)
    */
   async fetchPublicData() {
-    console.log('🔄 Fetching PUBLIC data from Supabase (optimized)...');
+    console.log('🔄 Fetching PUBLIC data with images (simple approach)...');
     
     try {
-      // Only fetch what's needed for public menu
-      // 🚀 PROGRESSIVE: Use basic products (no images) for faster render
+      // Simple approach: fetch everything at once including images
       const [restaurant, categories, products, productTags] = await Promise.all([
         this.fetchRestaurant(),
         this.fetchCategories(), 
-        this.fetchProductsBasic(), // ← Changed to basic (no images)
+        this.fetchProducts(), // ← SIMPLE: fetch products WITH images
         this.fetchProductTags()
       ]);
       
-      const result = {
+      console.log('✅ PUBLIC data loaded with images:', {
+        restaurant: restaurant ? 'OK' : 'Missing',
+        categories: categories?.length || 0,
+        products: products?.length || 0,
+        productsWithImages: products?.filter(p => p.image_url)?.length || 0,
+        productTags: productTags?.length || 0
+      });
+      
+      return {
         restaurant,
         categories,
         products,
         galleryImages: [], // Not needed for public menu
-        productTags       // ✅ CRITICAL FIX: Include productTags
+        productTags
       };
-      
-      console.log('✅ PUBLIC data loaded (BASIC - no images yet):', {
-        restaurant: restaurant ? 'OK' : 'Missing',
-        categories: categories?.length || 0,
-        products: products?.length || 0,
-        productTags: productTags?.length || 0
-      });
-      
-      // 🖼️ Load images in background (non-blocking)
-      setTimeout(() => this.loadImagesInBackground(products), 100);
-      
-      return result;
       
     } catch (error) {
       console.error('❌ Failed to fetch public data:', error);
@@ -230,8 +187,9 @@ class DataFetcher {
   }
 
   /**
-   * Load images in background without blocking UI
+   * DISABLED: Load images in background (REPLACED by individual lazy loading)
    */
+  /*
   async loadImagesInBackground(basicProducts) {
     console.log('🖼️ Loading images in background (non-blocking)...');
     
@@ -262,16 +220,17 @@ class DataFetcher {
       console.warn('⚠️ Background image loading failed:', error);
     }
   }
+  */
 
   async fetchAllData() {
     console.log('🔄 Fetching data from Supabase...');
     
     try {
-      // Parallel fetch for performance
+      // Simple approach: fetch everything including images
       const [restaurant, categories, products, galleryImages, productTags] = await Promise.all([
         this.fetchRestaurant(),
         this.fetchCategories(),
-        this.fetchProducts(),
+        this.fetchProducts(), // ← SIMPLE: Use products with images
         this.fetchGalleryImages(),
         this.fetchProductTags()
       ]);
@@ -280,6 +239,7 @@ class DataFetcher {
         restaurant: restaurant?.name || 'N/A',
         categories: categories.length,
         products: products.length,
+        productsWithImages: products.filter(p => p.image_url).length,
         galleryImages: galleryImages.length,
         productTags: productTags.length
       });
