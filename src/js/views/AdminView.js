@@ -621,6 +621,7 @@ export class AdminView {
         const content = document.getElementById('contentArea');
         content.innerHTML = `
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Informações do Restaurante -->
                 <div class="bg-white rounded-lg shadow">
                     <div class="px-6 py-4 border-b border-gray-200">
                         <h2 class="text-lg font-semibold text-gray-800">Informacoes do Restaurante</h2>
@@ -647,6 +648,90 @@ export class AdminView {
                                     class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-300"
                                 >
                             </div>
+
+                <!-- Otimização de Imagens -->
+                <div class="bg-white rounded-lg shadow">
+                    <div class="px-6 py-4 border-b border-gray-200">
+                        <h2 class="text-lg font-semibold text-gray-800">🚀 Otimização de Imagens</h2>
+                        <p class="text-sm text-gray-600 mt-1">Comprima imagens existentes para melhorar a performance</p>
+                    </div>
+                    <div class="p-6">
+                        <!-- Status da otimização -->
+                        <div id="imageOptimizationStatus" class="mb-4">
+                            <div class="flex items-center text-sm text-gray-600">
+                                <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd"></path>
+                                </svg>
+                                <span id="imageCount">Carregando...</span>
+                            </div>
+                        </div>
+
+                        <!-- Botão principal -->
+                        <button 
+                            id="optimizeImagesBtn"
+                            class="w-full bg-orange-600 text-white px-4 py-3 rounded-lg hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
+                        >
+                            <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                            </svg>
+                            Otimizar Todas as Imagens
+                        </button>
+
+                        <!-- Progress bar (hidden initially) -->
+                        <div id="optimizationProgress" class="mt-4 hidden">
+                            <div class="flex items-center justify-between text-sm text-gray-600 mb-2">
+                                <span id="progressText">Processando...</span>
+                                <span id="progressPercent">0%</span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-2">
+                                <div id="progressBar" class="bg-orange-600 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+                            </div>
+                        </div>
+
+                        <!-- Results (hidden initially) -->
+                        <div id="optimizationResults" class="mt-4 hidden">
+                            <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+                                <h3 class="font-medium text-green-800 mb-2">✅ Otimização Concluída!</h3>
+                                <div class="text-sm text-green-700 space-y-1">
+                                    <div>📷 Imagens otimizadas: <span id="resultOptimized">0</span></div>
+                                    <div>⏭️ Puladas (já otimizadas): <span id="resultSkipped">0</span></div>
+                                    <div>💾 Economia total: <span id="resultSavings">0 KB</span></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Backup info -->
+                        <div class="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                            <h4 class="font-medium text-blue-800 mb-2">💾 Backup Automático</h4>
+                            <p class="text-sm text-blue-700">
+                                Um backup das imagens originais será criado automaticamente antes da otimização.
+                                Você pode restaurar caso necessário.
+                            </p>
+                            <div class="mt-3">
+                                <button 
+                                    id="showBackupsBtn"
+                                    class="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                                >
+                                    Ver Backups Disponíveis
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Backup list (hidden initially) -->
+                        <div id="backupList" class="mt-4 hidden">
+                            <div class="bg-gray-50 border rounded-lg p-4">
+                                <h4 class="font-medium text-gray-800 mb-3">Backups Disponíveis</h4>
+                                <div id="backupItems" class="space-y-2">
+                                    <!-- Will be populated dynamically -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 gap-6 mt-6">
+                <!-- Seção existente de backup/importação -->
                             
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-2">URL do Banner</label>

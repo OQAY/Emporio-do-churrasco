@@ -182,6 +182,9 @@ class AdminApp {
         const view = new AdminView(this.database); // ✅ CRITICAL FIX: Pass database for tag display
         const controller = new AdminController(this.database, view);
         
+        // Expor controller globalmente para uso na interface
+        window.adminController = controller;
+        
         view.render();
         controller.init();
         
