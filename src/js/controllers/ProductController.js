@@ -34,29 +34,63 @@ export class ProductController {
         }, 100);
     }
 
-    loadProducts() {
-        this.view.showLoading();
-        
-        setTimeout(() => {
-            const filters = {
-                activeOnly: true
-            };
-
-            if (this.searchQuery) {
-                filters.search = this.searchQuery;
-            }
-
-            const products = this.database.getProducts(filters);
+    async loadProducts() {
+        try {
+            this.view.showLoading();
             
-            // Para busca, usar renderização simples
-            if (this.searchQuery) {
-                this.renderSearchResults(products);
-            } else {
-                // Para exibição normal, usar sistema de seções
-                const categories = this.database.getCategories(true);
-                this.view.renderProducts(products, categories);
+            const products = await this.database.getProducts({ activeOnly: true });
+            const categories = await this.database.getCategories(true);
+            
+            this.view.renderProducts(products, categories);
+        } catch (error) {
+            console.error('Erro ao carregar produtos:', error);
+            this.view.showError('Erro ao carregar produtos. Tente novamente.');
+        }
+    }
+
+    /**
+     * ULTRA-OPTIMIZED: Load ONLY critical/featured products (sub-500ms target)
+     * Function size: 20 lines (NASA compliant)
+     */
+    async loadCriticalProducts() {
+        try {
+            console.log('🚀 Loading CRITICAL products (featured only, ultra-fast)...');
+            
+            // Load only critical essentials from database
+            const criticalData = await this.database.loadCriticalEssentials();
+            
+            if (criticalData && criticalData.products) {
+                // Render ONLY featured products immediately
+                this.view.renderFeaturedProducts(criticalData.products);
+                
+                console.log(`🚀 CRITICAL products rendered: ${criticalData.products.length} featured products`);
+                console.log('  - Target: sub-500ms render time for featured section');
             }
-        }, 100);
+        } catch (error) {
+            console.error('Erro ao carregar produtos críticos:', error);
+            this.view.showError('Erro ao carregar destaques.');
+        }
+    }
+
+    /**
+     * Load INSTANT products (FALLBACK - all products with skeletons)
+     * Function size: 15 lines (NASA compliant)
+     */
+    async loadInstantProducts() {
+        try {
+            console.log('⚡ FALLBACK: Loading INSTANT products (all products, skeleton images)...');
+            
+            const products = await this.database.getProducts({ activeOnly: true });
+            const categories = await this.database.getCategories(true);
+            
+            // Render ALL products with skeleton images
+            this.view.renderProducts(products, categories);
+            
+            console.log(`⚡ INSTANT products rendered: ${products.length} products with skeletons`);
+        } catch (error) {
+            console.error('Erro ao carregar produtos instantâneos:', error);
+            this.view.showError('Erro ao carregar cardápio.');
+        }
     }
     
     renderSearchResults(products) {

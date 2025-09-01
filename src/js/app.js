@@ -31,10 +31,10 @@ class App {
             document.body.classList.remove('no-transition');
         }, 100);
         
-        // 🚀 SIMPLE: Carregar dados com imagens direto
-        console.log('🔄 Loading menu data with images...');
-        await this.database.loadPublicData();
-        console.log('✅ Menu data loaded with images!');
+        // ⚡ INSTANT: Load structural data first (all products, no images)
+        console.log('⚡ INSTANT: Loading structural data first...');
+        await this.database.loadInstantData();
+        console.log('⚡ Structural data loaded - all products ready with skeletons!');
         
         // Inicializar sistema enterprise (não-bloqueante)
         await this.initializeEnterpriseFeatures();
@@ -45,8 +45,8 @@ class App {
         // Configurar event listeners
         this.setupEventListeners();
         
-        // SIMPLE: Load menu directly
-        this.loadInitialData();
+        // ULTRA-OPTIMIZED: Load critical essentials first, then chunked products
+        this.loadCriticalEssentialsFirst();
     }
 
     /**
@@ -326,14 +326,112 @@ class App {
         console.log('🔄 Cache sync monitoring started');
     }
 
-    loadInitialData() {
-        // SIMPLIFIED: Direct data loading
-        console.log('📊 Loading menu data...');
+    /**
+     * ULTRA-OPTIMIZED: Load critical essentials first (sub-500ms target)
+     * Function size: 30 lines (NASA compliant)
+     */
+    async loadCriticalEssentialsFirst() {
+        console.log('🚀 ULTRA: Loading ONLY critical essentials first...');
         
-        // Load restaurant info
+        // PHASE 1: CRITICAL (sub-500ms) - Only restaurant info + featured products
+        this.loadRestaurantInfo();
+        await this.controller.loadCriticalProducts(); // Only featured products
+        
+        console.log('🚀 CRITICAL essentials rendered - starting chunked loading...');
+        
+        // PHASE 2: CHUNKED (500ms+) - Load remaining products in chunks
+        setTimeout(() => {
+            this.loadChunkedProductsInBackground();
+        }, 100); // Small delay to let critical content render
+        
+        // PHASE 3: PROGRESSIVE IMAGES (background) - Load all images
+        setTimeout(() => {
+            this.loadProgressiveImagesInBackground();
+        }, 200); // Start images after chunked begins
+    }
+
+    /**
+     * Load products in chunks for better perceived performance
+     * Function size: 25 lines (NASA compliant)
+     */
+    async loadChunkedProductsInBackground() {
+        console.log('📦 CHUNKED: Loading remaining products...');
+        
+        try {
+            let offset = 0;
+            const limit = 15; // Load 15 products per chunk
+            let hasMore = true;
+
+            // Load categories with first chunk
+            if (offset === 0) {
+                this.controller.loadCategories();
+            }
+
+            // Load products in chunks until all loaded
+            while (hasMore) {
+                const result = await this.database.loadChunkedProducts(offset, limit);
+                hasMore = result.hasMore;
+                offset += limit;
+
+                console.log(`📦 Loaded chunk: offset=${offset-limit}, +${result.products?.length || 0} products`);
+                
+                // Small delay between chunks to avoid blocking UI
+                if (hasMore) {
+                    await new Promise(resolve => setTimeout(resolve, 50));
+                }
+            }
+
+            console.log('✅ CHUNKED: All products loaded progressively!');
+        } catch (error) {
+            console.warn('⚠️ Chunked loading failed:', error);
+        }
+    }
+
+    /**
+     * FALLBACK: Load instant structural data (kept for compatibility)
+     * Function size: 25 lines (NASA compliant)
+     */
+    async loadInstantDataFirst() {
+        console.log('⚡ FALLBACK: Using instant loading approach...');
+        
+        // Load restaurant info immediately
         this.loadRestaurantInfo();
 
-        // Load categories and products directly
+        // Load categories and ALL products (with skeletons for images)
+        this.controller.loadCategories();
+        await this.controller.loadInstantProducts(); // Load ALL products with text, skeletons for images
+        
+        console.log('⚡ Instant content rendered - starting progressive image loading...');
+        
+        // Start progressive image loading (non-blocking, immediate)
+        this.loadProgressiveImagesInBackground();
+    }
+
+    /**
+     * Load progressive images in background without blocking UI
+     * Function size: 20 lines (NASA compliant)
+     */
+    async loadProgressiveImagesInBackground() {
+        console.log('🖼️ PROGRESSIVE: Loading product images...');
+        
+        try {
+            // Load all product images progressively
+            await this.database.loadProgressiveImages();
+            
+            // Images will be updated via event system - no re-render needed
+            console.log('✅ PROGRESSIVE: All images loaded and updating cards!');
+        } catch (error) {
+            console.warn('⚠️ Progressive image loading failed:', error);
+        }
+    }
+
+    /**
+     * LEGACY: Load all data at once (kept for fallback)
+     */
+    loadInitialData() {
+        console.log('📊 FALLBACK: Loading all data at once...');
+        
+        this.loadRestaurantInfo();
         this.controller.loadCategories();
         this.controller.loadProducts();
     }
