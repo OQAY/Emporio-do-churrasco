@@ -1,9 +1,27 @@
-// Sistema de banco de dados local usando localStorage
+// Sistema de banco de dados local usando localStorage com cache otimizado
+import CacheManager from './services/CacheManager.js';
 
 class Database {
   constructor() {
     this.storageKey = "restaurantData";
+    this.cache = CacheManager;
+    this.isOnline = navigator.onLine;
     this.initializeDatabase();
+    this.setupEventListeners();
+  }
+
+  setupEventListeners() {
+    // Monitorar status da conexão
+    window.addEventListener('online', () => {
+      this.isOnline = true;
+      console.log('Conexão restabelecida - atualizando cache...');
+      this.refreshDataInBackground();
+    });
+    
+    window.addEventListener('offline', () => {
+      this.isOnline = false;
+      console.log('Offline - usando dados em cache');
+    });
   }
 
   initializeDatabase() {
@@ -491,13 +509,51 @@ class Database {
   }
 
   getData() {
+    // 1. Tentar cache primeiro (instantâneo)
+    const cached = this.cache.get('allData', 30 * 60 * 1000); // 30 minutos
+    if (cached) {
+      return cached;
+    }
+    
+    // 2. Fallback para localStorage original
     const data = localStorage.getItem(this.storageKey);
-    return data ? JSON.parse(data) : null;
+    const parsed = data ? JSON.parse(data) : null;
+    
+    // 3. Se tem dados, cachear para próxima vez
+    if (parsed) {
+      this.cache.set('allData', parsed);
+    }
+    
+    return parsed;
   }
 
   saveData(data) {
-    localStorage.setItem(this.storageKey, JSON.stringify(data));
-    window.dispatchEvent(new Event("databaseUpdated"));
+    try {
+      // 1. Salvar no localStorage original (compatibilidade)
+      localStorage.setItem(this.storageKey, JSON.stringify(data));
+      
+      // 2. Atualizar cache imediatamente
+      this.cache.set('allData', data);
+      
+      // 3. Cache específico por tipo de dados para acesso rápido
+      if (data.products) {
+        this.cache.set('produtos', data.products);
+      }
+      if (data.categories) {
+        this.cache.set('categorias', data.categories);
+      }
+      if (data.restaurant) {
+        this.cache.set('config', data.restaurant);
+      }
+      
+      // 4. Notificar mudanças
+      window.dispatchEvent(new Event("databaseUpdated"));
+      
+      return true;
+    } catch (error) {
+      console.error('Erro ao salvar dados:', error);
+      return false;
+    }
   }
 
   // Restaurant methods
@@ -995,6 +1051,156 @@ class Database {
     } catch (error) {
       console.error("Erro ao importar dados:", error);
       return false;
+    }
+  }
+
+  // ===== MÉTODOS DE OTIMIZAÇÃO DE CACHE =====
+
+  /**
+   * Busca rápida de produtos com cache inteligente
+   */
+  async getProductsFast(filters = {}) {
+    // 1. Tentar cache específico primeiro (1-5ms)
+    let products = this.cache.get('produtos', 15 * 60 * 1000); // 15 min
+    
+    if (!products) {
+      // 2. Buscar dos dados principais
+      const data = this.getData();
+      products = data?.products || [];
+      
+      // 3. Cachear para próximas buscas
+      if (products.length > 0) {
+        this.cache.set('produtos', products);
+      }
+    }
+
+    // 4. Aplicar filtros
+    if (filters.categoryId) {
+      products = products.filter(prod => prod.categoryId === filters.categoryId);
+    }
+    if (filters.active !== undefined) {
+      products = products.filter(prod => prod.active === filters.active);
+    }
+    if (filters.featured !== undefined) {
+      products = products.filter(prod => prod.featured === filters.featured);
+    }
+
+    // 5. Ordenar por ordem se disponível
+    return products.sort((a, b) => (a.order || 0) - (b.order || 0));
+  }
+
+  /**
+   * Busca rápida de categorias com cache
+   */
+  async getCategoriesFast(activeOnly = false) {
+    // Cache específico para categorias
+    let categories = this.cache.get('categorias', 60 * 60 * 1000); // 1 hora
+    
+    if (!categories) {
+      const data = this.getData();
+      categories = data?.categories || [];
+      
+      if (categories.length > 0) {
+        this.cache.set('categorias', categories);
+      }
+    }
+
+    if (activeOnly) {
+      categories = categories.filter(cat => cat.active);
+    }
+
+    return categories.sort((a, b) => a.order - b.order);
+  }
+
+  /**
+   * Busca rápida da configuração do restaurante
+   */
+  async getRestaurantFast() {
+    let config = this.cache.get('config', 24 * 60 * 60 * 1000); // 24 horas
+    
+    if (!config) {
+      const data = this.getData();
+      config = data?.restaurant || {};
+      
+      if (Object.keys(config).length > 0) {
+        this.cache.set('config', config);
+      }
+    }
+
+    return config;
+  }
+
+  /**
+   * Atualização em background dos dados (não bloqueia)
+   */
+  refreshDataInBackground() {
+    // Aguardar um pouco para não competir com render inicial
+    setTimeout(() => {
+      try {
+        // Forçar reload dos dados principais
+        const freshData = localStorage.getItem(this.storageKey);
+        if (freshData) {
+          const parsed = JSON.parse(freshData);
+          
+          // Atualizar caches com dados frescos
+          this.cache.set('allData', parsed);
+          this.cache.set('produtos', parsed.products || []);
+          this.cache.set('categorias', parsed.categories || []);
+          this.cache.set('config', parsed.restaurant || {});
+          
+          console.log('Cache atualizado em background');
+          window.dispatchEvent(new Event("cacheRefreshed"));
+        }
+      } catch (error) {
+        console.warn('Falha no refresh em background:', error);
+      }
+    }, 3000); // 3 segundos de delay
+  }
+
+  /**
+   * Limpar todos os caches (útil para debug)
+   */
+  clearAllCaches() {
+    this.cache.clear();
+    console.log('Todos os caches limpos');
+  }
+
+  /**
+   * Obter estatísticas de cache para debug
+   */
+  getCacheStats() {
+    return this.cache.getStats();
+  }
+
+  /**
+   * Invalidar cache específico
+   */
+  invalidateCache(key) {
+    this.cache.invalidate(key);
+  }
+
+  /**
+   * Preload de dados essenciais para performance
+   */
+  async preloadEssentialData() {
+    try {
+      // Carregar dados mais acessados em paralelo
+      const [products, categories, config] = await Promise.all([
+        this.getProductsFast({ active: true }),
+        this.getCategoriesFast(true),
+        this.getRestaurantFast()
+      ]);
+
+      console.log('Dados essenciais pré-carregados:', {
+        products: products.length,
+        categories: categories.length,
+        hasConfig: !!config.name
+      });
+
+      return { products, categories, config };
+    } catch (error) {
+      console.warn('Falha no preload:', error);
+      return null;
     }
   }
 }
