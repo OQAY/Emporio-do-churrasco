@@ -77,7 +77,7 @@ export class MenuView {
      * Create optimized image with loading state (NASA: performance optimization)
      * Function size: 25 lines (NASA compliant)
      */
-    createOptimizedImage(src, alt, className = "w-full h-full object-cover", productId = null) {
+    createOptimizedImage(src, alt, className = "w-full h-full object-cover", productId = null, context = 'default') {
         // Use image service para processar URL com fallback inteligente
         const processedSrc = this.imageService.processImageUrl(src, 'product');
         
@@ -90,13 +90,15 @@ export class MenuView {
             </div>`;
         }
 
-        // Use product ID if provided and valid, otherwise use unique ID
-        const imageId = (productId && typeof productId === 'string') ? `img-${productId}` : `img-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        // Criar ID único baseado no contexto para evitar duplicatas
+        const uniqueId = productId 
+            ? `img-${context}-${productId}` 
+            : `img-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
         
         return `
             <div class="image-container relative w-full h-full">
                 <!-- Simple skeleton -->
-                <div id="skeleton-${imageId}" class="absolute inset-0 bg-gray-200 animate-pulse flex items-center justify-center">
+                <div id="skeleton-${uniqueId}" class="absolute inset-0 bg-gray-200 animate-pulse flex items-center justify-center">
                     <svg class="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
                         <path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd"></path>
                     </svg>
@@ -104,20 +106,20 @@ export class MenuView {
                 
                 <!-- Image with progressive fade in -->
                 <img 
-                    id="${imageId}"
+                    id="${uniqueId}"
                     src="${processedSrc}"
                     alt="${alt}" 
                     class="${className} opacity-0 transition-opacity duration-300" 
                     loading="lazy"
                     onload="
                         this.style.opacity = '1';
-                        const skeleton = document.getElementById('skeleton-${imageId}');
+                        const skeleton = document.getElementById('skeleton-${uniqueId}');
                         if (skeleton) skeleton.style.display = 'none';
                     "
                     onerror="
                         this.src = '${this.imageService.defaultImages.productPlaceholder}';
                         this.style.opacity = '1';
-                        const skeleton = document.getElementById('skeleton-${imageId}');
+                        const skeleton = document.getElementById('skeleton-${uniqueId}');
                         if (skeleton) skeleton.style.display = 'none';
                     "
                 >
@@ -480,7 +482,7 @@ export class MenuView {
                 
                 <!-- Imagem do produto -->
                 <div class="w-full h-full bg-gray-100">
-                    ${this.createOptimizedImage(product.image_url || product.image, product.name, "w-full h-full object-cover", product.id)}
+                    ${this.createOptimizedImage(product.image_url || product.image, product.name, "w-full h-full object-cover", product.id, 'featured')}
                 </div>
             </div>
             
@@ -551,7 +553,7 @@ export class MenuView {
                 
                 <!-- Imagem à direita -->
                 <div class="w-20 h-20 flex-shrink-0 bg-gray-100 rounded-xl overflow-hidden">
-                    ${this.createOptimizedImage(product.image_url || product.image, product.name, "w-full h-full object-cover", product.id)}
+                    ${this.createOptimizedImage(product.image_url || product.image, product.name, "w-full h-full object-cover", product.id, 'category')}
                 </div>
             </div>
 
@@ -564,7 +566,7 @@ export class MenuView {
                         </span>
                     ` : ''}
                     <div class="h-48 w-full bg-gray-100">
-                        ${this.createOptimizedImage(product.image_url || product.image, product.name, "w-full h-full object-cover", product.id)}
+                        ${this.createOptimizedImage(product.image_url || product.image, product.name, "w-full h-full object-cover", product.id, 'category')}
                     </div>
                 </div>
                 <div class="p-4">

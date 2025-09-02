@@ -161,18 +161,27 @@ class App {
      * Load restaurant info
      */
     loadRestaurantInfo() {
-        const restaurant = this.database.getRestaurant();
-        document.getElementById('restaurantLogo').textContent = restaurant.logo || 'IC';
-        document.getElementById('restaurantName').textContent = restaurant.name || 'Império do Churrasco';
+        const restaurant = this.database.getRestaurant() || {};
         
-        // Usar banner local direto (não do Supabase)
+        // Usar dados padrão se não conseguir carregar do banco
+        const restaurantName = restaurant.name || 'Império do Churrasco';
+        const restaurantLogo = restaurant.logo || 'IC';
+        
+        document.getElementById('restaurantLogo').textContent = restaurantLogo;
+        document.getElementById('restaurantName').textContent = restaurantName;
+        
+        // SEMPRE usar banner local (ignorar qualquer banner do Supabase)
         const bannerElement = document.getElementById('restaurantBanner');
         bannerElement.src = 'images/banners/imd_dia.jpeg';
         
-        document.getElementById('footerText').textContent = `${restaurant.name || 'Império do Churrasco'} - Cardápio Digital`;
+        document.getElementById('footerText').textContent = `${restaurantName} - Cardápio Digital`;
 
-        if (restaurant.theme) {
+        // Aplicar tema se disponível
+        if (restaurant && restaurant.theme) {
             document.documentElement.style.setProperty('--primary-color', restaurant.theme.primaryColor);
+        } else {
+            // Tema padrão
+            document.documentElement.style.setProperty('--primary-color', '#fb923c');
         }
     }
 
@@ -218,19 +227,57 @@ class App {
 
 
     /**
-     * Load critical essentials first
+     * Load essentials - simplified approach
      */
     async loadCriticalEssentialsFirst() {
-        // Load restaurant info
-        this.loadRestaurantInfo();
-        
-        // Load featured products first
-        await this.controller.loadCriticalProducts();
-        
-        // Load all products and categories
-        setTimeout(() => {
-            this.loadAllProducts();
-        }, 500);
+        try {
+            // Load restaurant info (sempre funciona, usa fallback)
+            this.loadRestaurantInfo();
+            
+            // Carregar tudo direto - mais simples e rápido
+            setTimeout(async () => {
+                await this.loadEverythingDirect();
+            }, 100);
+            
+        } catch (error) {
+            console.error('Erro no carregamento:', error);
+            this.loadRestaurantInfo();
+        }
+    }
+    
+    /**
+     * Load everything directly without complex caching
+     */
+    async loadEverythingDirect() {
+        try {
+            // Carregar dados do Supabase direto
+            await this.database.loadPublicData();
+            
+            // Renderizar tudo
+            const categories = this.database.getCategories(true);
+            const products = this.database.getProducts({ activeOnly: true });
+            
+            if (products.length === 0) {
+                console.log('⚠️ Nenhum produto carregado, usando dados locais de fallback');
+                return;
+            }
+            
+            console.log(`📊 Carregados: ${products.length} produtos, ${categories.length} categorias`);
+            
+            const categoriesWithCount = categories.map(category => ({
+                ...category,
+                productCount: products.filter(product => product.categoryId === category.id).length
+            }));
+            
+            // Renderizar categorias
+            this.view.renderCategories(categoriesWithCount, () => {});
+            
+            // Renderizar produtos nas categorias
+            this.view.renderProducts(products, categoriesWithCount);
+            
+        } catch (error) {
+            console.error('Erro no carregamento direto:', error);
+        }
     }
     
     /**
@@ -238,12 +285,23 @@ class App {
      */
     async loadAllProducts() {
         try {
-            // Carregar todos os dados
-            await this.database.loadPublicData();
+            // FORÇAR carregamento completo - limpar cache se necessário
+            const cachedData = this.database.cache?.getCache();
+            
+            // Se só tem produtos featured, forçar reload completo
+            if (cachedData && cachedData.isCritical) {
+                console.log('🔄 Cache só tem produtos featured, forçando reload completo...');
+                await this.database.forceReload();
+            } else {
+                // Carregar todos os dados normalmente
+                await this.database.loadPublicData();
+            }
             
             // Renderizar tudo
             const categories = this.database.getCategories(true);
             const products = this.database.getProducts({ activeOnly: true });
+            
+            console.log(`📊 Carregando: ${products.length} produtos, ${categories.length} categorias`);
             
             const categoriesWithCount = categories.map(category => ({
                 ...category,
