@@ -1,10 +1,12 @@
 // View para o menu do cliente
 import lazyLoader from '../services/lazy-loader.js';
+import imageService from '../services/image-service.js';
 
 export class MenuView {
     constructor(database = null) {
         this.selectedCategory = null;
         this.database = database;
+        this.imageService = imageService;
     }
 
     /**
@@ -75,49 +77,50 @@ export class MenuView {
      * Create optimized image with loading state (NASA: performance optimization)
      * Function size: 25 lines (NASA compliant)
      */
-    createOptimizedImage(src, alt, className = "w-full h-full object-cover", showSkeleton = true, useLazyLoading = false) {
-        if (!src) {
+    createOptimizedImage(src, alt, className = "w-full h-full object-cover", productId = null, context = 'default') {
+        // Use image service para processar URL com fallback inteligente
+        const processedSrc = this.imageService.processImageUrl(src, 'product');
+        
+        // Se não tem imagem válida, retorna placeholder
+        if (processedSrc === this.imageService.defaultImages.productPlaceholder) {
             return `<div class="w-full h-full flex items-center justify-center bg-gray-100">
-                <svg class="w-12 h-12 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
                 </svg>
             </div>`;
         }
 
-        const uniqueId = `img-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        // Criar ID único baseado no contexto para evitar duplicatas
+        const uniqueId = productId 
+            ? `img-${context}-${productId}` 
+            : `img-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
         
         return `
-            <div class="image-container relative ${className.includes('w-full') ? 'w-full h-full' : ''}">
-                <!-- Skeleton placeholder sempre visível até imagem carregar -->
+            <div class="image-container relative w-full h-full">
+                <!-- Simple skeleton -->
                 <div id="skeleton-${uniqueId}" class="absolute inset-0 bg-gray-200 animate-pulse flex items-center justify-center">
-                    <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                    <svg class="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd"></path>
                     </svg>
                 </div>
                 
-                <!-- Imagem carrega progressivamente -->
+                <!-- Image with progressive fade in -->
                 <img 
-                    id="${uniqueId}" 
-                    src="${src}"
+                    id="${uniqueId}"
+                    src="${processedSrc}"
                     alt="${alt}" 
-                    class="${className} transition-all duration-500 opacity-0 scale-105" 
+                    class="${className} opacity-0 transition-opacity duration-300" 
                     loading="lazy"
                     onload="
                         this.style.opacity = '1';
-                        this.style.transform = 'scale(1)';
                         const skeleton = document.getElementById('skeleton-${uniqueId}');
-                        if (skeleton) {
-                            skeleton.style.opacity = '0';
-                            setTimeout(() => skeleton.remove(), 300);
-                        }
+                        if (skeleton) skeleton.style.display = 'none';
                     "
                     onerror="
-                        this.style.display = 'none';
+                        this.src = '${this.imageService.defaultImages.productPlaceholder}';
+                        this.style.opacity = '1';
                         const skeleton = document.getElementById('skeleton-${uniqueId}');
-                        if (skeleton) {
-                            skeleton.innerHTML = '<div class=&quot;text-xs text-gray-400&quot;>Erro ao carregar</div>';
-                            skeleton.classList.remove('animate-pulse');
-                        }
+                        if (skeleton) skeleton.style.display = 'none';
                     "
                 >
             </div>
@@ -363,7 +366,7 @@ export class MenuView {
         // Renderizar seções por categoria
         this.renderCategorySections(products, categories);
         
-        // Carregamento progressivo ativo - imagens carregam automaticamente
+        // Images load directly with progressive fade in
     }
     
     renderFeaturedProducts(featuredProducts) {
@@ -385,7 +388,7 @@ export class MenuView {
             featuredContainer.appendChild(card);
         });
         
-        // Imagens featured carregam automaticamente (sem lazy loading)
+        // Featured images load with progressive fade in
     }
     
     renderCategorySections(products, categories) {
@@ -479,7 +482,7 @@ export class MenuView {
                 
                 <!-- Imagem do produto -->
                 <div class="w-full h-full bg-gray-100">
-                    ${this.createOptimizedImage(product.image, product.name, "w-full h-full object-cover")}
+                    ${this.createOptimizedImage(product.image_url || product.image, product.name, "w-full h-full object-cover", product.id, 'featured')}
                 </div>
             </div>
             
@@ -511,8 +514,6 @@ export class MenuView {
         // Layout responsivo: horizontal no mobile, vertical no desktop
         card.className = 'rounded-2xl border border-gray-200 overflow-hidden bg-white shadow-sm hover:shadow-lg active:scale-[0.98] transition-all duration-200 cursor-pointer touch-manipulation sm:block';
         
-        // 🖼️ Add product ID for progressive image loading
-        card.setAttribute('data-product-id', product.id);
         
         const priceFormatted = product.price ? 
             `R$ ${product.price.toFixed(2).replace('.', ',')}` : 
@@ -552,7 +553,7 @@ export class MenuView {
                 
                 <!-- Imagem à direita -->
                 <div class="w-20 h-20 flex-shrink-0 bg-gray-100 rounded-xl overflow-hidden">
-                    ${this.createOptimizedImage(product.image, product.name, "w-full h-full object-cover")}
+                    ${this.createOptimizedImage(product.image_url || product.image, product.name, "w-full h-full object-cover", product.id, 'category')}
                 </div>
             </div>
 
@@ -565,7 +566,7 @@ export class MenuView {
                         </span>
                     ` : ''}
                     <div class="h-48 w-full bg-gray-100">
-                        ${this.createOptimizedImage(product.image, product.name, "w-full h-full object-cover")}
+                        ${this.createOptimizedImage(product.image_url || product.image, product.name, "w-full h-full object-cover", product.id, 'category')}
                     </div>
                 </div>
                 <div class="p-4">
@@ -612,7 +613,7 @@ export class MenuView {
                     
                     <!-- Imagem grande -->
                     <div class="w-full h-56 sm:h-64 bg-gray-100 relative">
-                        ${this.createOptimizedImage(product.image, product.name, "w-full h-full object-cover", false)}
+                        ${this.createOptimizedImage(product.image_url, product.name, "w-full h-full object-cover", product.id)}
                     </div>
                     
                     <!-- Conteúdo com scroll se necessário -->

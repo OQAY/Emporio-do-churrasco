@@ -21,8 +21,7 @@ export class ProductController {
             // Callback não mais usado para filtrar, apenas para setup inicial
         });
         
-        // Carregar todos os produtos organizados por seção
-        this.loadAllProducts(categoriesWithCount);
+        // NÃO carregar produtos aqui - será feito após chunked loading
     }
 
     loadAllProducts(categories) {
@@ -34,29 +33,54 @@ export class ProductController {
         }, 100);
     }
 
-    loadProducts() {
-        this.view.showLoading();
-        
-        setTimeout(() => {
-            const filters = {
-                activeOnly: true
-            };
-
-            if (this.searchQuery) {
-                filters.search = this.searchQuery;
-            }
-
-            const products = this.database.getProducts(filters);
+    async loadProducts() {
+        try {
+            this.view.showLoading();
             
-            // Para busca, usar renderização simples
-            if (this.searchQuery) {
-                this.renderSearchResults(products);
-            } else {
-                // Para exibição normal, usar sistema de seções
-                const categories = this.database.getCategories(true);
-                this.view.renderProducts(products, categories);
+            const products = await this.database.getProducts({ activeOnly: true });
+            const categories = await this.database.getCategories(true);
+            
+            this.view.renderProducts(products, categories);
+        } catch (error) {
+            console.error('Erro ao carregar produtos:', error);
+            this.view.showError('Erro ao carregar produtos. Tente novamente.');
+        }
+    }
+
+    /**
+     * Load featured products
+     */
+    async loadCriticalProducts() {
+        try {
+            const criticalData = await this.database.loadCriticalEssentials();
+            
+            if (criticalData && criticalData.products) {
+                this.view.renderFeaturedProducts(criticalData.products);
             }
-        }, 100);
+        } catch (error) {
+            console.error('Erro ao carregar produtos críticos:', error);
+        }
+    }
+
+    /**
+     * Load INSTANT products (FALLBACK - all products with skeletons)
+     * Function size: 15 lines (NASA compliant)
+     */
+    async loadInstantProducts() {
+        try {
+            console.log('⚡ FALLBACK: Loading INSTANT products (all products, skeleton images)...');
+            
+            const products = await this.database.getProducts({ activeOnly: true });
+            const categories = await this.database.getCategories(true);
+            
+            // Render ALL products with skeleton images
+            this.view.renderProducts(products, categories);
+            
+            console.log(`⚡ INSTANT products rendered: ${products.length} products with skeletons`);
+        } catch (error) {
+            console.error('Erro ao carregar produtos instantâneos:', error);
+            this.view.showError('Erro ao carregar cardápio.');
+        }
     }
     
     renderSearchResults(products) {

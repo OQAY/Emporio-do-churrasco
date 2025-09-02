@@ -12,7 +12,7 @@ class CacheManager {
     this.versionKey = 'menu_admin_cache_version';
     this.lastModifiedKey = 'menu_admin_last_modified';
     this.cacheTimeout = 5 * 60 * 1000; // 5 minutes (shorter for better sync)
-    this.currentVersion = '2.2'; // Updated to force cache refresh
+    this.currentVersion = '2.4'; // Cache optimized - smaller size limit + simplified data
     
     // Performance tracking
     this.hits = 0;
@@ -42,10 +42,7 @@ class CacheManager {
       if (cached && timestamp) {
         this.cachedData = JSON.parse(cached);
         this.cacheTimestamp = parseInt(timestamp);
-        console.log('💾 Cache loaded from localStorage', {
-          age: Math.round((Date.now() - this.cacheTimestamp) / 1000 / 60),
-          version: version
-        });
+        // Cache loaded successfully
       }
     } catch (error) {
       console.warn('⚠️ Failed to load cache from localStorage:', error);
@@ -72,29 +69,31 @@ class CacheManager {
       const dataString = JSON.stringify(data);
       const sizeKB = Math.round(dataString.length / 1024);
       
-      // Check if cache is too large (> 4MB limit)
-      if (sizeKB > 4000) {
-        console.warn(`⚠️ Cache too large (${sizeKB}KB), cannot store in localStorage`);
-        // Don't cache if too large - localStorage has 5-10MB limit
-        console.log('💾 Skipping cache storage - data too large');
-        return;
+      // Check if cache is too large (> 50KB limit - much smaller for better performance)
+      if (sizeKB > 50) {
+        console.warn(`⚠️ Cache too large (${sizeKB}KB), optimizing data...`);
+        
+        // Try with optimized data
+        const optimizedData = this.optimizeForStorage(data);
+        const optimizedString = JSON.stringify(optimizedData);
+        const optimizedSizeKB = Math.round(optimizedString.length / 1024);
+        
+        if (optimizedSizeKB > 50) {
+          console.warn(`⚠️ Even optimized cache too large (${optimizedSizeKB}KB), skipping localStorage`);
+          return;
+        } else {
+          localStorage.setItem(this.cacheKey, optimizedString);
+          // Optimized cache saved
+        }
       } else {
         localStorage.setItem(this.cacheKey, dataString);
+        // Cache saved successfully
       }
       
       localStorage.setItem(this.timestampKey, this.cacheTimestamp.toString());
       localStorage.setItem(this.versionKey, this.currentVersion);
       
-      console.log('💾 Cache updated', {
-        size: `${sizeKB}KB`,
-        forceUpdate: forceUpdate,
-        items: {
-          products: data?.products?.length || 0,
-          categories: data?.categories?.length || 0,
-          galleryImages: data?.galleryImages?.length || 0,
-          productTags: data?.productTags?.length || 0
-        }
-      });
+      // Cache updated successfully
     } catch (error) {
       console.warn('⚠️ Failed to save cache to localStorage:', error);
       // Try with optimized data as fallback
@@ -109,32 +108,42 @@ class CacheManager {
   }
 
   /**
-   * Optimize data for storage when cache is too large (NASA: optimization)
-   * Function size: 25 lines (NASA compliant)
+   * Optimize data for storage when cache is too large
    */
   optimizeForStorage(data) {
     if (!data) return data;
     
-    // Keep structure but optimize large fields
     const optimized = { ...data };
     
-    // Optimize products - DON'T truncate images on public mode
+    // Optimize products - keep only essential data
     if (data.products) {
       optimized.products = data.products.map(product => ({
-        ...product,
-        // Keep full image data for now (will optimize differently later)
-        image: product.image
+        id: product.id,
+        name: product.name,
+        description: product.description ? product.description.substring(0, 100) + '...' : '', // Truncate descriptions
+        price: product.price,
+        categoryId: product.categoryId,
+        active: product.active,
+        featured: product.featured,
+        image_url: product.image_url,
+        // Remove campos desnecessários para cache
+        // originalPrice, isOnSale, tags, createdAt, updatedAt são removidos
       }));
     }
     
-    // Optimize gallery images - keep full data
-    if (data.galleryImages) {
-      optimized.galleryImages = data.galleryImages.map(img => ({
-        ...img,
-        // Keep full image URL
-        url: img.url
+    // Optimize categories - keep only essential
+    if (data.categories) {
+      optimized.categories = data.categories.map(cat => ({
+        id: cat.id,
+        name: cat.name,
+        active: cat.active,
+        displayOrder: cat.displayOrder || cat.order
       }));
     }
+    
+    // Remove dados opcionais para economizar espaço
+    delete optimized.galleryImages;
+    delete optimized.productTags;
     
     return optimized;
   }
@@ -326,8 +335,16 @@ class CacheManager {
    */
   getRestaurant() {
     if (!this.cachedData?.restaurant) {
-      console.warn('⚠️ No cached restaurant');
-      return null;
+      console.warn('⚠️ No cached restaurant, using defaults');
+      return {
+        name: 'Império do Churrasco',
+        logo: 'IC',
+        banner: 'images/banners/imd_dia.jpeg',
+        theme: {
+          primaryColor: '#fb923c',
+          secondaryColor: '#f97316'
+        }
+      };
     }
     
     return this.cachedData.restaurant;

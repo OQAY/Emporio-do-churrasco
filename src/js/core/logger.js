@@ -7,7 +7,7 @@
 
 class EnterpriseLogger {
     constructor() {
-        this.logLevel = 'INFO';
+        this.logLevel = 'WARN'; // Silence INFO and DEBUG for production
         this.logs = [];
         this.maxLogs = 1000; // Keep only last 1000 logs
         this.logLevels = {

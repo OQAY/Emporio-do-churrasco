@@ -21,11 +21,7 @@ class DatabaseNASA {
     this.adminMode = adminMode; // Flag to determine if we need all data or just public data
     this.isLoading = false; // Prevent duplicate loading
 
-    console.log(
-      `🚀 DatabaseNASA initialized - Mode: ${
-        adminMode ? "ADMIN (full data)" : "PUBLIC (optimized)"
-      }`
-    );
+    // DatabaseNASA initialized
 
     // DON'T preload automatically - let app.js control when to load
     // this.preloadDataIfNeeded();
@@ -88,44 +84,189 @@ class DatabaseNASA {
   }
 
   /**
-   * Load only essential data for public menu (NASA: public optimization)
+   * ULTRA-OPTIMIZED: Load ONLY critical above-the-fold content
    * Function size: 25 lines (NASA compliant)
    */
-  async loadPublicData() {
-    // Prevent duplicate loading
-    if (this.isLoading) {
-      console.log("⏳ Already loading data, waiting...");
-      while (this.isLoading) {
-        await new Promise((resolve) => setTimeout(resolve, 100));
-      }
-      return this.cache.getCache();
-    }
-
-    console.log("🔄 Loading PUBLIC data (NASA optimized)...");
+  async loadCriticalEssentials() {
+    console.log("🚀 ULTRA: Loading ONLY critical essentials (sub-500ms target)...");
 
     try {
-      // Check cache first (NASA: performance optimization)
+      this.isLoading = true;
+
+      // SINGLE OPTIMIZED REQUEST: Only featured products + restaurant info
+      const rawData = await this.fetcher.fetchCriticalEssentials();
+
+      // Transform to app format
+      const transformedData = this.transformer.transformAllData(rawData);
+      transformedData.isCritical = true; // Mark as critical-only data
+
+      // Cache critical data immediately
+      this.cache.setCache(transformedData);
+
+      console.log("🚀 CRITICAL essentials loaded - showing destaques immediately!");
+      console.log(`  - Restaurant: ${transformedData.restaurant?.name || 'N/A'}`);
+      console.log(`  - Featured products: ${transformedData.products?.length || 0}`);
+      
+      return transformedData;
+    } catch (error) {
+      console.error("❌ Critical load failed, using fallback:", error);
+      return this.getFallbackData();
+    } finally {
+      this.isLoading = false;
+    }
+  }
+
+  /**
+   * CHUNKED: Load remaining products in priority-based chunks
+   * Function size: 30 lines (NASA compliant)
+   */
+  async loadChunkedProducts(offset = 0, limit = 15) {
+    console.log(`📦 CHUNKED: Loading products chunk ${offset}-${offset + limit}...`);
+
+    try {
+      // Fetch chunked data
+      const rawData = await this.fetcher.fetchChunkedProducts(offset, limit);
+
+      // Get existing cached data
+      const cachedData = this.cache.getCache() || {};
+      
+      // Merge categories (only on first chunk)
+      if (offset === 0 && rawData.categories?.length > 0) {
+        const transformedCategories = this.transformer.transformCategories(rawData.categories);
+        cachedData.categories = transformedCategories;
+      }
+
+      // Merge new products with existing ones
+      if (rawData.products?.length > 0) {
+        const transformedProducts = this.transformer.transformProducts(rawData.products);
+        cachedData.products = [...(cachedData.products || []), ...transformedProducts];
+      }
+
+      // Update cache
+      this.cache.setCache(cachedData);
+
+      // Dispatch event for UI updates
+      window.dispatchEvent(new CustomEvent('chunkedProductsLoaded', {
+        detail: { 
+          products: rawData.products,
+          hasMore: rawData.hasMore,
+          offset,
+          totalLoaded: cachedData.products?.length || 0
+        }
+      }));
+
+      console.log(`📦 CHUNKED loaded: +${rawData.products?.length || 0} products (total: ${cachedData.products?.length || 0})`);
+      return { products: rawData.products, hasMore: rawData.hasMore };
+    } catch (error) {
+      console.error("❌ Chunked load failed:", error);
+      return { products: [], hasMore: false };
+    }
+  }
+
+  /**
+   * Load INSTANT structural data (FALLBACK - kept for compatibility)
+   * Function size: 30 lines (NASA compliant)
+   */
+  async loadInstantData() {
+    console.log("⚡ INSTANT: Loading structural data (text only, no images)...");
+
+    try {
+      // Check cache first for instant data
       const cached = this.cache.getCache();
-      if (cached && cached.categories && cached.categories.length > 0) {
-        console.log("📦 Using cached data");
+      if (cached && cached.isInstant) {
+        console.log("⚡ Using cached INSTANT data");
         return cached;
       }
 
       this.isLoading = true;
 
-      // Fetch fresh PUBLIC data only
-      const rawData = await this.fetcher.fetchPublicData();
+      // Fetch INSTANT structural data (all products, no images)
+      const rawData = await this.fetcher.fetchInstantData();
 
       // Transform to app format
       const transformedData = this.transformer.transformAllData(rawData);
+      transformedData.isInstant = true; // Mark as instant structural data
 
-      // Cache for sync access
+      // Cache instant data immediately
       this.cache.setCache(transformedData);
 
-      console.log("✅ PUBLIC data loaded successfully");
+      console.log("⚡ INSTANT data loaded - UI can render ALL products with skeletons!");
       return transformedData;
     } catch (error) {
-      console.error("❌ Load failed, using fallback:", error);
+      console.error("❌ Instant load failed, using fallback:", error);
+      return this.getFallbackData();
+    } finally {
+      this.isLoading = false;
+    }
+  }
+
+  /**
+   * Load PROGRESSIVE images in background (non-blocking)
+   * Function size: 30 lines (NASA compliant)
+   */
+  async loadProgressiveImages() {
+    console.log("🖼️ PROGRESSIVE: Loading product images...");
+
+    try {
+      // Load all product images progressively
+      const rawData = await this.fetcher.fetchProgressiveImages();
+      
+      if (rawData.images && rawData.images.length > 0) {
+        // Get cached structural data to match images with products
+        const cachedData = this.cache.getCache();
+        if (cachedData && cachedData.products) {
+          // Merge images with existing products in cache
+          cachedData.products.forEach(product => {
+            const imageData = rawData.images.find(img => img.id === product.id);
+            if (imageData && imageData.image_url) {
+              product.image = imageData.image_url; // Add image to cached product (compatibility)
+              product.image_url = imageData.image_url; // Add image_url to cached product
+            }
+          });
+
+          // Update cache with images
+          this.cache.setCache(cachedData);
+          
+          // Dispatch event to notify UI to update images progressively
+          window.dispatchEvent(new CustomEvent('progressiveImagesLoaded', {
+            detail: { images: rawData.images }
+          }));
+
+          console.log("✅ PROGRESSIVE: All images loaded and ready for UI updates!");
+          return rawData.images;
+        }
+      }
+    } catch (error) {
+      console.error("❌ Progressive image load failed:", error);
+    }
+  }
+
+  /**
+   * Load FULL data (fallback or admin mode)
+   * Function size: 25 lines (NASA compliant)
+   */
+  async loadPublicData() {
+    // Loading FULL data
+
+    try {
+      // Check cache first
+      const cached = this.cache.getCache();
+      if (cached && cached.categories && cached.categories.length > 0 && !cached.isCritical) {
+        console.log("📦 Using cached FULL data");
+        return cached;
+      }
+
+      this.isLoading = true;
+
+      // Fetch full data
+      const rawData = await this.fetcher.fetchPublicData();
+      const transformedData = this.transformer.transformAllData(rawData);
+      this.cache.setCache(transformedData);
+
+      console.log("✅ FULL data loaded successfully");
+      return transformedData;
+    } catch (error) {
+      console.error("❌ Full load failed, using fallback:", error);
       return this.getFallbackData();
     } finally {
       this.isLoading = false;
@@ -1276,113 +1417,6 @@ class DatabaseNASA {
     return true;
   }
 
-  /**
-   * Load data PROGRESSIVELY (FAST basic data first, lazy images)
-   * Function size: 45 lines (NASA compliant < 60)
-   */
-  async loadDataProgressive() {
-    console.log("🚀 Loading data PROGRESSIVELY (basic first, images lazy)...");
-
-    try {
-      // Check cache first
-      const cached = this.cache.getCache();
-      if (cached && cached.categories && cached.categories.length > 0) {
-        console.log("📦 Using cached data");
-        return cached;
-      }
-
-      this.isLoading = true;
-
-      // STEP 1: Load basic data WITHOUT images (FAST)
-      console.log("⚡ Step 1: Loading basic data (no images)...");
-      const [restaurant, categories, products] = await Promise.all([
-        this.fetcher.fetchRestaurant(),
-        this.fetcher.fetchCategories(), 
-        this.fetcher.fetchProducts() // ← CHANGED: Load complete products (with images)
-      ]);
-
-      // Transform complete data  
-      const completeData = this.transformer.transformAllData({
-        restaurant,
-        categories,
-        products: products, // Complete products with images
-        gallery_images: []
-      });
-
-      // Cache complete data immediately
-      this.cache.setCache(completeData);
-      console.log("✅ Complete data loaded (with images for progressive loading)");
-
-      // No separate image loading needed - progressive loading handles it
-
-      return completeData;
-
-    } catch (error) {
-      console.error("❌ Progressive load failed:", error);
-      return this.getFallbackData();
-    } finally {
-      this.isLoading = false;
-    }
-  }
-
-  /**
-   * Load images lazily in background
-   * Function size: 30 lines (NASA compliant)
-   */
-  // DISABLED: No longer needed - using single load with progressive images
-  /*
-  async loadImagesLazy(productsBasic) {
-    console.log("🖼️ Step 2: Loading images lazily...");
-    
-    // Track loaded images to prevent duplicates
-    const loadedImages = new Set();
-    
-    for (const product of productsBasic) {
-      // Skip if already loaded
-      if (loadedImages.has(product.id)) {
-        console.log(`⏭️ Skipping ${product.name} (already loaded)`);
-        continue;
-      }
-      
-      try {
-        console.log(`🖼️ Loading image for: ${product.name}`);
-        const imageUrl = await this.fetcher.fetchProductImage(product.id);
-        
-        if (imageUrl) {
-          loadedImages.add(product.id);
-          
-          // Update cached product with image (without triggering reload)
-          const cached = this.cache.getCache();
-          const cachedProduct = cached.products.find(p => p.id === product.id);
-          if (cachedProduct) {
-            cachedProduct.image = imageUrl;
-            // Update cache silently (no events)
-            this.cache.setCache(cached, false, true); // silent update
-            
-            // Trigger UI update event
-            window.dispatchEvent(new CustomEvent('product-image-loaded', {
-              detail: { productId: product.id, imageUrl }
-            }));
-            
-            console.log(`✅ Image loaded: ${product.name}`);
-          }
-        } else {
-          console.log(`⚠️ No image found for: ${product.name}`);
-        }
-        
-        // Throttle requests (avoid overwhelming Supabase)
-        await new Promise(resolve => setTimeout(resolve, 200));
-        
-      } catch (error) {
-        console.warn(`❌ Failed to load image for ${product.name}:`, error);
-        // Continue with next image even if one fails
-        await new Promise(resolve => setTimeout(resolve, 500));
-      }
-    }
-    
-    console.log("✅ Step 2 complete: All images loaded lazily");
-  }
-  */
 }
 
 // Export singleton instance (NASA: singleton pattern)
