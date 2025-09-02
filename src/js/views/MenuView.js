@@ -491,7 +491,7 @@ export class MenuView {
                 
                 <!-- Badge de desconto -->
                 ${discount ? `
-                    <span class="absolute bg-green-600 text-white text-xs font-bold px-2 py-1 rounded-md z-10 discount-badge">
+                    <span class="absolute bg-green-600 text-white text-[0.5rem] font-bold px-1.5 py-0.5 rounded z-10 discount-badge">
                         -${discount}%
                     </span>
                 ` : ''}
@@ -505,10 +505,10 @@ export class MenuView {
             <!-- Conteúdo embaixo da imagem -->
             <div class="p-3">
                 <!-- Preços -->
-                <div class="flex items-center gap-2 mb-2 featured-prices">
+                <div class="flex items-center gap-1.5 mb-2 featured-prices">
                     <span class="text-lg font-bold text-gray-900">${priceFormatted}</span>
                     ${originalPriceFormatted ? `
-                        <span class="text-sm text-gray-400 line-through">${originalPriceFormatted}</span>
+                        <span class="text-[0.65rem] text-gray-400 line-through">${originalPriceFormatted}</span>
                     ` : ''}
                 </div>
                 
@@ -573,8 +573,8 @@ export class MenuView {
                     <div class="flex items-center gap-2">
                         <span class="text-orange-600 font-bold text-lg">${priceFormatted}</span>
                         ${originalPriceFormatted ? `
-                            <span class="text-sm text-gray-400 line-through">${originalPriceFormatted}</span>
-                            <span class="text-xs bg-green-600 text-white px-2 py-1 rounded-md font-bold">-${discount}%</span>
+                            <span class="text-[0.65rem] text-gray-400 line-through">${originalPriceFormatted}</span>
+                            <span class="text-[0.5rem] bg-green-600 text-white px-1.5 py-0.5 rounded font-bold">-${discount}%</span>
                         ` : ''}
                     </div>
                 </div>
@@ -604,8 +604,8 @@ export class MenuView {
                     <div class="flex items-center gap-2 mb-3">
                         <span class="text-orange-600 font-bold text-lg">${priceFormatted}</span>
                         ${originalPriceFormatted ? `
-                            <span class="text-sm text-gray-400 line-through">${originalPriceFormatted}</span>
-                            <span class="text-xs bg-green-600 text-white px-2 py-1 rounded-md font-bold">-${discount}%</span>
+                            <span class="text-[0.65rem] text-gray-400 line-through">${originalPriceFormatted}</span>
+                            <span class="text-[0.5rem] bg-green-600 text-white px-1.5 py-0.5 rounded font-bold">-${discount}%</span>
                         ` : ''}
                     </div>
                     ${product.description ? 
