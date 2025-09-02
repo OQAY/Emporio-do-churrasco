@@ -3,9 +3,9 @@
  * Focus: Fast loading + Stability
  */
 
-const CACHE_NAME = 'menu-online-v1.2';
-const STATIC_CACHE = 'static-v1.2';
-const DYNAMIC_CACHE = 'dynamic-v1.2';
+const CACHE_NAME = 'menu-online-v1.3';
+const STATIC_CACHE = 'static-v1.3';
+const DYNAMIC_CACHE = 'dynamic-v1.3';
 
 // Critical assets to cache immediately
 const STATIC_ASSETS = [

@@ -5,6 +5,7 @@ import { ProductController } from './controllers/ProductController.js';
 import enterpriseSystemLite from './enterprise-system-lite.js';
 import lazyLoader from './services/lazy-loader.js';
 import imageService from './services/image-service.js';
+import versionManager from './core/version-manager.js';
 
 class App {
     constructor() {
@@ -18,6 +19,13 @@ class App {
     }
 
     async init() {
+        // 🚀 CRITICAL: Check version first - force update if needed
+        const canContinue = await versionManager.initialize();
+        if (!canContinue) {
+            console.log('🔄 App stopping for version update...');
+            return; // Version manager will handle reload
+        }
+        
         // Renderizar estrutura inicial
         this.render();
         
