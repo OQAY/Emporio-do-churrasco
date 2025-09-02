@@ -439,6 +439,19 @@ export class MenuView {
         }, 100);
     }
 
+    // Função auxiliar para gerar desconto consistente baseado no ID do produto
+    getConsistentDiscount(productId) {
+        if (!productId) return 0;
+        // Usa o ID do produto para gerar um número pseudo-aleatório consistente
+        let hash = 0;
+        for (let i = 0; i < productId.length; i++) {
+            hash = ((hash << 5) - hash) + productId.charCodeAt(i);
+            hash = hash & hash; // Convert to 32bit integer
+        }
+        // Retorna um valor entre 0.2 e 0.7 (20% a 70% de aumento no preço original)
+        return 0.2 + (Math.abs(hash) % 50) / 100;
+    }
+
     createFeaturedCard(product, index) {
         const card = document.createElement('article');
         card.className = 'featured-card rounded-2xl overflow-hidden bg-white shadow-sm hover:shadow-lg active:scale-[0.98] transition-all duration-200 cursor-pointer touch-manipulation';
@@ -447,8 +460,9 @@ export class MenuView {
             `R$ ${product.price.toFixed(2).replace('.', ',')}` : 
             'Consulte';
             
-        // Simular preço original (20-50% maior) e desconto para demonstração
-        const originalPrice = product.price ? product.price * (1 + Math.random() * 0.5 + 0.2) : null;
+        // Simular preço original usando desconto consistente baseado no ID
+        const discountMultiplier = this.getConsistentDiscount(product.id);
+        const originalPrice = product.price ? product.price * (1 + discountMultiplier) : null;
         const originalPriceFormatted = originalPrice ? 
             `R$ ${originalPrice.toFixed(2).replace('.', ',')}` : null;
         const discount = originalPrice ? 
@@ -525,12 +539,19 @@ export class MenuView {
         const priceFormatted = product.price ? 
             `R$ ${product.price.toFixed(2).replace('.', ',')}` : 
             'Consulte';
+        
+        // Simular preço original e desconto igual aos cards de destaque
+        // Se o produto está em destaque (featured), simula desconto consistente
+        const discountMultiplier = product.featured ? this.getConsistentDiscount(product.id) : 0;
+        const originalPrice = product.featured && product.price ? 
+            product.price * (1 + discountMultiplier) : 
+            (product.originalPrice || null);
             
-        const originalPriceFormatted = product.originalPrice ? 
-            `R$ ${product.originalPrice.toFixed(2).replace('.', ',')}` : null;
+        const originalPriceFormatted = originalPrice ? 
+            `R$ ${originalPrice.toFixed(2).replace('.', ',')}` : null;
             
-        const discount = product.isOnSale && product.originalPrice ? 
-            Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100) : null;
+        const discount = originalPrice && product.price ? 
+            Math.round(((originalPrice - product.price) / originalPrice) * 100) : null;
 
         // Layout mobile horizontal (até 742px) - layout desktop vertical (743px+)
         card.innerHTML = `
