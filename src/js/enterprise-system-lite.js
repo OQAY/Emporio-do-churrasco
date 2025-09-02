@@ -25,7 +25,7 @@ class EnterpriseSystemLite {
             healthStatus: 'initializing'
         };
         
-        logger.info('🚀 Enterprise Lite starting initialization...');
+        // Enterprise Lite starting
     }
 
     /**
@@ -36,7 +36,7 @@ class EnterpriseSystemLite {
         try {
             const initStart = performance.now();
             
-            logger.info('🏗️ Enterprise Lite Integration - Starting...');
+            // Enterprise Lite Integration starting
             
             // Step 1: Initialize performance monitoring
             await this.initializePerformanceMonitoring();
@@ -52,11 +52,7 @@ class EnterpriseSystemLite {
             this.isInitialized = true;
             this.metrics.healthStatus = 'healthy';
             
-            logger.info('✅ Enterprise Lite fully initialized', {
-                initializationTime: `${initTime.toFixed(2)}ms`,
-                componentsLoaded: this.metrics.componentsLoaded,
-                memoryUsage: this.getMemoryUsage()
-            });
+            // Enterprise Lite fully initialized
             
             return {
                 success: true,

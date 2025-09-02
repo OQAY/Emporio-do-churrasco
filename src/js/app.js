@@ -270,7 +270,7 @@ class App {
                 return;
             }
             
-            console.log(`📊 Carregados: ${products.length} produtos, ${categories.length} categorias`);
+            // Data loaded successfully
             
             const categoriesWithCount = categories.map(category => ({
                 ...category,

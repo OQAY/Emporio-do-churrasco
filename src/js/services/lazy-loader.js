@@ -20,14 +20,11 @@ export class LazyImageLoader {
      * NASA: Function size 25 lines
      */
     init() {
-        console.log('🚀 Initializing LazyImageLoader...');
-        console.log(`   - IntersectionObserver supported: ${this.isSupported}`);
-        console.log(`   - Root margin: ${this.rootMargin}`);
-        console.log(`   - Threshold: ${this.threshold}`);
+        // LazyImageLoader initializing
         
         if (this.isSupported) {
             this.setupObserver();
-            console.log('✅ Lazy loading initialized with Intersection Observer');
+            // Lazy loading initialized
             
             // Fallback manual para scroll quando IntersectionObserver falha
             this.setupScrollFallback();

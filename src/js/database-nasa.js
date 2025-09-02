@@ -21,11 +21,7 @@ class DatabaseNASA {
     this.adminMode = adminMode; // Flag to determine if we need all data or just public data
     this.isLoading = false; // Prevent duplicate loading
 
-    console.log(
-      `🚀 DatabaseNASA initialized - Mode: ${
-        adminMode ? "ADMIN (full data)" : "PUBLIC (optimized)"
-      }`
-    );
+    // DatabaseNASA initialized
 
     // DON'T preload automatically - let app.js control when to load
     // this.preloadDataIfNeeded();
@@ -250,7 +246,7 @@ class DatabaseNASA {
    * Function size: 25 lines (NASA compliant)
    */
   async loadPublicData() {
-    console.log("🔄 Loading FULL data (fallback mode)...");
+    // Loading FULL data
 
     try {
       // Check cache first

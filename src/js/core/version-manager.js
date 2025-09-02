@@ -209,7 +209,7 @@ class VersionManager {
      * Initialize version checking
      */
     async initialize() {
-        console.log(`🚀 Version Manager initialized - v${this.APP_VERSION}`);
+        // Version Manager initialized
         
         // Check immediately on load
         const needsUpdate = await this.checkAndForceUpdate();

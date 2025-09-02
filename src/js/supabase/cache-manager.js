@@ -42,10 +42,7 @@ class CacheManager {
       if (cached && timestamp) {
         this.cachedData = JSON.parse(cached);
         this.cacheTimestamp = parseInt(timestamp);
-        console.log('💾 Cache loaded from localStorage', {
-          age: Math.round((Date.now() - this.cacheTimestamp) / 1000 / 60),
-          version: version
-        });
+        // Cache loaded successfully
       }
     } catch (error) {
       console.warn('⚠️ Failed to load cache from localStorage:', error);
@@ -90,22 +87,13 @@ class CacheManager {
         }
       } else {
         localStorage.setItem(this.cacheKey, dataString);
-        console.log(`💾 Saved normal cache (${sizeKB}KB)`);
+        // Cache saved successfully
       }
       
       localStorage.setItem(this.timestampKey, this.cacheTimestamp.toString());
       localStorage.setItem(this.versionKey, this.currentVersion);
       
-      console.log('💾 Cache updated', {
-        size: `${sizeKB}KB`,
-        forceUpdate: forceUpdate,
-        items: {
-          products: data?.products?.length || 0,
-          categories: data?.categories?.length || 0,
-          galleryImages: data?.galleryImages?.length || 0,
-          productTags: data?.productTags?.length || 0
-        }
-      });
+      // Cache updated successfully
     } catch (error) {
       console.warn('⚠️ Failed to save cache to localStorage:', error);
       // Try with optimized data as fallback
