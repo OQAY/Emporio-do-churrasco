@@ -39,22 +39,28 @@ src/js/
 ├── app.js                    # Inicialização do app cliente
 ├── admin.js                  # Inicialização do painel admin
 ├── database.js               # Classe base de dados localStorage
-├── database-nasa.js          # Database com monitoramento
+├── database-nasa.js          # Database com monitoramento NASA-compliant
 ├── database-supabase.js      # Integração Supabase
 ├── controllers/
 │   ├── AdminController.js   # Lógica do painel admin
 │   ├── AuthController.js    # Autenticação
 │   └── ProductController.js  # Gerenciamento de produtos
 ├── views/
-│   ├── MenuView.js          # Renderização do menu
+│   ├── MenuView.js          # Renderização do menu (responsividade avançada)
 │   └── AdminView.js         # Renderização do admin
 ├── core/
-│   ├── EnterpriseCore.js   # Padrões avançados
-│   └── SecuritySystem.js    # Camada de segurança
+│   ├── version-manager.js   # Gerenciamento de versões e cache
+│   ├── logger.js           # Sistema de logging enterprise
+│   └── enterprise-system-lite.js # Padrões enterprise
 ├── services/
-│   └── SupabaseService.js  # Serviço de sincronização
+│   ├── image-service.js     # Processamento inteligente de imagens
+│   ├── image-lazy-loader.js # Carregamento otimizado de imagens
+│   └── lazy-loader.js       # Carregamento progressivo
+├── supabase/
+│   ├── cache-manager.js     # Cache otimizado (50KB limit)
+│   └── data-fetcher.js      # Fetching inteligente de dados
 └── performance/
-    └── PerformanceMonitor.js # Monitoramento de performance
+    └── performance-monitor.js # Monitoramento de performance
 ```
 
 ## Padrões de Código Pragmáticos
@@ -82,10 +88,12 @@ src/js/
 
 ### Chaves do localStorage
 - `restaurante_config` - Configurações do restaurante (nome, logo, banner)
-- `menu_produtos` - Dados dos produtos
+- `menu_produtos` - Dados dos produtos com desconto consistente
 - `menu_categorias` - Dados das categorias
 - `admin_user` - Autenticação do admin
 - `performance_metrics` - Dados de monitoramento
+- `app_version` - Controle de versão para invalidação de cache
+- `supabase_cache` - Cache otimizado dos dados (máx 50KB)
 
 ### Fluxo de Dados
 1. Ações do usuário disparam métodos dos controllers
@@ -121,11 +129,15 @@ try {
 ## Performance
 
 ### Otimizações Implementadas
-- Lazy loading de imagens
-- Carregamento progressivo de dados
-- Service worker para funcionar offline
+- Lazy loading inteligente de imagens com fallbacks
+- Sistema de carregamento progressivo com indicadores visuais
+- Service worker para funcionar offline (v1.4)
+- Cache otimizado com limite de 50KB para localStorage
 - Busca com debounce
 - Circuit breaker para APIs
+- Version Manager com invalidação automática de cache
+- Desconto consistente baseado em hash do ID do produto
+- Responsividade adaptativa para telas < 360px
 
 ### Pragmatismo
 - Código que funciona primeiro, otimizar depois
@@ -203,9 +215,10 @@ Nenhuma obrigatória. Para Supabase (opcional):
 - Tentar modo incógnito
 
 ### Imagens não carregam
-- Verificar encoding base64
-- Tamanho < 5MB recomendado
-- MIME type correto no data URL
+- Verificar se estão em `images/products/` (migradas do Base64)
+- Imagens agora são arquivos locais (JPG/PNG/AVIF)
+- Fallbacks automáticos implementados no image-service.js
+- Verificar logs no console para diagnóstico
 
 ### Sync Supabase não funciona
 - Verificar conexão internet
@@ -230,3 +243,28 @@ Evite:
 - Regras arbitrárias
 
 **O melhor código é o que entrega valor.**
+
+## Interface e Responsividade
+
+### Sistema de Cards Inteligente
+- **Featured Cards**: Grid 2x2 com desconto simulado consistente
+- **Category Cards**: Layout horizontal mobile, vertical desktop
+- **Breakpoints**: Mobile-first com breakpoint em 742px
+- **Mobile adaptativo**: Telas < 360px com ajustes específicos
+
+### Desconto e Preços
+- Desconto gerado por hash do ID (consistente entre renderizações)
+- Preço principal em destaque (`text-lg font-bold`)
+- Preço original riscado sutil (`text-[0.65rem]`)
+- Badge desconto discreto (`text-[0.5rem]`)
+
+### Sistema de Loading
+- Indicador global entre banner e footer
+- Spinner animado com ícone de prato
+- Auto-hide após carregamento completo
+- Estados de loading, success e error
+
+### Tags e Badges
+- Tags em layout vertical mobile, horizontal desktop
+- Posicionamento inteligente do badge de desconto
+- Evita sobreposição automática
