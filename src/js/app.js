@@ -362,10 +362,7 @@ class App {
             const limit = 15; // Load 15 products per chunk
             let hasMore = true;
 
-            // Load categories with first chunk
-            if (offset === 0) {
-                this.controller.loadCategories();
-            }
+            // Categories already loaded in instant phase, skip to avoid clearing products
 
             // Load products in chunks until all loaded
             while (hasMore) {

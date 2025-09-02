@@ -223,7 +223,8 @@ class DatabaseNASA {
           cachedData.products.forEach(product => {
             const imageData = rawData.images.find(img => img.id === product.id);
             if (imageData && imageData.image_url) {
-              product.image = imageData.image_url; // Add image to cached product
+              product.image = imageData.image_url; // Add image to cached product (compatibility)
+              product.image_url = imageData.image_url; // Add image_url to cached product
             }
           });
 

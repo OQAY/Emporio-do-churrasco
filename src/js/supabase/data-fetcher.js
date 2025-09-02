@@ -219,7 +219,7 @@ class DataFetcher {
       const [restaurant, featuredProducts] = await Promise.all([
         this.fetchRestaurant(),
         this.client.makeRequest(
-          `products?restaurant_id=eq.${restaurantId}&featured=eq.true&active=eq.true&order=display_order.asc&limit=8&select=id,name,description,price,category_id,featured,is_on_sale,original_price`
+          `products?restaurant_id=eq.${restaurantId}&featured=eq.true&active=eq.true&order=display_order.asc&limit=8&select=id,name,description,price,category_id,featured,is_on_sale,original_price,image_url`
         )
       ]);
 
