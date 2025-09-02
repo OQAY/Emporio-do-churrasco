@@ -1,10 +1,12 @@
 // View para o menu do cliente
 import lazyLoader from '../services/lazy-loader.js';
+import imageService from '../services/image-service.js';
 
 export class MenuView {
     constructor(database = null) {
         this.selectedCategory = null;
         this.database = database;
+        this.imageService = imageService;
     }
 
     /**
@@ -76,7 +78,11 @@ export class MenuView {
      * Function size: 25 lines (NASA compliant)
      */
     createOptimizedImage(src, alt, className = "w-full h-full object-cover", productId = null) {
-        if (!src || src === null) {
+        // Use image service para processar URL com fallback inteligente
+        const processedSrc = this.imageService.processImageUrl(src, 'product');
+        
+        // Se não tem imagem válida, retorna placeholder
+        if (processedSrc === this.imageService.defaultImages.productPlaceholder) {
             return `<div class="w-full h-full flex items-center justify-center bg-gray-100">
                 <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
@@ -99,20 +105,20 @@ export class MenuView {
                 <!-- Image with progressive fade in -->
                 <img 
                     id="${imageId}"
-                    src="${src}"
+                    src="${processedSrc}"
                     alt="${alt}" 
                     class="${className} opacity-0 transition-opacity duration-300" 
+                    loading="lazy"
                     onload="
                         this.style.opacity = '1';
                         const skeleton = document.getElementById('skeleton-${imageId}');
                         if (skeleton) skeleton.style.display = 'none';
                     "
                     onerror="
+                        this.src = '${this.imageService.defaultImages.productPlaceholder}';
+                        this.style.opacity = '1';
                         const skeleton = document.getElementById('skeleton-${imageId}');
-                        if (skeleton) {
-                            skeleton.innerHTML = '<div class=\\'text-xs text-gray-500\\'>Sem imagem</div>';
-                            skeleton.classList.remove('animate-pulse');
-                        }
+                        if (skeleton) skeleton.style.display = 'none';
                     "
                 >
             </div>
@@ -474,7 +480,7 @@ export class MenuView {
                 
                 <!-- Imagem do produto -->
                 <div class="w-full h-full bg-gray-100">
-                    ${this.createOptimizedImage(product.image_url, product.name, "w-full h-full object-cover", product.id)}
+                    ${this.createOptimizedImage(product.image_url || product.image, product.name, "w-full h-full object-cover", product.id)}
                 </div>
             </div>
             
@@ -545,7 +551,7 @@ export class MenuView {
                 
                 <!-- Imagem à direita -->
                 <div class="w-20 h-20 flex-shrink-0 bg-gray-100 rounded-xl overflow-hidden">
-                    ${this.createOptimizedImage(product.image_url, product.name, "w-full h-full object-cover", product.id)}
+                    ${this.createOptimizedImage(product.image_url || product.image, product.name, "w-full h-full object-cover", product.id)}
                 </div>
             </div>
 
@@ -558,7 +564,7 @@ export class MenuView {
                         </span>
                     ` : ''}
                     <div class="h-48 w-full bg-gray-100">
-                        ${this.createOptimizedImage(product.image_url, product.name, "w-full h-full object-cover", product.id)}
+                        ${this.createOptimizedImage(product.image_url || product.image, product.name, "w-full h-full object-cover", product.id)}
                     </div>
                 </div>
                 <div class="p-4">

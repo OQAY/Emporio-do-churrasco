@@ -4,6 +4,7 @@ import { MenuView } from './views/MenuView.js';
 import { ProductController } from './controllers/ProductController.js';
 import enterpriseSystemLite from './enterprise-system-lite.js';
 import lazyLoader from './services/lazy-loader.js';
+import imageService from './services/image-service.js';
 
 class App {
     constructor() {
@@ -17,107 +18,16 @@ class App {
     }
 
     async init() {
-        // CRÍTICO: Prevent layout shifts during load
-        document.body.classList.add('no-transition');
-        
-        // CRÍTICO: Registrar Service Worker primeiro (performance)
-        this.registerServiceWorker();
-        
         // Renderizar estrutura inicial
         this.render();
-        
-        // Enable transitions after initial render
-        setTimeout(() => {
-            document.body.classList.remove('no-transition');
-        }, 100);
-        
-        // ⚡ INSTANT: Load structural data first (all products, no images)
-        console.log('⚡ INSTANT: Loading structural data first...');
-        await this.database.loadInstantData();
-        console.log('⚡ Structural data loaded - all products ready with skeletons!');
-        
-        // Inicializar sistema enterprise (não-bloqueante)
-        await this.initializeEnterpriseFeatures();
-        
-        // Carregamento progressivo (sem lazy loading para melhor UX)
-        // Progressive loading initialized
         
         // Configurar event listeners
         this.setupEventListeners();
         
-        // ULTRA-OPTIMIZED: Load critical essentials first, then chunked products
+        // Carregamento otimizado
         this.loadCriticalEssentialsFirst();
     }
 
-    /**
-     * Register Service Worker for performance (NASA: 20 lines)
-     */
-    registerServiceWorker() {
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('/sw.js')
-                .then(registration => {
-                    console.log('✅ Service Worker registered:', registration.scope);
-                    
-                    // Update on new version
-                    registration.addEventListener('updatefound', () => {
-                        console.log('🔄 Service Worker update found');
-                    });
-                })
-                .catch(error => {
-                    console.warn('⚠️ Service Worker registration failed:', error);
-                });
-        } else {
-            console.warn('⚠️ Service Worker not supported');
-        }
-    }
-
-    /**
-     * Initialize enterprise features (NASA: enterprise integration)
-     * Function size: 25 lines (NASA compliant)
-     */
-    async initializeEnterpriseFeatures() {
-        try {
-            console.log('🚀 Initializing enterprise features...');
-            
-            const initResult = await this.enterpriseSystem.initialize();
-            
-            if (initResult.success) {
-                console.log('✅ Enterprise features active:', {
-                    initTime: initResult.initializationTime,
-                    components: initResult.componentsLoaded
-                });
-                
-                // Add enterprise status indicator to UI
-                this.addEnterpriseStatusIndicator();
-            } else {
-                console.warn('⚠️ Enterprise features unavailable:', initResult.error);
-            }
-        } catch (error) {
-            console.warn('⚠️ Enterprise initialization failed:', error.message);
-            // App continues normally without enterprise features
-        }
-    }
-
-    /**
-     * Add enterprise status indicator (NASA: status display)
-     * Function size: 20 lines (NASA compliant)
-     */
-    addEnterpriseStatusIndicator() {
-        const header = document.querySelector('header .max-w-4xl');
-        if (!header) return;
-        
-        const indicator = document.createElement('div');
-        indicator.className = 'enterprise-status';
-        indicator.innerHTML = `
-            <div class="flex items-center gap-2 text-xs">
-                <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                <span class="text-gray-500">Enterprise Active</span>
-            </div>
-        `;
-        
-        // Insert enterprise indicator
-        header.appendChild(indicator);
-    }
 
     render() {
         const app = document.getElementById('app');
@@ -241,9 +151,6 @@ class App {
             this.loadInitialData();
         });
 
-        // Setup automatic cache sync detection
-        this.setupCacheSync();
-
         // Setup mobile gestures
         this.setupMobileGestures();
 
@@ -251,16 +158,19 @@ class App {
 
 
     /**
-     * Load restaurant info immediately (NASA: 15 lines)
+     * Load restaurant info
      */
     loadRestaurantInfo() {
         const restaurant = this.database.getRestaurant();
-        document.getElementById('restaurantLogo').textContent = restaurant.logo;
-        document.getElementById('restaurantName').textContent = restaurant.name;
-        document.getElementById('restaurantBanner').src = "images/banners/imperio-banner.png";
-        document.getElementById('footerText').textContent = `${restaurant.name} - Cardapio Digital`;
+        document.getElementById('restaurantLogo').textContent = restaurant.logo || 'IC';
+        document.getElementById('restaurantName').textContent = restaurant.name || 'Império do Churrasco';
+        
+        // Usar banner local direto (não do Supabase)
+        const bannerElement = document.getElementById('restaurantBanner');
+        bannerElement.src = 'images/banners/imd_dia.jpeg';
+        
+        document.getElementById('footerText').textContent = `${restaurant.name || 'Império do Churrasco'} - Cardápio Digital`;
 
-        // Aplicar tema
         if (restaurant.theme) {
             document.documentElement.style.setProperty('--primary-color', restaurant.theme.primaryColor);
         }
@@ -306,81 +216,86 @@ class App {
         }, { passive: true });
     }
 
-    /**
-     * Setup automatic cache sync detection (NASA: 25 lines)
-     * Detects when data changes in admin and automatically refreshes frontend
-     */
-    setupCacheSync() {
-        // DISABLED: Cache sync check (causing errors)
-        // Will implement proper cache validation later
-        /*
-        setInterval(async () => {
-            try {
-                // TODO: Implement proper cache validation
-            } catch (error) {
-                // Silently ignore
-            }
-        }, 30000); // Check every 30 seconds
-        */
-        
-        console.log('🔄 Cache sync monitoring started');
-    }
 
     /**
-     * ULTRA-OPTIMIZED: Load critical essentials first (sub-500ms target)
-     * Function size: 30 lines (NASA compliant)
+     * Load critical essentials first
      */
     async loadCriticalEssentialsFirst() {
-        console.log('🚀 ULTRA: Loading ONLY critical essentials first...');
-        
-        // PHASE 1: CRITICAL (sub-500ms) - Only restaurant info + featured products
+        // Load restaurant info
         this.loadRestaurantInfo();
-        await this.controller.loadCriticalProducts(); // Only featured products
         
-        console.log('🚀 CRITICAL essentials rendered - starting chunked loading...');
+        // Load featured products first
+        await this.controller.loadCriticalProducts();
         
-        // PHASE 2: CHUNKED (500ms+) - Load remaining products in chunks
+        // Load all products and categories
         setTimeout(() => {
-            this.loadChunkedProductsInBackground();
-        }, 100); // Small delay to let critical content render
-        
-        // PHASE 3: PROGRESSIVE IMAGES (background) - Load all images
-        setTimeout(() => {
-            this.loadProgressiveImagesInBackground();
-        }, 200); // Start images after chunked begins
+            this.loadAllProducts();
+        }, 500);
+    }
+    
+    /**
+     * Load all products and categories
+     */
+    async loadAllProducts() {
+        try {
+            // Carregar todos os dados
+            await this.database.loadPublicData();
+            
+            // Renderizar tudo
+            const categories = this.database.getCategories(true);
+            const products = this.database.getProducts({ activeOnly: true });
+            
+            const categoriesWithCount = categories.map(category => ({
+                ...category,
+                productCount: products.filter(product => product.categoryId === category.id).length
+            }));
+            
+            // Renderizar categorias
+            this.view.renderCategories(categoriesWithCount, () => {});
+            
+            // Renderizar produtos nas categorias
+            this.view.renderProducts(products, categoriesWithCount);
+            
+        } catch (error) {
+            console.error('Error loading products:', error);
+        }
     }
 
     /**
-     * Load products in chunks for better perceived performance
-     * Function size: 25 lines (NASA compliant)
+     * Load products in chunks
      */
     async loadChunkedProductsInBackground() {
-        console.log('📦 CHUNKED: Loading remaining products...');
-        
         try {
             let offset = 0;
-            const limit = 15; // Load 15 products per chunk
+            const limit = 15;
             let hasMore = true;
 
-            // Categories already loaded in instant phase, skip to avoid clearing products
-
-            // Load products in chunks until all loaded
+            // Load products in chunks
             while (hasMore) {
                 const result = await this.database.loadChunkedProducts(offset, limit);
                 hasMore = result.hasMore;
                 offset += limit;
-
-                console.log(`📦 Loaded chunk: offset=${offset-limit}, +${result.products?.length || 0} products`);
                 
-                // Small delay between chunks to avoid blocking UI
                 if (hasMore) {
                     await new Promise(resolve => setTimeout(resolve, 50));
                 }
             }
-
-            console.log('✅ CHUNKED: All products loaded progressively!');
+            
+            // Renderizar produtos nas categorias após carregar todos
+            const categories = this.database.getCategories(true);
+            const products = this.database.getProducts({ activeOnly: true });
+            
+            const categoriesWithCount = categories.map(category => ({
+                ...category,
+                productCount: products.filter(product => product.categoryId === category.id).length
+            }));
+            
+            // PROBLEMA: renderCategorySections não existe na view
+            // Vamos usar renderProducts que já existe
+            this.view.renderProducts(products, categoriesWithCount);
+            
         } catch (error) {
-            console.warn('⚠️ Chunked loading failed:', error);
+            console.error('Error loading products:', error);
         }
     }
 

@@ -21,8 +21,7 @@ export class ProductController {
             // Callback não mais usado para filtrar, apenas para setup inicial
         });
         
-        // Carregar todos os produtos organizados por seção
-        this.loadAllProducts(categoriesWithCount);
+        // NÃO carregar produtos aqui - será feito após chunked loading
     }
 
     loadAllProducts(categories) {
@@ -49,26 +48,17 @@ export class ProductController {
     }
 
     /**
-     * ULTRA-OPTIMIZED: Load ONLY critical/featured products (sub-500ms target)
-     * Function size: 20 lines (NASA compliant)
+     * Load featured products
      */
     async loadCriticalProducts() {
         try {
-            console.log('🚀 Loading CRITICAL products (featured only, ultra-fast)...');
-            
-            // Load only critical essentials from database
             const criticalData = await this.database.loadCriticalEssentials();
             
             if (criticalData && criticalData.products) {
-                // Render ONLY featured products immediately
                 this.view.renderFeaturedProducts(criticalData.products);
-                
-                console.log(`🚀 CRITICAL products rendered: ${criticalData.products.length} featured products`);
-                console.log('  - Target: sub-500ms render time for featured section');
             }
         } catch (error) {
             console.error('Erro ao carregar produtos críticos:', error);
-            this.view.showError('Erro ao carregar destaques.');
         }
     }
 
