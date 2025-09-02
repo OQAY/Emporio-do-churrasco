@@ -23,19 +23,23 @@ class VersionManager {
             const lastCheck = localStorage.getItem(this.LAST_CHECK_KEY);
             const now = Date.now();
             
-            // First time or version mismatch - force update
-            if (!storedVersion || storedVersion !== this.APP_VERSION) {
+            // Only force update if there's an actual OLD version (not first visit)
+            if (storedVersion && storedVersion !== this.APP_VERSION) {
                 console.log(`🔄 Version mismatch detected: ${storedVersion} → ${this.APP_VERSION}`);
                 return await this.forceAppUpdate();
             }
             
+            // First time user (no stored version) - just set current version
+            if (!storedVersion) {
+                localStorage.setItem(this.VERSION_KEY, this.APP_VERSION);
+                localStorage.setItem(this.LAST_CHECK_KEY, now.toString());
+                return false; // Continue normal loading
+            }
+            
             // Periodic check - verify if server has new version
             if (!lastCheck || (now - parseInt(lastCheck)) > this.checkInterval) {
-                console.log('🔍 Checking for version updates...');
                 localStorage.setItem(this.LAST_CHECK_KEY, now.toString());
-                
-                // In a real scenario, you'd check server for version
-                // For now, we trust local version
+                // Periodic version check completed
                 return false;
             }
             
@@ -50,7 +54,7 @@ class VersionManager {
      * Force complete app update - nuclear option
      */
     async forceAppUpdate() {
-        console.log('💣 FORCING COMPLETE APP UPDATE...');
+        // Forcing complete app update
         
         try {
             // 1. Clear ALL localStorage data
@@ -88,7 +92,7 @@ class VersionManager {
      * Clear ALL localStorage data (nuclear option)
      */
     clearAllStorage() {
-        console.log('🧹 Clearing ALL localStorage...');
+        // Clearing ALL localStorage
         
         const keysToKeep = [this.VERSION_KEY, this.LAST_CHECK_KEY];
         const allKeys = Object.keys(localStorage);
@@ -96,7 +100,7 @@ class VersionManager {
         allKeys.forEach(key => {
             if (!keysToKeep.includes(key)) {
                 localStorage.removeItem(key);
-                console.log(`🗑️ Removed: ${key}`);
+                // Removed old cache key
             }
         });
     }
@@ -107,7 +111,7 @@ class VersionManager {
     async forceServiceWorkerUpdate() {
         if ('serviceWorker' in navigator) {
             try {
-                console.log('🔄 Forcing Service Worker update...');
+                // Forcing Service Worker update
                 
                 const registration = await navigator.serviceWorker.getRegistration();
                 if (registration) {
@@ -120,7 +124,7 @@ class VersionManager {
                     }
                 }
                 
-                console.log('✅ Service Worker update triggered');
+                // Service Worker update triggered
             } catch (error) {
                 console.warn('⚠️ SW update failed:', error);
             }
@@ -133,7 +137,7 @@ class VersionManager {
     async clearBrowserCaches() {
         try {
             if ('caches' in window) {
-                console.log('🧹 Clearing browser caches...');
+                // Clearing browser caches
                 const cacheNames = await caches.keys();
                 
                 await Promise.all(
@@ -143,7 +147,7 @@ class VersionManager {
                     })
                 );
                 
-                console.log('✅ Browser caches cleared');
+                // Browser caches cleared
             }
         } catch (error) {
             console.warn('⚠️ Cache clear failed:', error);
@@ -202,7 +206,7 @@ class VersionManager {
         
         document.body.appendChild(notification);
         
-        console.log('📢 Update notification shown');
+        // Update notification shown
     }
 
     /**
