@@ -5,7 +5,7 @@
 
 class VersionManager {
     constructor() {
-        this.APP_VERSION = '1.3.0';
+        this.APP_VERSION = '1.4.0';
         this.VERSION_KEY = 'app_version';
         this.FORCE_UPDATE_KEY = 'force_update_check';
         this.LAST_CHECK_KEY = 'version_last_check';

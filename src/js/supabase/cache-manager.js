@@ -83,7 +83,7 @@ class CacheManager {
           return;
         } else {
           localStorage.setItem(this.cacheKey, optimizedString);
-          console.log(`💾 Saved optimized cache (${optimizedSizeKB}KB)`);
+          // Optimized cache saved
         }
       } else {
         localStorage.setItem(this.cacheKey, dataString);
