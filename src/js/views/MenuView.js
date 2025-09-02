@@ -454,16 +454,18 @@ export class MenuView {
         const discount = originalPrice ? 
             Math.round(((originalPrice - product.price) / originalPrice) * 100) : null;
 
+        const hasProductTags = product.tags && product.tags.length > 0;
+        
         card.innerHTML = `
             <div class="relative aspect-square">
                 <!-- Product Tags + Destaque Badge -->
-                <div class="absolute top-3 left-3 z-10 flex flex-wrap gap-1">
+                <div class="absolute top-3 left-3 z-10 product-tags">
                     <!-- Tag Destaque (sempre presente na seção Featured) -->
                     <span class="text-white text-xs font-medium px-2 py-1 rounded-md flex items-center gap-1" style="background-color: #f59e0b;">
                         ⭐ Destaque
                     </span>
                     <!-- Tags do produto (limitado a 1 para não sobrecarregar) -->
-                    ${product.tags && product.tags.length > 0 ? 
+                    ${hasProductTags ? 
                         this.resolveProductTags(product.tags).slice(0, 1).map(tag => 
                             `<span class="text-white text-xs font-medium px-2 py-1 rounded-md flex items-center gap-1" style="background-color: ${tag.color || '#fb923c'};">
                                 ${tag.icon || '🏷️'} ${tag.name}
@@ -475,7 +477,7 @@ export class MenuView {
                 
                 <!-- Badge de desconto -->
                 ${discount ? `
-                    <span class="absolute top-3 right-3 bg-green-600 text-white text-xs font-bold px-2 py-1 rounded-md z-10">
+                    <span class="absolute bg-green-600 text-white text-xs font-bold px-2 py-1 rounded-md z-10 discount-badge">
                         -${discount}%
                     </span>
                 ` : ''}
@@ -489,7 +491,7 @@ export class MenuView {
             <!-- Conteúdo embaixo da imagem -->
             <div class="p-3">
                 <!-- Preços -->
-                <div class="flex items-center gap-2 mb-2">
+                <div class="flex items-center gap-2 mb-2 featured-prices">
                     <span class="text-lg font-bold text-gray-900">${priceFormatted}</span>
                     ${originalPriceFormatted ? `
                         <span class="text-sm text-gray-400 line-through">${originalPriceFormatted}</span>
@@ -500,6 +502,11 @@ export class MenuView {
                 <h3 class="font-medium text-sm text-gray-800 leading-tight">${product.name}</h3>
             </div>
         `;
+        
+        // Adiciona classe para controlar posicionamento do badge
+        if (hasProductTags || true) { // Sempre tem tag "Destaque"
+            card.classList.add('has-tags');
+        }
 
         // Modal desativado temporariamente
         // card.addEventListener('click', () => {

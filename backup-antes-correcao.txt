@@ -1,0 +1,10 @@
+* 2145edd fix: prevent version manager from forcing updates on first visit
+* 29cee21 fix: force cache invalidation v1.4.0 - clean all remaining logs
+* 5f02250 clean: remove verbose development logs
+* 31abdde feat: implement global cache invalidation system
+* b6580f6 fix: optimize cache size and loading performance
+* 84df41e feat: versão estável com carregamento rápido
+* daf48ed fix: tentativa de correção do carregamento de imagens
+* 7c70c51 feat: implement ultra-optimized loading with critical essentials and chunked products
+* 2f6e0fb fix: simplify image rendering with direct fetch approach
+* b4406c3 feat: implement single API call approach with progressive images

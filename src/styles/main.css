@@ -463,6 +463,51 @@ html {
     aspect-ratio: 1 / 1;
 }
 
+/* Featured Cards - Ajustes de responsividade */
+@media (max-width: 360px) {
+    /* Preços menores em telas muito pequenas */
+    .featured-card .featured-prices .text-lg {
+        font-size: 1rem !important; /* Reduz de text-lg (1.125rem) para 1rem */
+    }
+    
+    .featured-card .featured-prices .text-sm {
+        font-size: 0.8rem !important; /* Reduz texto riscado */
+    }
+}
+
+/* Tags dos produtos em featured cards - layout inteligente */
+.featured-card .product-tags {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    max-width: calc(100% - 4rem); /* Deixa espaço para badge desconto */
+}
+
+@media (min-width: 480px) {
+    /* Em telas maiores, pode usar flex normal */
+    .featured-card .product-tags {
+        flex-direction: row;
+        flex-wrap: wrap;
+        gap: 0.25rem;
+    }
+}
+
+/* Badge de desconto - posicionamento inteligente */
+.featured-card .discount-badge {
+    /* Se tiver tags, fica mais embaixo */
+    top: auto !important;
+    bottom: 0.75rem;
+    right: 0.75rem;
+    top: unset;
+}
+
+/* Se não tiver tags, badge volta para cima */
+.featured-card:not(.has-tags) .discount-badge {
+    top: 0.75rem !important;
+    bottom: unset;
+    right: 0.75rem;
+}
+
 /* Category menu bar styling */
 .category-menu-item {
     min-width: fit-content;
