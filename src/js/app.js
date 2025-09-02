@@ -110,14 +110,29 @@ class App {
             </nav>
 
             <main class="max-w-4xl mx-auto px-3 py-4">
+                <!-- Indicador de Carregamento Global -->
+                <div id="globalLoader" class="flex flex-col items-center justify-center py-16">
+                    <div class="relative">
+                        <!-- Spinner animado -->
+                        <div class="w-16 h-16 border-4 border-gray-200 border-t-orange-500 rounded-full animate-spin"></div>
+                        <!-- Ícone de prato no centro -->
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <svg class="w-8 h-8 text-orange-500" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22A10,10 0 0,1 2,12A10,10 0 0,1 12,2M12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20A8,8 0 0,0 20,12A8,8 0 0,0 12,4M12,6A6,6 0 0,1 18,12A6,6 0 0,1 12,18A6,6 0 0,1 6,12A6,6 0 0,1 12,6M12,8A4,4 0 0,0 8,12A4,4 0 0,0 12,16A4,4 0 0,0 16,12A4,4 0 0,0 12,8Z"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <p class="mt-4 text-gray-600 text-sm animate-pulse">Carregando cardápio...</p>
+                </div>
+                
                 <!-- Seção de Destaques -->
-                <section id="featuredSection" class="mb-5">
+                <section id="featuredSection" class="mb-5 hidden">
                     <h2 class="text-xl font-bold text-gray-800 mb-3">Destaques</h2>
                     <div id="featuredGrid" class="featured-grid gap-2"></div>
                 </section>
                 
                 <!-- Seção de Todos os Produtos -->
-                <section id="allProductsSection">
+                <section id="allProductsSection" class="hidden">
                     <div id="productsGrid" class="products-grid gap-2"></div>
                     
                     <div id="emptyState" class="hidden text-center py-12">
@@ -258,6 +273,8 @@ class App {
      */
     async loadEverythingDirect() {
         try {
+            // Mostrar loader está visível por padrão no HTML
+            
             // Carregar dados do Supabase direto
             await this.database.loadPublicData();
             
@@ -267,6 +284,8 @@ class App {
             
             if (products.length === 0) {
                 console.log('⚠️ Nenhum produto carregado, usando dados locais de fallback');
+                // Esconder loader mesmo sem produtos
+                this.hideLoader();
                 return;
             }
             
@@ -283,8 +302,35 @@ class App {
             // Renderizar produtos nas categorias
             this.view.renderProducts(products, categoriesWithCount);
             
+            // Esconder loader após renderizar tudo
+            this.hideLoader();
+            
         } catch (error) {
             console.error('Erro no carregamento direto:', error);
+            // Esconder loader mesmo com erro
+            this.hideLoader();
+        }
+    }
+    
+    /**
+     * Hide loader and show content sections
+     */
+    hideLoader() {
+        const loader = document.getElementById('globalLoader');
+        const featuredSection = document.getElementById('featuredSection');
+        const allProductsSection = document.getElementById('allProductsSection');
+        
+        if (loader) {
+            loader.style.display = 'none';
+        }
+        
+        // Mostrar as seções de conteúdo
+        if (featuredSection) {
+            featuredSection.classList.remove('hidden');
+        }
+        
+        if (allProductsSection) {
+            allProductsSection.classList.remove('hidden');
         }
     }
     
