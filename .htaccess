@@ -1,14 +1,19 @@
-# Apache configuration for clean URLs
+# Hostinger/Apache configuration for clean URLs
 <IfModule mod_rewrite.c>
     RewriteEngine On
+    RewriteBase /
     
     # Redireciona /admin para admin.html
     RewriteRule ^admin/?$ admin.html [L]
     
-    # Remove .html extension
+    # Remove .html extension para URLs limpas
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteCond %{REQUEST_FILENAME} !-f
-    RewriteRule ^([^\.]+)$ $1.html [NC,L]
+    RewriteCond %{REQUEST_FILENAME}.html -f
+    RewriteRule ^([^\.]+)$ $1.html [L]
+    
+    # Redireciona index para raiz
+    RewriteRule ^index\.html$ / [R=301,L]
     
     # Security headers
     Header set X-Frame-Options "DENY"
