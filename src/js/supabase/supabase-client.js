@@ -11,11 +11,11 @@ class SupabaseClient {
     this.supabaseKey = window.ENV?.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx5cG1qbnBicHZxa3B0Z21kbm5jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU1NDg4NjcsImV4cCI6MjA3MTEyNDg2N30.naWda_QL5W9JLu87gO6LbFZmG3utyWJwFPvgh4V2i3g';
     this.restaurantId = 'b639641d-518a-4bb3-a2b5-f7927d6b6186';
     
-    // 🚀 OTIMIZAÇÃO: Headers simplificados para evitar preflights
+    // 🚀 OTIMIZAÇÃO: Headers com Content-Type necessário para JSON
     this.headers = {
       'apikey': this.supabaseKey,
-      'Authorization': `Bearer ${this.supabaseKey}`
-      // Removidos Content-Type e Prefer para evitar preflight CORS
+      'Authorization': `Bearer ${this.supabaseKey}`,
+      'Content-Type': 'application/json'
     };
     
     // 🚀 Cache de requisições para evitar duplicatas
@@ -52,6 +52,21 @@ class SupabaseClient {
       if (!response.ok) {
         const error = await response.text();
         throw new Error(`Supabase Error (${response.status}): ${error}`);
+      }
+
+      // 🚀 FIX: Handle empty responses for PATCH/DELETE only
+      const contentLength = response.headers.get('content-length');
+      const method = options.method || 'GET';
+      
+      if (contentLength === '0') {
+        console.log('📭 Empty response (normal for PATCH/DELETE)');
+        
+        // GET operations should return empty array, PATCH/DELETE return null
+        if (method === 'GET') {
+          return [];
+        } else {
+          return null;
+        }
       }
 
       const data = await response.json();

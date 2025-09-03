@@ -3,7 +3,6 @@ import { ImageOptimizationController } from './image-optimization-controller.js'
 import { ProductAdminController } from './product-admin-controller.js';
 import { GalleryAdminController } from './gallery-admin-controller.js';
 import { TagsAdminController } from './tags-admin-controller.js';
-import { SettingsAdminController } from './settings-admin-controller.js';
 
 export class AdminController {
     constructor(database, view) {
@@ -16,14 +15,12 @@ export class AdminController {
         this.productController = new ProductAdminController(database, view, this);
         this.galleryController = new GalleryAdminController(database, view, this);
         this.tagsController = new TagsAdminController(database, view, this);
-        this.settingsController = new SettingsAdminController(database, view, this);
         
         // Expor globalmente para onclick dos botões
         window.imageOptController = this.imageOptController;
         window.productController = this.productController;
         window.galleryController = this.galleryController;
         window.tagsController = this.tagsController;
-        window.settingsController = this.settingsController;
     }
 
     init() {
@@ -111,13 +108,13 @@ export class AdminController {
                 await this.productController.showProducts();
                 break;
             case 'categories':
-                this.showCategories(); // TODO: Move to CategoryAdminController
+                this.showCategories();
                 break;
             case 'gallery':
                 await this.galleryController.showGallery();
                 break;
             case 'settings':
-                this.settingsController.showSettings();
+                this.showSettings();
                 break;
         }
     }
@@ -426,6 +423,51 @@ export class AdminController {
         this.showCategories();
     }
 
+    async showSettings() {
+        const restaurant = this.database.getRestaurant();
+        this.view.showSettings(restaurant);
+        
+        // Restaurant form
+        document.getElementById('restaurantForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.saveRestaurantSettings();
+        });
+
+        // Image optimization
+        await this.imageOptController.setupImageOptimization();
+        
+        // Export data
+        document.getElementById('exportDataBtn').addEventListener('click', () => {
+            this.database.exportData();
+            this.view.showNotification('Dados exportados com sucesso!');
+        });
+        
+        // Import data
+        document.getElementById('importDataBtn').addEventListener('click', () => {
+            const fileInput = document.getElementById('importFile');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                alert('Selecione um arquivo para importar');
+                return;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    if (this.database.importData(e.target.result)) {
+                        this.view.showNotification('Dados importados com sucesso!');
+                        setTimeout(() => location.reload(), 1500);
+                    } else {
+                        this.view.showNotification('Erro ao importar dados', 'error');
+                    }
+                } catch (error) {
+                    this.view.showNotification('Arquivo inválido', 'error');
+                }
+            };
+            reader.readAsText(file);
+        });
+    }
 
     async showGallery() {
         
@@ -1700,7 +1742,7 @@ export class AdminController {
             
             // Delete buttons
             document.querySelectorAll('.delete-image-btn').forEach(btn => {
-                btn.addEventListener('click', async (e) => {
+                btn.addEventListener('click', (e) => {
                     e.stopPropagation(); // Prevent event bubbling
                     if (confirm('Tem certeza que deseja excluir esta imagem?')) {
                         this.database.deleteGalleryImage(btn.dataset.imageId);
@@ -1712,6 +1754,16 @@ export class AdminController {
         }
     }
 
+    saveRestaurantSettings() {
+        const restaurantData = {
+            name: document.getElementById('restaurantName').value,
+            logo: document.getElementById('restaurantLogo').value,
+            banner: document.getElementById('restaurantBanner').value
+        };
+        
+        this.database.updateRestaurant(restaurantData);
+        this.view.showNotification('Configurações salvas com sucesso!');
+    }
 
     setupDragAndDrop() {
         // Variáveis para controlar o drag
@@ -2213,6 +2265,695 @@ export class AdminController {
             if (!isDragging || !draggedElement) return;
             finishDrag();
         });
+    }
+
+    renderCompactTagsSelector(selectedTags = []) {
+        const availableTags = this.database.getProductTags();
+        
+        // If no tags from database, use fallback tags
+        const tagsToShow = availableTags.length > 0 ? availableTags : [
+            { id: "destaque", name: "Destaque", color: "#f59e0b", icon: "⭐" },
+            { id: "mais-vendido", name: "Mais Vendido", color: "#ef4444", icon: "🔥" },
+            { id: "especial-chef", name: "Especial do Chef", color: "#8b5cf6", icon: "👨‍🍳" },
+            { id: "novo", name: "Novo", color: "#10b981", icon: "✨" },
+            { id: "promocao", name: "Promoção", color: "#f97316", icon: "💰" }
+        ];
+        
+        return `
+            <div class="space-y-3">
+                <!-- Compact Header with Expandable Tags -->
+                <div class="bg-gray-50 rounded-lg p-3 border border-gray-200">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-3">
+                            <span class="text-sm font-medium text-gray-700">Tags do Produto</span>
+                            <button 
+                                type="button" 
+                                id="toggleTagsBtn"
+                                class="text-orange-600 hover:text-orange-700 text-sm font-medium flex items-center gap-1 transition-colors"
+                            >
+                                <span>${tagsToShow.length} Tags Disponíveis</span>
+                                <svg class="w-4 h-4 transition-transform" id="toggleTagsIcon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                </svg>
+                            </button>
+                        </div>
+                        ${selectedTags.length > 0 ? `
+                            <span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+                                ${selectedTags.length} selecionada${selectedTags.length !== 1 ? 's' : ''}
+                            </span>
+                        ` : ''}
+                    </div>
+                </div>
+
+                <!-- Tags Grid - Initially Hidden -->
+                <div id="tagsGrid" class="hidden">
+                    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+                        ${tagsToShow.map(tag => {
+                            const isSelected = selectedTags.includes(tag.id);
+                            return `
+                                <label class="group relative cursor-pointer transform transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]">
+                                    <input 
+                                        type="checkbox" 
+                                        name="productTags" 
+                                        value="${tag.id}"
+                                        ${isSelected ? 'checked' : ''}
+                                        class="hidden tag-checkbox"
+                                    >
+                                    <div class="tag-card relative overflow-hidden rounded-xl border-2 transition-all duration-300 ${
+                                        isSelected 
+                                            ? 'border-transparent shadow-lg transform' 
+                                            : 'border-gray-200 hover:border-gray-300 hover:shadow-md'
+                                    }" 
+                                    style="${isSelected ? `background: linear-gradient(135deg, ${tag.color}ee, ${tag.color});` : 'background: linear-gradient(135deg, #ffffff, #f8fafc);'}"
+                                    data-color="${tag.color}">
+                                        
+                                        <!-- Selection Indicator - Top right -->
+                                        <div class="absolute top-1 right-1 w-5 h-5 rounded-full border-2 transition-all duration-200 z-10 ${
+                                            isSelected 
+                                                ? 'bg-green-600 border-green-600 shadow-lg' 
+                                                : 'border-gray-300 bg-white'
+                                        }"${isSelected ? '' : ' style="background-color: rgba(255,255,255,0.9);"'}>
+                                            ${isSelected ? `
+                                                <div class="w-full h-full flex items-center justify-center">
+                                                    <svg class="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                                                    </svg>
+                                                </div>
+                                            ` : ''}
+                                        </div>
+
+                                        <!-- Tag Content -->
+                                        <div class="p-3 text-center">
+                                            <div class="text-2xl mb-1 filter ${isSelected ? 'drop-shadow-sm' : ''}">${tag.icon}</div>
+                                            <div class="text-xs font-semibold ${isSelected ? 'text-white' : 'text-gray-700'} truncate">${tag.name}</div>
+                                        </div>
+                                    </div>
+                                </label>
+                            `;
+                        }).join('')}
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    renderTagsSelector(selectedTags = []) {
+        const availableTags = this.database.getProductTags();
+        
+        // Debug log to see what tags are available
+        
+        // If no tags from database, use fallback tags
+        const tagsToShow = availableTags.length > 0 ? availableTags : [
+            { id: "destaque", name: "Destaque", color: "#f59e0b", icon: "⭐" },
+            { id: "mais-vendido", name: "Mais Vendido", color: "#ef4444", icon: "🔥" },
+            { id: "especial-chef", name: "Especial do Chef", color: "#8b5cf6", icon: "👨‍🍳" },
+            { id: "novo", name: "Novo", color: "#10b981", icon: "✨" },
+            { id: "promocao", name: "Promoção", color: "#f97316", icon: "💰" }
+        ];
+        
+        return `
+            <div class="space-y-4">
+                <!-- Section Header -->
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-2">
+                        <div class="w-2 h-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full"></div>
+                        <span class="text-sm font-medium text-gray-700">Tags Disponíveis</span>
+                        <span class="text-xs text-gray-400">(${selectedTags.length} selecionada${selectedTags.length !== 1 ? 's' : ''})</span>
+                    </div>
+                </div>
+
+                <!-- Tags Grid - Modern Layout -->
+                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+                    ${tagsToShow.map(tag => {
+                        const isSelected = selectedTags.includes(tag.id);
+                        return `
+                            <label class="group relative cursor-pointer transform transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]">
+                                <input 
+                                    type="checkbox" 
+                                    name="productTags" 
+                                    value="${tag.id}"
+                                    ${isSelected ? 'checked' : ''}
+                                    class="hidden tag-checkbox"
+                                >
+                                <div class="tag-card relative overflow-hidden rounded-xl border-2 transition-all duration-300 ${
+                                    isSelected 
+                                        ? 'border-transparent shadow-lg transform' 
+                                        : 'border-gray-200 hover:border-gray-300 hover:shadow-md'
+                                }" 
+                                style="${isSelected ? `background: linear-gradient(135deg, ${tag.color}ee, ${tag.color});` : 'background: linear-gradient(135deg, #ffffff, #f8fafc);'}"
+                                data-color="${tag.color}">
+                                    
+                                    <!-- Delete Button - Always visible, top left -->
+                                    <button 
+                                        type="button" 
+                                        class="delete-tag-btn absolute top-1 left-1 w-5 h-5 bg-red-500 hover:bg-red-600 text-white rounded-full transition-all duration-200 flex items-center justify-center shadow-md"
+                                        data-tag-id="${tag.id}"
+                                        title="Deletar tag"
+                                    >
+                                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                        </svg>
+                                    </button>
+                                    
+                                    <!-- Selection Indicator - Top right -->
+                                    <div class="absolute top-1 right-1 w-5 h-5 rounded-full border-2 transition-all duration-200 z-10 ${
+                                        isSelected 
+                                            ? 'bg-green-600 border-green-600 shadow-lg' 
+                                            : 'border-gray-300 bg-white'
+                                    }"${isSelected ? '' : ' style="background-color: rgba(255,255,255,0.9);"'}>
+                                        ${isSelected ? `
+                                            <div class="w-full h-full flex items-center justify-center">
+                                                <svg class="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                                                </svg>
+                                            </div>
+                                        ` : ''}
+                                    </div>
+
+                                    <!-- Tag Content -->
+                                    <div class="p-3 text-center">
+                                        <div class="text-2xl mb-1 filter ${isSelected ? 'drop-shadow-sm' : ''}">${tag.icon}</div>
+                                        <div class="text-xs font-semibold ${isSelected ? 'text-white' : 'text-gray-700'} truncate">${tag.name}</div>
+                                    </div>
+
+                                    <!-- Hover Overlay -->
+                                    <div class="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none"></div>
+                                </div>
+                            </label>
+                        `;
+                    }).join('')}
+                    
+                    <!-- Add Custom Tag Card -->
+                    <div class="tag-add-card group cursor-pointer transform transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]" id="addCustomTagCard">
+                        <div class="h-full rounded-xl border-2 border-dashed border-gray-300 bg-gradient-to-br from-gray-50 to-white p-3 text-center transition-all duration-300 group-hover:border-orange-400 group-hover:bg-gradient-to-br group-hover:from-orange-50 group-hover:to-orange-100 group-hover:shadow-md">
+                            <div class="flex flex-col items-center justify-center h-full space-y-1">
+                                <div class="w-8 h-8 rounded-full bg-gray-200 group-hover:bg-orange-200 transition-colors duration-200 flex items-center justify-center">
+                                    <svg class="w-4 h-4 text-gray-400 group-hover:text-orange-500 transition-colors duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                                    </svg>
+                                </div>
+                                <span class="text-xs font-medium text-gray-500 group-hover:text-orange-600 transition-colors duration-200">Nova Tag</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Custom Tag Creation Panel -->
+                <div id="customTagSection" class="hidden">
+                    <div class="bg-gradient-to-r from-orange-50 via-orange-50 to-yellow-50 rounded-2xl border border-orange-200 p-6 shadow-sm">
+                        <!-- Header -->
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-10 h-10 bg-gradient-to-r from-orange-400 to-orange-500 rounded-xl flex items-center justify-center shadow-lg">
+                                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h3 class="text-lg font-semibold text-gray-800">Criar Tag Personalizada</h3>
+                                    <p class="text-sm text-gray-600">Defina um nome, emoji e cor para sua nova tag</p>
+                                </div>
+                            </div>
+                            <button type="button" id="cancelCreateTag" class="text-gray-400 hover:text-gray-600 transition-colors">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                </svg>
+                            </button>
+                        </div>
+
+                        <!-- Form Fields -->
+                        <div class="space-y-4 mb-6">
+                            <!-- Name Field -->
+                            <div class="space-y-2">
+                                <label class="block text-sm font-medium text-gray-700">
+                                    Nome da Tag *
+                                </label>
+                                <div class="relative">
+                                    <input 
+                                        type="text" 
+                                        id="customTagName" 
+                                        placeholder="Ex: Super Especial, Favorito dos Clientes..."
+                                        class="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all duration-200 placeholder-gray-400"
+                                        maxlength="20"
+                                    >
+                                    <div class="absolute inset-y-0 right-0 flex items-center pr-3">
+                                        <span class="text-xs text-gray-400" id="nameCounter">0/20</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Icon and Color Row -->
+                            <div class="grid grid-cols-2 gap-4">
+                                <!-- Icon Field -->
+                                <div class="space-y-2">
+                                    <label class="block text-sm font-medium text-gray-700">
+                                        Emoji
+                                    </label>
+                                    <div class="relative">
+                                        <input 
+                                            type="text" 
+                                            id="customTagIcon" 
+                                            placeholder="🔥"
+                                            maxlength="2"
+                                            class="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all duration-200 text-center text-lg placeholder-gray-400"
+                                        >
+                                        <div class="absolute inset-y-0 right-0 flex items-center pr-3">
+                                            <button type="button" class="text-xs text-orange-600 hover:text-orange-700 font-medium" onclick="document.getElementById('customTagIcon').value = ['🔥','⭐','✨','👑','💎','🎯','🚀','❤️','🌟','🏆'][Math.floor(Math.random()*10)]">
+                                                Aleatório
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Color Field -->
+                                <div class="space-y-2">
+                                    <label class="block text-sm font-medium text-gray-700">
+                                        Cor
+                                    </label>
+                                    <div class="relative">
+                                        <input 
+                                            type="color" 
+                                            id="customTagColor" 
+                                            value="#6366f1"
+                                            class="w-full h-12 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all duration-200 cursor-pointer"
+                                        >
+                                        <!-- Color Presets -->
+                                        <div class="absolute top-full mt-2 flex space-x-1">
+                                            ${['#ef4444', '#f97316', '#eab308', '#22c55e', '#3b82f6', '#8b5cf6', '#ec4899', '#6b7280'].map(color => `
+                                                <button type="button" class="w-6 h-6 rounded-full border-2 border-white shadow-sm hover:scale-110 transition-transform" 
+                                                        style="background-color: ${color}" 
+                                                        onclick="document.getElementById('customTagColor').value = '${color}'"></button>
+                                            `).join('')}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Preview -->
+                            <div class="space-y-2 mb-5">
+                                <label class="block text-sm font-medium text-gray-700">
+                                    Preview
+                                </label>
+                                <div class="flex items-center space-x-3 p-4 bg-white rounded-xl border border-gray-200">
+                                    <span class="text-sm text-gray-600">Sua tag ficará assim:</span>
+                                    <div id="tagPreview" class="px-3 py-1.5 text-sm font-medium rounded-full border-2 border-gray-300 text-gray-700">
+                                        🏷️ Nova Tag
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="flex items-center justify-end space-x-3">
+                            <button 
+                                type="button" 
+                                id="cancelCreateTagAlt"
+                                class="px-6 py-2.5 text-sm font-medium text-gray-600 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-all duration-200"
+                            >
+                                Cancelar
+                            </button>
+                            <button 
+                                type="button" 
+                                id="confirmCreateTag"
+                                class="px-6 py-2.5 text-sm font-semibold text-white bg-gradient-to-r from-orange-500 to-orange-600 rounded-xl hover:from-orange-600 hover:to-orange-700 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 transform transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
+                                disabled
+                            >
+                                <svg class="w-4 h-4 mr-2 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                </svg>
+                                Criar Tag
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    setupTagsEvents() {
+        // Toggle tags visibility
+        const toggleBtn = document.getElementById('toggleTagsBtn');
+        const tagsGrid = document.getElementById('tagsGrid');
+        const toggleIcon = document.getElementById('toggleTagsIcon');
+        
+        if (toggleBtn && tagsGrid && toggleIcon) {
+            toggleBtn.addEventListener('click', () => {
+                const isHidden = tagsGrid.classList.contains('hidden');
+                
+                if (isHidden) {
+                    tagsGrid.classList.remove('hidden');
+                    toggleIcon.style.transform = 'rotate(180deg)';
+                } else {
+                    tagsGrid.classList.add('hidden');
+                    toggleIcon.style.transform = 'rotate(0deg)';
+                }
+            });
+        }
+        
+        // Toggle tag selection with improved visual feedback
+        document.querySelectorAll('.tag-checkbox').forEach(checkbox => {
+            checkbox.addEventListener('change', (e) => {
+                const tagCard = e.target.nextElementSibling;
+                const color = tagCard.dataset.color;
+                const isSelected = e.target.checked;
+                
+                // Update card background
+                if (isSelected) {
+                    tagCard.style.background = `linear-gradient(135deg, ${color}ee, ${color})`;
+                    tagCard.classList.add('border-transparent', 'shadow-lg');
+                    tagCard.classList.remove('border-gray-200');
+                } else {
+                    tagCard.style.background = 'linear-gradient(135deg, #ffffff, #f8fafc)';
+                    tagCard.classList.remove('border-transparent', 'shadow-lg');
+                    tagCard.classList.add('border-gray-200');
+                }
+                
+                // Update selection indicator circle
+                const selectionIndicator = tagCard.querySelector('.absolute.top-1.right-1');
+                if (selectionIndicator) {
+                    if (isSelected) {
+                        selectionIndicator.className = 'absolute top-1 right-1 w-5 h-5 rounded-full border-2 transition-all duration-200 z-10 bg-green-600 border-green-600 shadow-lg';
+                        selectionIndicator.innerHTML = `
+                            <div class="w-full h-full flex items-center justify-center">
+                                <svg class="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                                </svg>
+                            </div>
+                        `;
+                    } else {
+                        selectionIndicator.className = 'absolute top-1 right-1 w-5 h-5 rounded-full border-2 transition-all duration-200 z-10 border-gray-300 bg-white';
+                        selectionIndicator.style.backgroundColor = 'rgba(255,255,255,0.9)';
+                        selectionIndicator.innerHTML = '';
+                    }
+                }
+                
+                // Update counter
+                this.updateTagCounter();
+            });
+        });
+        
+        // Delete tag buttons
+        document.querySelectorAll('.delete-tag-btn').forEach(deleteBtn => {
+            deleteBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation(); // Prevent tag selection when clicking delete
+                
+                const tagId = deleteBtn.dataset.tagId;
+                this.confirmDeleteTag(tagId);
+            });
+        });
+        
+        // Add custom tag card click
+        const addCustomTagCard = document.getElementById('addCustomTagCard');
+        if (addCustomTagCard) {
+            addCustomTagCard.addEventListener('click', () => {
+                const customTagSection = document.getElementById('customTagSection');
+                customTagSection.classList.remove('hidden');
+                
+                // Smooth scroll to the form
+                setTimeout(() => {
+                    customTagSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    document.getElementById('customTagName').focus();
+                }, 100);
+            });
+        }
+        
+        // Create custom tag
+        const confirmCreateTag = document.getElementById('confirmCreateTag');
+        if (confirmCreateTag) {
+            confirmCreateTag.addEventListener('click', async () => {
+                await this.createCustomTag();
+            });
+        }
+        
+        // Cancel custom tag (multiple buttons)
+        ['cancelCreateTag', 'cancelCreateTagAlt'].forEach(id => {
+            const cancelBtn = document.getElementById(id);
+            if (cancelBtn) {
+                cancelBtn.addEventListener('click', () => {
+                    document.getElementById('customTagSection').classList.add('hidden');
+                    this.clearCustomTagForm();
+                });
+            }
+        });
+        
+        // ✅ SIMPLE DIRECT TAG PREVIEW (no complex components)
+        this.setupSimpleTagPreview();
+        
+        // Enter key handlers
+        const customTagName = document.getElementById('customTagName');
+        const customTagIcon = document.getElementById('customTagIcon');
+        
+        if (customTagName && customTagIcon) {
+            [customTagName, customTagIcon].forEach(input => {
+                input.addEventListener('keypress', async (e) => {
+                    if (e.key === 'Enter') {
+                        const confirmBtn = document.getElementById('confirmCreateTag');
+                        if (confirmBtn && !confirmBtn.disabled) {
+                            await this.createCustomTag();
+                        }
+                    }
+                });
+            });
+        }
+    }
+    
+    /**
+     * Setup simple tag preview that ALWAYS works (NASA: simple solution)
+     * Function size: 35 lines (NASA compliant)
+     */
+    setupSimpleTagPreview() {
+        const nameField = document.getElementById('customTagName');
+        const emojiField = document.getElementById('customTagIcon');
+        const colorField = document.getElementById('customTagColor');
+        const preview = document.getElementById('tagPreview');
+        const confirmBtn = document.getElementById('confirmCreateTag');
+        
+        if (!nameField || !emojiField || !colorField || !preview) {
+            return;
+        }
+        
+        // Simple update function that ALWAYS works
+        const updatePreview = () => {
+            const name = nameField.value.trim() || 'Nova Tag';
+            const emoji = emojiField.value.trim() || '🏷️';
+            const color = colorField.value || '#3b82f6';
+            
+            // Update preview with current values
+            preview.innerHTML = `
+                <span class="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg" 
+                      style="background-color: ${color}; color: white;">
+                    <span>${emoji}</span>
+                    <span class="font-medium">${name}</span>
+                </span>
+            `;
+            
+            // Update button state
+            if (confirmBtn) {
+                confirmBtn.disabled = !nameField.value.trim();
+            }
+        };
+        
+        // Bind ALL events to ALL fields
+        [nameField, emojiField, colorField].forEach(field => {
+            field.addEventListener('input', updatePreview);
+            field.addEventListener('change', updatePreview);
+            field.addEventListener('keyup', updatePreview);
+            field.addEventListener('blur', updatePreview);
+        });
+        
+        // ✅ DIRECT CLICK DETECTION: Detectar cliques nos pickers específicos
+        this.setupDirectClickDetection(updatePreview);
+        
+        // Initial update
+        updatePreview();
+    }
+    
+    /**
+     * Setup direct click detection (NASA: simple solution)
+     * Function size: 25 lines (NASA compliant)
+     */
+    setupDirectClickDetection(updateCallback) {
+        // NASA Standard: Single responsibility - apenas detectar cliques
+        document.addEventListener('click', (event) => {
+            const target = event.target;
+            const tagSection = document.getElementById('customTagSection');
+            
+            // Verificar se clique foi dentro da seção de tags
+            if (!tagSection || !tagSection.contains(target)) {
+                return; // NASA: Early return para reduzir complexidade
+            }
+            
+            // Detectar cliques nos pickers específicos
+            const emojiContainer = target.closest('#customTagSection > div > div.space-y-4.mb-6 > div.grid.grid-cols-2.gap-4 > div:nth-child(1) > div > div');
+            const colorContainer = target.closest('#customTagSection > div > div.space-y-4.mb-6 > div.grid.grid-cols-2.gap-4 > div:nth-child(2) > div > div');
+            
+            if (emojiContainer || colorContainer) {
+                setTimeout(updateCallback, 50); // NASA: Minimal delay
+            }
+        });
+    }
+    
+    /**
+     * Clear custom tag form (NASA: form management)
+     * Function size: 15 lines (NASA compliant)
+     */
+    clearCustomTagForm() {
+        const nameField = document.getElementById('customTagName');
+        const emojiField = document.getElementById('customTagIcon');
+        const colorField = document.getElementById('customTagColor');
+        
+        if (nameField) nameField.value = '';
+        if (emojiField) emojiField.value = '🏷️';
+        if (colorField) colorField.value = '#3b82f6';
+        
+        // Trigger preview update
+        this.setupSimpleTagPreview();
+    }
+    
+    updateTagCounter() {
+        const selectedCount = document.querySelectorAll('.tag-checkbox:checked').length;
+        const counterElement = document.querySelector('.text-xs.text-gray-400');
+        if (counterElement) {
+            counterElement.textContent = `(${selectedCount} selecionada${selectedCount !== 1 ? 's' : ''})`;
+        }
+    }
+
+    async createCustomTag() {
+        const name = document.getElementById('customTagName').value.trim();
+        const icon = document.getElementById('customTagIcon').value.trim() || '🏷️';
+        const color = document.getElementById('customTagColor').value;
+        
+        if (!name) {
+            this.view.showNotification('Nome da tag é obrigatório', 'error');
+            return;
+        }
+        
+        try {
+            
+            // Show loading state
+            const confirmBtn = document.getElementById('confirmCreateTag');
+            const originalText = confirmBtn.textContent;
+            confirmBtn.textContent = 'Criando...';
+            confirmBtn.disabled = true;
+            
+            const newTag = await this.database.addProductTag({ name, icon, color });
+            
+            // Try to refresh tags container safely
+            try {
+                const container = document.getElementById('productTagsContainer');
+                if (container) {
+                    const currentTags = this.tagsController.getSelectedTags();
+                    container.innerHTML = this.tagsController.renderCompactTagsSelector(currentTags);
+                    this.tagsController.setupTagsEvents();
+                }
+            } catch (uiError) {
+                // Don't throw - tag was created successfully in database
+            }
+            
+            // Hide custom tag section and clear form
+            document.getElementById('customTagSection').classList.add('hidden');
+            this.clearCustomTagForm();
+            
+            this.view.showNotification(`Tag "${name}" criada com sucesso!`);
+            
+        } catch (error) {
+            console.error('❌ Error creating tag:', error);
+            this.view.showNotification(`Erro ao criar tag: ${error.message}`, 'error');
+            
+            // Restore button state
+            const confirmBtn = document.getElementById('confirmCreateTag');
+            if (confirmBtn) {
+                confirmBtn.textContent = 'Criar Tag';
+                confirmBtn.disabled = false;
+            }
+        }
+    }
+
+    getSelectedTags() {
+        const checkboxes = document.querySelectorAll('.tag-checkbox:checked');
+        return Array.from(checkboxes).map(cb => cb.value);
+    }
+
+    confirmDeleteTag(tagId) {
+        const tag = this.database.getProductTags().find(t => t.id === tagId);
+        if (!tag) return;
+        
+        // Check how many products use this tag
+        const products = this.database.getProducts();
+        const productsWithTag = products.filter(p => p.tags && p.tags.includes(tagId));
+        
+        const warningMessage = productsWithTag.length > 0 
+            ? `Esta tag será removida de ${productsWithTag.length} produto${productsWithTag.length > 1 ? 's' : ''}.` 
+            : '';
+        
+        const confirmMessage = `
+            <div class="text-center space-y-4">
+                <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto">
+                    <svg class="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                    </svg>
+                </div>
+                
+                <div>
+                    <h3 class="text-lg font-semibold text-gray-900 mb-2">Deletar Tag</h3>
+                    <p class="text-gray-600 mb-2">
+                        Tem certeza que deseja deletar a tag 
+                        <span class="inline-flex items-center px-2 py-1 rounded-full text-sm font-medium text-white" 
+                              style="background-color: ${tag.color};">
+                            ${tag.icon} ${tag.name}
+                        </span>?
+                    </p>
+                    ${warningMessage ? `<p class="text-orange-600 text-sm font-medium">${warningMessage}</p>` : ''}
+                </div>
+                
+                <div class="flex justify-center space-x-3 pt-4">
+                    <button 
+                        type="button" 
+                        id="confirmDeleteTagBtn"
+                        class="px-6 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                        data-tag-id="${tagId}"
+                    >
+                        Sim, Deletar
+                    </button>
+                    <button 
+                        type="button" 
+                        id="cancelDeleteTag"
+                        class="px-6 py-2 text-sm font-semibold text-white bg-orange-600 rounded-lg hover:bg-orange-700 transition-colors"
+                    >
+                        Cancelar
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        this.view.showModal('Confirmar Exclusão', confirmMessage, true);
+        
+        // Handle confirmation
+        document.getElementById('confirmDeleteTagBtn').addEventListener('click', () => {
+            this.deleteTag(tagId);
+        });
+        
+        document.getElementById('cancelDeleteTag').addEventListener('click', () => {
+            this.view.closeModal(true);
+        });
+    }
+
+    deleteTag(tagId) {
+        try {
+            this.database.deleteProductTag(tagId);
+            
+            // Refresh tags container
+            const container = document.getElementById('productTagsContainer');
+            const currentTags = this.tagsController.getSelectedTags().filter(t => t !== tagId); // Remove deleted tag from selection
+            container.innerHTML = this.tagsController.renderCompactTagsSelector(currentTags);
+            this.tagsController.setupTagsEvents();
+            
+            this.view.closeModal(true);
+            this.view.showNotification('Tag deletada com sucesso!');
+        } catch (error) {
+            this.view.showNotification('Erro ao deletar tag: ' + error.message, 'error');
+        }
     }
 
     // ===== MÉTODOS DE OTIMIZAÇÃO DE IMAGENS =====

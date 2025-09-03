@@ -169,7 +169,7 @@ class DataFetcher {
     try {
       const restaurantId = this.client.getRestaurantId();
       const data = await this.client.makeRequest(
-        `gallery_images?restaurant_id=eq.${restaurantId}&order=created_at.desc&select=*`
+        `gallery_images?restaurant_id=eq.${restaurantId}&order=created_at.desc&select=id,name,size,type,tags,created_at&limit=50`
       );
       
       return data || [];

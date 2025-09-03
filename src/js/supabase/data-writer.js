@@ -81,7 +81,8 @@ class DataWriter {
         body: JSON.stringify(requestBody)
       });
       
-      console.log('✅ Product updated in Supabase, response:', response);
+      // 🚀 FIX: PATCH operations return null/empty response - this is normal
+      console.log('✅ Product updated in Supabase successfully');
       return true;
       
     } catch (error) {
@@ -242,7 +243,7 @@ class DataWriter {
       const restaurantId = this.client.getRestaurantId();
       
       const response = await this.client.makeRequest(
-        `admin_users?restaurant_id=eq.${restaurantId}&username=eq.${username}&password=eq.${password}&active=eq.true`,
+        `admin_users?restaurant_id=eq.${restaurantId}&email=eq.${username}&password_hash=eq.${password}&active=eq.true`,
         { method: 'GET' }
       );
       
