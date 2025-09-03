@@ -144,3 +144,32 @@ backup-*.json
 
 # Claude AI configuration
 .claude/
+
+# Arquivos temporários e debug (LIMPEZA PROJETO)
+debug/
+*.har
+menu-data-*.json
+*-original.*
+*-backup.*
+*.bak
+test-*.html
+test-*.js
+temp-*.*
+compress-*.js
+compress-*.html
+_lixeira/
+_backup*/
+LIMPEZA-PROJETO.md
+
+# Arquivos de teste
+check-images*.js
+clear-cache.js
+force-update.js
+test-version-update.js
+correcao-bugs.md
+smart-kill.bat
+debug-network
+
+# Vercel (não usado)
+.vercelignore
+vercel.json
