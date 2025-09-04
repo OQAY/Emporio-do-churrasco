@@ -1,7 +1,7 @@
 /**
- * CategoriesModal - Versão minimalista para corrigir posicionamento
+ * CategoriesModal - RECRIADO BASEADO NO COMMIT c8be04f5 QUE FUNCIONAVA
  * 
- * Abordagem ZERO: Um elemento, CSS simples, sem JavaScript de posicionamento
+ * Usando exatamente a mesma lógica e estrutura HTML que funcionava
  */
 
 class CategoriesModal {
@@ -11,143 +11,109 @@ class CategoriesModal {
             return CategoriesModal.instance;
         }
         
-        this.modal = null;
         this.isOpen = false;
-        this.categories = [];
-        this.totalProducts = 0;
-        this.callbacks = {};
-        
         CategoriesModal.instance = this;
     }
 
     /**
-     * Mostrar modal - abordagem minimalista
+     * Mostrar modal - EXATAMENTE como funcionava no MenuView.js
      */
     show(categories, totalProducts, callbacks = {}) {
         if (this.isOpen) {
-            this.hide();
+            return; // Evitar múltiplos modais
         }
 
-        this.categories = categories || [];
-        this.totalProducts = totalProducts || 0;
-        this.callbacks = {
-            onCategorySelect: callbacks.onCategorySelect || (() => {}),
-            onScrollToTop: callbacks.onScrollToTop || (() => {}),
-            onScrollToCategory: callbacks.onScrollToCategory || (() => {})
-        };
-
-        this.render();
-        this.setupEventListeners();
-        
-        // Bloquear scroll da página
-        document.body.style.overflow = 'hidden';
-        
-        this.isOpen = true;
-    }
-
-    /**
-     * Fechar modal
-     */
-    hide() {
-        if (!this.isOpen || !this.modal) return;
-        
-        // Animação de saída
-        this.modal.classList.add('modal-closing');
-        
-        setTimeout(() => {
-            this.destroy();
-        }, 300);
-    }
-
-    /**
-     * Render - UM elemento simples, sem aninhamento
-     */
-    render() {
+        // Criar modal HTML - CSS PURO SEM TAILWIND
         const modalHtml = `
-            <div class="simple-categories-modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
-                <!-- Header -->
-                <div class="modal-header">
-                    <h3 id="modal-title">Cardápio completo</h3>
-                    <button class="close-btn" aria-label="Fechar modal">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M18 6L6 18M6 6l12 12"/>
-                        </svg>
-                    </button>
-                </div>
-                
-                <!-- Lista -->
-                <div class="modal-list">
-                    <button class="category-item" data-category-id="all">
-                        <span>Todos</span>
-                        <span class="count">${this.totalProducts}</span>
-                    </button>
+            <div id="categoriesModal" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 9999; display: flex; align-items: flex-end;">
+                <div style="background: white; border-radius: 16px 16px 0 0; width: 100%; max-height: 70vh; overflow: hidden;">
+                    <!-- Header -->
+                    <div style="padding: 16px; border-bottom: 1px solid #e5e7eb;">
+                        <div style="display: flex; align-items: center; justify-content: space-between;">
+                            <h3 style="font-size: 18px; font-weight: 600; color: #374151; margin: 0;">Cardápio completo</h3>
+                            <button id="closeModalBtn" style="padding: 8px; color: #6b7280; background: none; border: none; cursor: pointer;">
+                                <svg style="width: 24px; height: 24px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
                     
-                    ${this.categories.map(cat => `
-                        <button class="category-item" data-category-id="${cat.id}">
-                            <span>${cat.name}</span>
-                            <span class="count">${cat.productCount || 0}</span>
+                    <!-- Lista de categorias -->
+                    <div style="overflow-y: auto; max-height: 50vh; padding: 8px 0;">
+                        <!-- Todos -->
+                        <button class="category-modal-item" style="width: 100%; padding: 16px; text-align: left; background: none; border: none; cursor: pointer; display: flex; align-items: center; justify-content: space-between;" data-category-id="all">
+                            <span style="font-size: 16px; color: #374151;">Todos</span>
+                            <span style="color: #6b7280; font-weight: 500;">${totalProducts}</span>
                         </button>
-                    `).join('')}
+                        
+                        ${categories.map(category => `
+                            <button class="category-modal-item" style="width: 100%; padding: 16px; text-align: left; background: none; border: none; cursor: pointer; display: flex; align-items: center; justify-content: space-between;" data-category-id="${category.id}">
+                                <span style="font-size: 16px; color: #374151;">${category.name}</span>
+                                <span style="color: #6b7280; font-weight: 500;">${category.productCount || 0}</span>
+                            </button>
+                        `).join('')}
+                    </div>
                 </div>
             </div>
         `;
-
-        document.body.insertAdjacentHTML('beforeend', modalHtml);
-        this.modal = document.querySelector('.simple-categories-modal');
-    }
-
-    /**
-     * Event listeners simples
-     */
-    setupEventListeners() {
-        // Fechar
-        const closeBtn = this.modal.querySelector('.close-btn');
-        closeBtn.addEventListener('click', () => this.hide());
-
-        // Clique fora (no próprio modal = fora do conteúdo)
-        this.modal.addEventListener('click', (e) => {
-            if (e.target === this.modal) {
-                this.hide();
+        
+        // Inserir modal diretamente no body (fora do #app)
+        document.body.insertAdjacentHTML('afterbegin', modalHtml);
+        
+        // Adicionar hover effects via CSS
+        const style = document.createElement('style');
+        style.textContent = `
+            .category-modal-item:hover {
+                background-color: #f9fafb !important;
             }
+        `;
+        document.head.appendChild(style);
+        
+        document.body.style.overflow = 'hidden';
+        
+        // Event listeners do modal - EXATAMENTE como funcionava
+        const modal = document.getElementById('categoriesModal');
+        const closeBtn = document.getElementById('closeModalBtn');
+        
+        // Fechar modal
+        const closeModal = () => {
+            modal.remove();
+            // Reabilitar scroll da página
+            document.body.style.overflow = '';
+            this.isOpen = false;
+        };
+        
+        closeBtn.addEventListener('click', closeModal);
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) closeModal();
         });
-
-        // Categorias
-        const categoryItems = this.modal.querySelectorAll('.category-item');
-        categoryItems.forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                const categoryId = e.currentTarget.dataset.categoryId;
+        
+        // Clique nas categorias - EXATAMENTE como funcionava
+        document.querySelectorAll('.category-modal-item').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const categoryId = btn.dataset.categoryId;
                 
-                this.callbacks.onCategorySelect(categoryId);
-                
-                if (categoryId === 'all') {
-                    this.callbacks.onScrollToTop();
-                } else {
-                    this.callbacks.onScrollToCategory(categoryId);
+                // Chamar callbacks se fornecidos
+                if (callbacks.onCategorySelect) {
+                    callbacks.onCategorySelect(categoryId);
                 }
                 
-                this.hide();
+                if (categoryId === 'all') {
+                    if (callbacks.onScrollToTop) {
+                        callbacks.onScrollToTop();
+                    }
+                } else {
+                    if (callbacks.onScrollToCategory) {
+                        callbacks.onScrollToCategory(categoryId);
+                    }
+                }
+                
+                closeModal();
             });
         });
 
-        // ESC key
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && this.isOpen) {
-                this.hide();
-            }
-        });
-    }
-
-    /**
-     * Limpar tudo
-     */
-    destroy() {
-        if (this.modal) {
-            this.modal.remove();
-            this.modal = null;
-        }
-        
-        document.body.style.overflow = '';
-        this.isOpen = false;
+        this.isOpen = true;
     }
 
     /**
