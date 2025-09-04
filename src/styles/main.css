@@ -709,14 +709,14 @@ html {
     }
 }
 
-/* Categories modal específico */
-.categories-modal {
+/* Categories modal overlay */
+.categories-modal-overlay {
     backdrop-filter: blur(4px);
     -webkit-backdrop-filter: blur(4px);
 }
 
-/* Modal content responsivo e otimizado */
-.categories-modal .modal-content {
+/* Categories modal bottom sheet */
+.categories-modal {
     will-change: transform;
     transform: translateZ(0);
     -webkit-backface-visibility: hidden;
@@ -758,7 +758,7 @@ html {
         transition: none;
     }
     
-    .categories-modal {
+    .categories-modal-overlay {
         backdrop-filter: none;
         -webkit-backdrop-filter: none;
     }

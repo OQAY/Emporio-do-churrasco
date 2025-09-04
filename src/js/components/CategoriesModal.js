@@ -31,7 +31,6 @@ class CategoriesModal {
         
         // Bind methods to preserve context
         this.handleKeyDown = this.handleKeyDown.bind(this);
-        this.handleClickOutside = this.handleClickOutside.bind(this);
         this.handleTouchStart = this.handleTouchStart.bind(this);
         this.handleTouchMove = this.handleTouchMove.bind(this);
         this.handleTouchEnd = this.handleTouchEnd.bind(this);
@@ -73,9 +72,8 @@ class CategoriesModal {
         if (!this.modal || !this.isOpen) return;
 
         // Animação de saída
-        const modalContent = this.modal.querySelector('.modal-content');
-        modalContent.classList.add('modal-slide-out');
-        this.modal.classList.add('modal-fade-out');
+        this.modal.classList.add('modal-slide-out');
+        this.overlay.classList.add('modal-fade-out');
 
         // Aguardar animação terminar
         setTimeout(() => {
@@ -88,16 +86,14 @@ class CategoriesModal {
      */
     render() {
         const modalHtml = `
-            <div class="categories-modal fixed inset-0 z-50 modal-fade-in" 
+            <!-- Overlay fixo na viewport atual -->
+            <div class="categories-modal-overlay fixed inset-0 z-40 bg-black bg-opacity-50 modal-fade-in"></div>
+            
+            <!-- Bottom Sheet fixo na viewport atual -->
+            <div class="categories-modal fixed bottom-0 left-0 right-0 h-[60vh] bg-white rounded-t-2xl z-50 modal-slide-in"
                  role="dialog" 
                  aria-modal="true" 
                  aria-labelledby="modal-title">
-                
-                <!-- Overlay (40% do topo clicável para fechar) -->
-                <div class="absolute inset-0 bg-black bg-opacity-50"></div>
-                
-                <!-- Bottom Sheet (60% da tela) -->
-                <div class="modal-content fixed bottom-0 left-0 right-0 h-[60vh] bg-white rounded-t-2xl modal-slide-in">
                     <!-- Header -->
                     <div class="modal-header px-4 py-4 border-b border-gray-200">
                         <div class="flex items-center justify-between">
@@ -134,13 +130,13 @@ class CategoriesModal {
                             </button>
                         `).join('')}
                     </div>
-                </div>
             </div>
         `;
 
         // Adicionar ao DOM
         document.body.insertAdjacentHTML('beforeend', modalHtml);
         this.modal = document.querySelector('.categories-modal');
+        this.overlay = document.querySelector('.categories-modal-overlay');
     }
 
     /**
@@ -153,8 +149,8 @@ class CategoriesModal {
         const closeBtn = this.modal.querySelector('.close-btn');
         closeBtn.addEventListener('click', () => this.hide());
 
-        // Click fora do modal
-        this.modal.addEventListener('click', this.handleClickOutside);
+        // Click no overlay para fechar
+        this.overlay.addEventListener('click', () => this.hide());
 
         // Clique nas categorias
         const categoryItems = this.modal.querySelectorAll('.category-item');
@@ -163,10 +159,9 @@ class CategoriesModal {
         });
 
         // Touch/swipe gestures para mobile
-        const modalContent = this.modal.querySelector('.modal-content');
-        modalContent.addEventListener('touchstart', this.handleTouchStart, { passive: true });
-        modalContent.addEventListener('touchmove', this.handleTouchMove, { passive: false });
-        modalContent.addEventListener('touchend', this.handleTouchEnd, { passive: true });
+        this.modal.addEventListener('touchstart', this.handleTouchStart, { passive: true });
+        this.modal.addEventListener('touchmove', this.handleTouchMove, { passive: false });
+        this.modal.addEventListener('touchend', this.handleTouchEnd, { passive: true });
 
         // Teclado (ESC key)
         document.addEventListener('keydown', this.handleKeyDown);
@@ -178,10 +173,11 @@ class CategoriesModal {
     setupAccessibility() {
         if (!this.modal) return;
 
-        // Focus trap - focar no primeiro item
+        // Focus trap - focar no primeiro item SEM fazer scroll
+        // preventScroll: true evita que o navegador role automaticamente
         const firstFocusable = this.modal.querySelector('.close-btn, .category-item');
         if (firstFocusable) {
-            firstFocusable.focus();
+            firstFocusable.focus({ preventScroll: true });
         }
 
         // Trap de foco no modal
@@ -220,17 +216,14 @@ class CategoriesModal {
      * Adicionar animações CSS suaves
      */
     addAnimations() {
-        // Animações serão implementadas via CSS
-        // Garantir que classes de animação sejam aplicadas
-        const modalContent = this.modal.querySelector('.modal-content');
-        
         // Force reflow para garantir animação
-        modalContent.offsetHeight;
+        this.modal.offsetHeight;
+        this.overlay.offsetHeight;
         
-        // Remover classe de animação após completar
+        // Remover classes de animação após completar
         setTimeout(() => {
-            modalContent.classList.remove('modal-slide-in');
-            this.modal.classList.remove('modal-fade-in');
+            this.modal.classList.remove('modal-slide-in');
+            this.overlay.classList.remove('modal-fade-in');
         }, 300);
     }
 
@@ -244,14 +237,6 @@ class CategoriesModal {
         }
     }
 
-    /**
-     * Handle click outside modal
-     */
-    handleClickOutside(e) {
-        if (e.target === this.modal) {
-            this.hide();
-        }
-    }
 
     /**
      * Handle category selection
@@ -295,10 +280,9 @@ class CategoriesModal {
         // Para bottom sheet, só swipe down fecha
         if (diffY > 10) {
             e.preventDefault();
-            const modalContent = this.modal.querySelector('.modal-content');
             
             // Feedback visual do swipe down
-            modalContent.style.transform = `translateY(${diffY}px)`;
+            this.modal.style.transform = `translateY(${diffY}px)`;
         }
     }
 
@@ -307,11 +291,9 @@ class CategoriesModal {
 
         this.touchEndY = e.changedTouches[0].clientY;
         const diffY = this.touchEndY - this.touchStartY;
-
-        const modalContent = this.modal.querySelector('.modal-content');
         
         // Reset visual feedback
-        modalContent.style.transform = '';
+        this.modal.style.transform = '';
 
         // Se swipe down > 100px, fechar modal
         if (diffY > 100) {
@@ -330,6 +312,11 @@ class CategoriesModal {
             // Remover do DOM
             this.modal.remove();
             this.modal = null;
+        }
+        
+        if (this.overlay) {
+            this.overlay.remove();
+            this.overlay = null;
         }
 
         // Restaurar scroll da página
