@@ -87,13 +87,19 @@ class CategoriesModal {
      * Renderizar HTML do modal
      */
     render() {
+        // Calcular posição atual do viewport
+        const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+        const viewportHeight = window.innerHeight;
+        const modalTop = scrollTop + (viewportHeight * 0.2); // 20% do topo do viewport atual
+        
         const modalHtml = `
-            <div class="categories-modal fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 modal-fade-in" 
+            <div class="categories-modal fixed inset-0 bg-black bg-opacity-50 z-50 modal-fade-in" 
                  role="dialog" 
                  aria-modal="true" 
                  aria-labelledby="modal-title">
                 
-                <div class="modal-content bg-white rounded-2xl w-full max-w-md max-h-[80vh] overflow-hidden modal-slide-in">
+                <div class="modal-content bg-white rounded-2xl w-full max-w-md max-h-[60vh] overflow-hidden modal-slide-in" 
+                     style="position: absolute; top: ${modalTop}px; left: 50%; transform: translateX(-50%); margin: 0 20px;">
                     <!-- Header -->
                     <div class="modal-header px-4 py-4 border-b border-gray-200">
                         <div class="flex items-center justify-between">
@@ -295,8 +301,8 @@ class CategoriesModal {
             const modalContent = this.modal.querySelector('.modal-content');
             const progress = Math.min(absDiffY / 150, 1);
             
-            // Feedback visual do swipe
-            modalContent.style.transform = `scale(${1 - progress * 0.1}) translateY(${diffY * 0.3}px)`;
+            // Feedback visual do swipe (mantendo translateX(-50%) para centralização)
+            modalContent.style.transform = `translateX(-50%) scale(${1 - progress * 0.1}) translateY(${diffY * 0.3}px)`;
             modalContent.style.opacity = 1 - (progress * 0.3);
         }
     }
