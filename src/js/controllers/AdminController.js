@@ -224,8 +224,6 @@ export class AdminController {
             });
         });
     }
-<<<<<<< HEAD
-=======
 
     async showProducts() {
         // 🔧 FORCE RELOAD to get fresh data from Supabase
@@ -1590,7 +1588,6 @@ export class AdminController {
         return [...new Set(tags)];
     }
 
->>>>>>> e24bd2f (atualizar banner e footer - configurar deploy hostinger)
     showCategories() {
         const categories = this.database.getCategories();
         this.view.showCategories(categories);
