@@ -197,7 +197,7 @@ class App {
         const bannerElement = document.getElementById('restaurantBanner');
         bannerElement.src = 'images/banners/imd_dia.jpeg';
         
-        document.getElementById('footerText').textContent = `${restaurantName} - Cardápio Digital`;
+        document.getElementById('footerText').textContent = `Seu Négocio Online - Bora Digital ® | Deploy automático testado!`;
 
         // Aplicar tema se disponível
         if (restaurant && restaurant.theme) {
