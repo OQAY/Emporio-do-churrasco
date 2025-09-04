@@ -19,8 +19,8 @@ body {
     text-rendering: optimizeSpeed;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    /* Performance: Force hardware acceleration */
-    transform: translateZ(0);
+    /* Performance: Force hardware acceleration - REMOVIDO TEMPORARIAMENTE */
+    /* transform: translateZ(0); */
     -webkit-backface-visibility: hidden;
     backface-visibility: hidden;
 }
@@ -652,3 +652,4 @@ html {
     object-fit: cover;
     object-position: center center; /* Sempre mostra o centro */
 }
+
