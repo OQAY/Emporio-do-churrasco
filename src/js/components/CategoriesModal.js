@@ -87,11 +87,6 @@ class CategoriesModal {
      * Renderizar HTML do modal
      */
     render() {
-        // Calcular posição atual do viewport
-        const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-        const viewportHeight = window.innerHeight;
-        const modalTop = scrollTop + (viewportHeight * 0.2); // 20% do topo do viewport atual
-        
         const modalHtml = `
             <div class="categories-modal fixed inset-0 bg-black bg-opacity-50 z-50 modal-fade-in" 
                  role="dialog" 
@@ -99,7 +94,7 @@ class CategoriesModal {
                  aria-labelledby="modal-title">
                 
                 <div class="modal-content bg-white rounded-2xl w-full max-w-md max-h-[60vh] overflow-hidden modal-slide-in" 
-                     style="position: absolute; top: ${modalTop}px; left: 50%; transform: translateX(-50%); margin: 0 20px;">
+                     style="position: fixed; top: 20vh; left: 50%; transform: translateX(-50%); margin: 0 20px;">
                     <!-- Header -->
                     <div class="modal-header px-4 py-4 border-b border-gray-200">
                         <div class="flex items-center justify-between">
