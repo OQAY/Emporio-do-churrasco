@@ -26,7 +26,7 @@ class CategoriesModal {
         // Criar modal HTML - CSS PURO SEM TAILWIND
         const modalHtml = `
             <div id="categoriesModal" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 9999; display: flex; align-items: flex-end;">
-                <div style="background: white; border-radius: 16px 16px 0 0; width: 100%; max-height: 70vh; overflow: hidden;">
+                <div id="modalContent" style="background: white; border-radius: 16px 16px 0 0; width: 100%; max-height: 70vh; overflow: hidden; transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);">
                     <!-- Header -->
                     <div style="padding: 16px; border-bottom: 1px solid #e5e7eb;">
                         <div style="display: flex; align-items: center; justify-content: space-between;">
@@ -74,14 +74,26 @@ class CategoriesModal {
         
         // Event listeners do modal - EXATAMENTE como funcionava
         const modal = document.getElementById('categoriesModal');
+        const modalContent = document.getElementById('modalContent');
         const closeBtn = document.getElementById('closeModalBtn');
         
-        // Fechar modal
+        // Animar entrada após DOM insertion
+        setTimeout(() => {
+            modalContent.style.transform = 'translateY(0)';
+        }, 10);
+        
+        // Fechar modal com animação
         const closeModal = () => {
-            modal.remove();
-            // Reabilitar scroll da página
-            document.body.style.overflow = '';
-            this.isOpen = false;
+            // Animar saída
+            modalContent.style.transform = 'translateY(100%)';
+            
+            // Aguardar animação terminar antes de remover
+            setTimeout(() => {
+                modal.remove();
+                // Reabilitar scroll da página
+                document.body.style.overflow = '';
+                this.isOpen = false;
+            }, 500);
         };
         
         closeBtn.addEventListener('click', closeModal);
