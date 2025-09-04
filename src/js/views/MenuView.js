@@ -1,12 +1,14 @@
 // View para o menu do cliente
 import lazyLoader from '../services/lazy-loader.js';
 import imageService from '../services/image-service.js';
+import CategoriesModal from '../components/CategoriesModal.js';
 
 export class MenuView {
     constructor(database = null) {
         this.selectedCategory = null;
         this.database = database;
         this.imageService = imageService;
+        this.categoriesModal = CategoriesModal.getInstance();
     }
 
     /**
@@ -173,8 +175,8 @@ export class MenuView {
             menuBarContainer.appendChild(button);
         });
         
-        // TODO: Setup modal de categorias (temporariamente removido para refatoração)
-        // this.setupCategoriesModal(categories, totalProducts, onCategoryClick);
+        // Setup modal de categorias - component refatorado
+        this.setupCategoriesModal(categories, totalProducts, onCategoryClick);
     }
 
     selectCategory(categoryId) {
@@ -225,7 +227,36 @@ export class MenuView {
         }
     }
 
-    // TODO: setupCategoriesModal removido - será implementado em component dedicado
+    /**
+     * Setup modal de categorias usando component refatorado
+     * Resolve problemas de memory leak e performance
+     */
+    setupCategoriesModal(categories, totalProducts, onCategoryClick) {
+        const menuBtn = document.getElementById('categoriesMenuBtn');
+        
+        if (!menuBtn) {
+            console.warn('Botão categoriesMenuBtn não encontrado');
+            return;
+        }
+
+        // Configurar callbacks para o modal
+        const modalCallbacks = {
+            onCategorySelect: (categoryId) => {
+                this.selectCategory(categoryId);
+            },
+            onScrollToTop: () => {
+                this.scrollToTop();
+            },
+            onScrollToCategory: (categoryId) => {
+                this.scrollToCategory(categoryId);
+            }
+        };
+
+        // Event listener no botão - usando modal component
+        menuBtn.addEventListener('click', () => {
+            this.categoriesModal.show(categories, totalProducts, modalCallbacks);
+        });
+    }
 
     setupScrollSpy(categories) {
         // Configurar Intersection Observer para detectar seções visíveis
