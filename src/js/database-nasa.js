@@ -601,7 +601,7 @@ class DatabaseNASA {
       restaurant: {
         name: "Imperio do Churrasco",
         logo: "IC",
-        banner: "images/banners/imd_dia.jpeg",
+        banner: "images/banners/banner_imperio.jpeg",
         theme: {
           primaryColor: "#fb923c",
           secondaryColor: "#f97316",
@@ -1293,6 +1293,19 @@ class DatabaseNASA {
 
       throw new Error(`Product not found in cache: ${productId}`);
     } catch (error) {
+      // Se for erro de JSON parsing mas o produto já foi salvo no localStorage
+      // consideramos como sucesso (problema apenas com resposta do Supabase)
+      if (error.message && error.message.includes('Unexpected end of JSON')) {
+        console.warn("⚠️ Supabase response parsing error, but product was saved locally");
+        
+        // Retorna o produto atualizado do cache
+        const cachedData = this.loadCache();
+        const index = cachedData.products.findIndex((p) => p.id === productId);
+        if (index !== -1) {
+          return cachedData.products[index];
+        }
+      }
+      
       console.error("❌ Update product failed:", error);
       throw error;
     }

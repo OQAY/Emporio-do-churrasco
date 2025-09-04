@@ -31,7 +31,7 @@ class Database {
         restaurant: {
           name: "Imperio do Churrasco",
           logo: "IC",
-          banner: "images/banners/imd_dia.jpeg",
+          banner: "images/banners/banner_imperio.jpeg",
           theme: {
             primaryColor: "#fb923c",
             secondaryColor: "#f97316",

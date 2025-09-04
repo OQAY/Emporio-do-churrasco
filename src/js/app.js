@@ -195,9 +195,11 @@ class App {
         
         // SEMPRE usar banner local (ignorar qualquer banner do Supabase)
         const bannerElement = document.getElementById('restaurantBanner');
-        bannerElement.src = 'images/banners/imd_dia.jpeg';
+        // Adicionar cache buster para forçar reload da imagem
+        const cacheBuster = Date.now();
+        bannerElement.src = `images/banners/banner_imperio.png?t=${cacheBuster}`;
         
-        document.getElementById('footerText').textContent = `Seu Négocio Online - Bora Digital ® | Webhook funcionando!`;
+        document.getElementById('footerText').textContent = `Seu Négocio Online - Bora Digital ®`;
 
         // Aplicar tema se disponível
         if (restaurant && restaurant.theme) {
