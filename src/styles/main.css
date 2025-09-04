@@ -653,113 +653,127 @@ html {
     object-position: center center; /* Sempre mostra o centro */
 }
 
-/* ===== CATEGORIES MODAL ANIMATIONS ===== */
+/* ===== SIMPLE CATEGORIES MODAL - MINIMALISTA ===== */
 
-/* Modal fade in/out */
-.modal-fade-in {
-    animation: modalFadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+.simple-categories-modal {
+    /* Posicionamento absoluto na viewport */
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 60vh;
+    z-index: 9999;
+    
+    /* Visual exato da screenshot */
+    background: white;
+    border-radius: 16px 16px 0 0;
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
+    
+    /* Animação slide up */
+    animation: simpleSlideUp 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+    
+    /* Layout interno */
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
 }
 
-.modal-fade-out {
-    animation: modalFadeOut 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+.simple-categories-modal.modal-closing {
+    animation: simpleSlideDown 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
 }
 
-@keyframes modalFadeIn {
-    from {
-        opacity: 0;
-    }
-    to {
-        opacity: 1;
-    }
+@keyframes simpleSlideUp {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
 }
 
-@keyframes modalFadeOut {
-    from {
-        opacity: 1;
-    }
-    to {
-        opacity: 0;
-    }
+@keyframes simpleSlideDown {
+    from { transform: translateY(0); }
+    to { transform: translateY(100%); }
 }
 
-/* Modal content slide up/down */
-.modal-slide-in {
-    animation: modalSlideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+/* Header do modal */
+.simple-categories-modal .modal-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid #e5e7eb;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
 }
 
-.modal-slide-out {
-    animation: modalSlideOut 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+.simple-categories-modal .modal-header h3 {
+    font-size: 18px;
+    font-weight: 600;
+    color: #374151;
+    margin: 0;
 }
 
-@keyframes modalSlideIn {
-    from {
-        transform: translateY(100%);
-    }
-    to {
-        transform: translateY(0);
-    }
+.simple-categories-modal .close-btn {
+    padding: 8px;
+    border: none;
+    background: none;
+    color: #6b7280;
+    cursor: pointer;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
 }
 
-@keyframes modalSlideOut {
-    from {
-        transform: translateY(0);
-    }
-    to {
-        transform: translateY(100%);
-    }
+.simple-categories-modal .close-btn:hover {
+    background-color: #f3f4f6;
+    color: #374151;
 }
 
-/* Categories modal overlay */
-.categories-modal-overlay {
-    backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
+/* Lista de categorias */
+.simple-categories-modal .modal-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px 0;
 }
 
-/* Categories modal bottom sheet */
-.categories-modal {
-    will-change: transform;
-    transform: translateZ(0);
-    -webkit-backface-visibility: hidden;
-    backface-visibility: hidden;
+/* Category items - visual exato da screenshot */
+.simple-categories-modal .category-item {
+    width: 100%;
+    padding: 16px 20px;
+    border: none;
+    background: none;
+    text-align: left;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    font-size: 16px;
+    color: #374151;
 }
 
-/* Items hover/focus otimizados */
-.category-item {
-    position: relative;
-    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+.simple-categories-modal .category-item:hover {
+    background-color: #f9fafb;
 }
 
-.category-item:hover,
-.category-item:focus {
-    background-color: rgba(59, 130, 246, 0.05);
+.simple-categories-modal .category-item:active {
+    background-color: #f3f4f6;
 }
 
-.category-item:active {
-    transform: scale(0.98);
-    transition-duration: 0.1s;
-}
-
-/* Focus ring melhorado */
-.category-item:focus {
-    box-shadow: inset 0 0 0 2px rgb(59, 130, 246);
-    outline: none;
+.simple-categories-modal .category-item .count {
+    color: #6b7280;
+    font-weight: 500;
 }
 
 /* Reduced motion support */
 @media (prefers-reduced-motion: reduce) {
-    .modal-fade-in,
-    .modal-fade-out,
-    .modal-slide-in,
-    .modal-slide-out {
+    .simple-categories-modal {
         animation: none;
     }
     
-    .category-item {
-        transition: none;
+    .simple-categories-modal.modal-closing {
+        animation: none;
     }
     
-    .categories-modal-overlay {
-        backdrop-filter: none;
-        -webkit-backdrop-filter: none;
+    .simple-categories-modal .category-item {
+        transition: none;
     }
 }
