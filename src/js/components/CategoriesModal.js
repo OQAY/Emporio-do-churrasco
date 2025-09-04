@@ -88,13 +88,16 @@ class CategoriesModal {
      */
     render() {
         const modalHtml = `
-            <div class="categories-modal fixed inset-0 bg-black bg-opacity-50 z-50 modal-fade-in" 
+            <div class="categories-modal fixed inset-0 z-50 modal-fade-in" 
                  role="dialog" 
                  aria-modal="true" 
                  aria-labelledby="modal-title">
                 
-                <div class="modal-content bg-white rounded-2xl w-full max-w-md max-h-[60vh] overflow-hidden modal-slide-in" 
-                     style="position: fixed; top: 20vh; left: 50%; transform: translateX(-50%); margin: 0 20px;">
+                <!-- Overlay (40% do topo clicável para fechar) -->
+                <div class="absolute inset-0 bg-black bg-opacity-50"></div>
+                
+                <!-- Bottom Sheet (60% da tela) -->
+                <div class="modal-content fixed bottom-0 left-0 right-0 h-[60vh] bg-white rounded-t-2xl modal-slide-in">
                     <!-- Header -->
                     <div class="modal-header px-4 py-4 border-b border-gray-200">
                         <div class="flex items-center justify-between">
@@ -289,16 +292,13 @@ class CategoriesModal {
             return;
         }
 
-        // Para modal centralizado, swipe em qualquer direção > 50px pode fechar
-        const absDiffY = Math.abs(diffY);
-        if (absDiffY > 50) {
+        // Para bottom sheet, só swipe down fecha
+        if (diffY > 10) {
             e.preventDefault();
             const modalContent = this.modal.querySelector('.modal-content');
-            const progress = Math.min(absDiffY / 150, 1);
             
-            // Feedback visual do swipe (mantendo translateX(-50%) para centralização)
-            modalContent.style.transform = `translateX(-50%) scale(${1 - progress * 0.1}) translateY(${diffY * 0.3}px)`;
-            modalContent.style.opacity = 1 - (progress * 0.3);
+            // Feedback visual do swipe down
+            modalContent.style.transform = `translateY(${diffY}px)`;
         }
     }
 
@@ -306,16 +306,15 @@ class CategoriesModal {
         if (this.isScrolling) return;
 
         this.touchEndY = e.changedTouches[0].clientY;
-        const diffY = Math.abs(this.touchEndY - this.touchStartY);
+        const diffY = this.touchEndY - this.touchStartY;
 
         const modalContent = this.modal.querySelector('.modal-content');
         
         // Reset visual feedback
         modalContent.style.transform = '';
-        modalContent.style.opacity = '';
 
-        // Se swipe > 80px em qualquer direção, fechar modal
-        if (diffY > 80) {
+        // Se swipe down > 100px, fechar modal
+        if (diffY > 100) {
             this.hide();
         }
     }
